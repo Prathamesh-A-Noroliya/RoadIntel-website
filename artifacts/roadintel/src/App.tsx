@@ -1,9 +1,10 @@
+import type { ReactNode } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
-import NotFound from "@/pages/not-found";
 
 import RootLayout from "@/components/layout/root-layout";
 import AppLayout from "@/components/layout/app-layout";
@@ -25,48 +26,110 @@ import Settings from "@/pages/settings";
 import SOS from "@/pages/sos";
 import Assistant from "@/pages/assistant";
 import Subscribe from "@/pages/subscribe";
+import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
-function AppRoute({ path, children }: { path: string; children: React.ReactNode }) {
-  return <Route path={path}><AppLayout>{children}</AppLayout></Route>;
+function PublicRoute({ path, children }: { path: string; children: ReactNode }) {
+  return (
+    <Route path={path}>
+      <RootLayout>{children}</RootLayout>
+    </Route>
+  );
+}
+
+function AppRoute({ path, children }: { path: string; children: ReactNode }) {
+  return (
+    <Route path={path}>
+      <AppLayout>{children}</AppLayout>
+    </Route>
+  );
 }
 
 function Router() {
   return (
     <Switch>
-      {/* Public */}
-      <Route path="/"><RootLayout><Landing /></RootLayout></Route>
-      <Route path="/login"><RootLayout><Login /></RootLayout></Route>
-      <Route path="/register"><RootLayout><Register /></RootLayout></Route>
+      <PublicRoute path="/">
+        <Landing />
+      </PublicRoute>
 
-      {/* App */}
-      <AppRoute path="/dashboard"><Dashboard /></AppRoute>
-      <AppRoute path="/complaints"><Complaints /></AppRoute>
-      <AppRoute path="/scan"><Scan /></AppRoute>
-      <AppRoute path="/roads"><Roads /></AppRoute>
-      <AppRoute path="/roads/:id"><RoadDetail /></AppRoute>
-      <AppRoute path="/risk-map"><RiskMap /></AppRoute>
-      <AppRoute path="/spending"><Spending /></AppRoute>
-      <AppRoute path="/sensors"><Sensors /></AppRoute>
-      <AppRoute path="/contractors"><Contractors /></AppRoute>
-      <AppRoute path="/analytics"><Analytics /></AppRoute>
-      <AppRoute path="/settings"><Settings /></AppRoute>
-      <AppRoute path="/sos"><SOS /></AppRoute>
-      <AppRoute path="/assistant"><Assistant /></AppRoute>
-      <AppRoute path="/subscribe"><Subscribe /></AppRoute>
+      <PublicRoute path="/login">
+        <Login />
+      </PublicRoute>
 
-      <Route component={NotFound} />
+      <PublicRoute path="/register">
+        <Register />
+      </PublicRoute>
+
+      <AppRoute path="/dashboard">
+        <Dashboard />
+      </AppRoute>
+
+      <AppRoute path="/complaints">
+        <Complaints />
+      </AppRoute>
+
+      <AppRoute path="/scan">
+        <Scan />
+      </AppRoute>
+
+      <AppRoute path="/roads">
+        <Roads />
+      </AppRoute>
+
+      <AppRoute path="/roads/:id">
+        <RoadDetail />
+      </AppRoute>
+
+      <AppRoute path="/risk-map">
+        <RiskMap />
+      </AppRoute>
+
+      <AppRoute path="/spending">
+        <Spending />
+      </AppRoute>
+
+      <AppRoute path="/sensors">
+        <Sensors />
+      </AppRoute>
+
+      <AppRoute path="/contractors">
+        <Contractors />
+      </AppRoute>
+
+      <AppRoute path="/analytics">
+        <Analytics />
+      </AppRoute>
+
+      <AppRoute path="/settings">
+        <Settings />
+      </AppRoute>
+
+      <AppRoute path="/sos">
+        <SOS />
+      </AppRoute>
+
+      <AppRoute path="/assistant">
+        <Assistant />
+      </AppRoute>
+
+      <AppRoute path="/subscribe">
+        <Subscribe />
+      </AppRoute>
+
+      <Route>
+        <NotFound />
+      </Route>
     </Switch>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="roadintel-theme">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <WouterRouter base="">
             <Router />
           </WouterRouter>
           <Toaster />
@@ -75,5 +138,3 @@ function App() {
     </ThemeProvider>
   );
 }
-
-export default App;
