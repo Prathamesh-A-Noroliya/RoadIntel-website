@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/toaster";
@@ -30,92 +29,118 @@ import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
-function PublicRoute({ path, children }: { path: string; children: ReactNode }) {
-  return (
-    <Route path={path}>
-      <RootLayout>{children}</RootLayout>
-    </Route>
-  );
+function PublicPage({ children }: { children: React.ReactNode }) {
+  return <RootLayout>{children}</RootLayout>;
 }
 
-function AppRoute({ path, children }: { path: string; children: ReactNode }) {
-  return (
-    <Route path={path}>
-      <AppLayout>{children}</AppLayout>
-    </Route>
-  );
+function PrivatePage({ children }: { children: React.ReactNode }) {
+  return <AppLayout>{children}</AppLayout>;
 }
 
 function Router() {
   return (
     <Switch>
-      <PublicRoute path="/">
-        <Landing />
-      </PublicRoute>
+      <Route path="/">
+        <PublicPage>
+          <Landing />
+        </PublicPage>
+      </Route>
 
-      <PublicRoute path="/login">
-        <Login />
-      </PublicRoute>
+      <Route path="/login">
+        <PublicPage>
+          <Login />
+        </PublicPage>
+      </Route>
 
-      <PublicRoute path="/register">
-        <Register />
-      </PublicRoute>
+      <Route path="/register">
+        <PublicPage>
+          <Register />
+        </PublicPage>
+      </Route>
 
-      <AppRoute path="/dashboard">
-        <Dashboard />
-      </AppRoute>
+      <Route path="/subscribe">
+        <PublicPage>
+          <Subscribe />
+        </PublicPage>
+      </Route>
 
-      <AppRoute path="/complaints">
-        <Complaints />
-      </AppRoute>
+      <Route path="/dashboard">
+        <PrivatePage>
+          <Dashboard />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/scan">
-        <Scan />
-      </AppRoute>
+      <Route path="/complaints">
+        <PrivatePage>
+          <Complaints />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/roads">
-        <Roads />
-      </AppRoute>
+      <Route path="/scan">
+        <PrivatePage>
+          <Scan />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/roads/:id">
-        <RoadDetail />
-      </AppRoute>
+      <Route path="/roads">
+        <PrivatePage>
+          <Roads />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/risk-map">
-        <RiskMap />
-      </AppRoute>
+      <Route path="/roads/:id">
+        <PrivatePage>
+          <RoadDetail />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/spending">
-        <Spending />
-      </AppRoute>
+      <Route path="/risk-map">
+        <PrivatePage>
+          <RiskMap />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/sensors">
-        <Sensors />
-      </AppRoute>
+      <Route path="/spending">
+        <PrivatePage>
+          <Spending />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/contractors">
-        <Contractors />
-      </AppRoute>
+      <Route path="/sensors">
+        <PrivatePage>
+          <Sensors />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/analytics">
-        <Analytics />
-      </AppRoute>
+      <Route path="/contractors">
+        <PrivatePage>
+          <Contractors />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/settings">
-        <Settings />
-      </AppRoute>
+      <Route path="/analytics">
+        <PrivatePage>
+          <Analytics />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/sos">
-        <SOS />
-      </AppRoute>
+      <Route path="/settings">
+        <PrivatePage>
+          <Settings />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/assistant">
-        <Assistant />
-      </AppRoute>
+      <Route path="/sos">
+        <PrivatePage>
+          <SOS />
+        </PrivatePage>
+      </Route>
 
-      <AppRoute path="/subscribe">
-        <Subscribe />
-      </AppRoute>
+      <Route path="/assistant">
+        <PrivatePage>
+          <Assistant />
+        </PrivatePage>
+      </Route>
 
       <Route>
         <NotFound />
@@ -126,15 +151,13 @@ function Router() {
 
 export default function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="roadintel-theme">
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="dark" storageKey="roadintel-theme">
         <TooltipProvider>
-          <WouterRouter base="">
-            <Router />
-          </WouterRouter>
+          <Router />
           <Toaster />
         </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
