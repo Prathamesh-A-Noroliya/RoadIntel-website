@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/toaster";
@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 import RootLayout from "@/components/layout/root-layout";
 import AppLayout from "@/components/layout/app-layout";
+import FloatingRoadIntelBot from "@/components/FloatingRoadIntelBot";
 
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
@@ -23,7 +24,6 @@ import Contractors from "@/pages/contractors";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
 import SOS from "@/pages/sos";
-import Assistant from "@/pages/assistant";
 import Subscribe from "@/pages/subscribe";
 import NotFound from "@/pages/not-found";
 
@@ -136,10 +136,11 @@ function Router() {
         </PrivatePage>
       </Route>
 
+      {/* Old full AI Assistant page removed.
+          Anyone visiting /assistant will be redirected to dashboard.
+          The working assistant is now the floating chatbot. */}
       <Route path="/assistant">
-        <PrivatePage>
-          <Assistant />
-        </PrivatePage>
+        <Redirect to="/dashboard" />
       </Route>
 
       <Route>
@@ -155,6 +156,7 @@ export default function App() {
       <ThemeProvider defaultTheme="dark" storageKey="roadintel-theme">
         <TooltipProvider>
           <Router />
+          <FloatingRoadIntelBot />
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>
