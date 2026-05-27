@@ -11,6 +11,7 @@ import {
   User,
   ScanLine,
   LayoutDashboard,
+  Maximize2,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -26,35 +27,95 @@ type SpeechRecognitionWindow = typeof window & {
   webkitSpeechRecognition?: any;
 };
 
-const ROUTES: Record<string, string> = {
-  dashboard: "/dashboard",
-  home: "/dashboard",
-  complaint: "/complaints",
-  complaints: "/complaints",
-  "file complaint": "/complaints",
-  scan: "/scan",
-  "ai scan": "/scan",
-  "quick scan": "/scan",
-  road: "/roads",
-  roads: "/roads",
-  "road dna": "/roads",
-  risk: "/risk-map",
-  "risk map": "/risk-map",
-  spending: "/spending",
-  budget: "/spending",
-  "public spending": "/spending",
-  sensor: "/sensors",
-  sensors: "/sensors",
-  "sensor intel": "/sensors",
-  contractor: "/contractors",
-  contractors: "/contractors",
-  analytics: "/analytics",
-  setting: "/settings",
-  settings: "/settings",
-  profile: "/settings",
-  sos: "/sos",
-  emergency: "/sos",
+type RouteCommand = {
+  keywords: string[];
+  route: string;
+  reply: string;
 };
+
+const ROUTE_COMMANDS: RouteCommand[] = [
+  {
+    keywords: ["dashboard", "home", "main page", "overview"],
+    route: "/dashboard",
+    reply:
+      "Opening the Dashboard. Here you can see the overall RoadIntel status, road risk summary, complaints, spending, and live system indicators.",
+  },
+  {
+    keywords: ["complaint", "complaints", "file complaint", "report pothole", "pothole", "road issue"],
+    route: "/complaints",
+    reply:
+      "Opening File Complaint. You can submit a road issue with location, severity, issue type, and evidence.",
+  },
+  {
+    keywords: ["scan", "ai scan", "quick scan", "road scan"],
+    route: "/scan",
+    reply:
+      "Opening AI Scan. Use this section to scan road damage and classify issues like potholes, cracks, or surface damage.",
+  },
+  {
+    keywords: ["road dna", "roads", "road details", "road profile"],
+    route: "/roads",
+    reply:
+      "Opening Road DNA. This page shows road-level details such as condition, repair history, risk patterns, and maintenance records.",
+  },
+  {
+    keywords: ["risk", "risk map", "danger map", "accident risk", "high risk"],
+    route: "/risk-map",
+    reply:
+      "Opening Risk Map. This helps identify dangerous road segments using complaints, sensor anomalies, repair history, and failure urgency.",
+  },
+  {
+    keywords: ["spending", "public spending", "budget", "money", "funds", "expense"],
+    route: "/spending",
+    reply:
+      "Opening Public Spending. Here you can inspect road budgets, spending patterns, repair allocations, and possible irregularities.",
+  },
+  {
+    keywords: ["sensor", "sensors", "sensor intel", "iot", "vibration", "road stress"],
+    route: "/sensors",
+    reply:
+      "Opening Sensor Intel. This section shows live vibration data, road stress, anomaly alerts, and predicted road failures.",
+  },
+  {
+    keywords: ["contractor", "contractors", "corruption", "corrupt", "vendor"],
+    route: "/contractors",
+    reply:
+      "Opening Contractors. This page helps compare contractors using repeated failures, delays, repair quality, and risk indicators.",
+  },
+  {
+    keywords: ["analytics", "analysis", "reports", "insights", "charts", "statistics"],
+    route: "/analytics",
+    reply:
+      "Opening Analytics. This section shows deeper insights, charts, trends, and performance indicators across RoadIntel data.",
+  },
+  {
+    keywords: ["profile", "settings", "account", "language", "theme"],
+    route: "/settings",
+    reply:
+      "Opening Settings. Here you can manage your profile, theme, language, and account preferences.",
+  },
+  {
+    keywords: ["sos", "emergency", "help emergency", "accident help"],
+    route: "/sos",
+    reply:
+      "Opening Emergency SOS. Use this section only for urgent road safety or emergency support actions.",
+  },
+];
+
+const QUICK_COMMANDS = [
+  "Open dashboard",
+  "Show risk map",
+  "File complaint",
+  "Open sensors",
+  "Analytics",
+];
+
+const FALLBACK_REPLIES = [
+  "I can help with RoadIntel navigation. Try saying dashboard, analytics, risk map, file complaint, sensors, contractors, or public spending.",
+  "I did not find an exact page command, but I can still guide you. Ask me about road risk, budgets, complaints, sensors, contractors, or analytics.",
+  "Please say a RoadIntel page name clearly. For example: open analytics, show sensors, file complaint, or open public spending.",
+  "I understood your message, but I need a clearer command. You can ask me to open dashboard, analytics, risk map, sensors, contractors, or settings.",
+];
 
 function getTime() {
   return new Date().toLocaleTimeString([], {
@@ -63,87 +124,99 @@ function getTime() {
   });
 }
 
-function getRouteFromText(text: string) {
-  const lower = text.toLowerCase();
-
-  for (const [keyword, route] of Object.entries(ROUTES)) {
-    if (lower.includes(keyword)) return route;
-  }
-
-  return null;
+function normalizeText(text: string) {
+  return text.toLowerCase().replace(/[-_]/g, " ").trim();
 }
 
-function getBotReply(input: string) {
-  const text = input.toLowerCase();
+function findRouteCommand(text: string) {
+  const lower = normalizeText(text);
 
-  if (text.includes("mg road") && (text.includes("money") || text.includes("spent") || text.includes("budget"))) {
-    return "MG Road has an estimated maintenance allocation of 8.4 crore rupees in the RoadIntel demo dataset. I am opening Public Spending.";
+  return ROUTE_COMMANDS.find((command) =>
+    command.keywords.some((keyword) => lower.includes(normalizeText(keyword))),
+  );
+}
+
+function getSmartReply(input: string) {
+  const text = normalizeText(input);
+
+  const routeCommand = findRouteCommand(text);
+  if (routeCommand) return routeCommand.reply;
+
+  if (text.includes("mg road") && (text.includes("spent") || text.includes("money") || text.includes("budget"))) {
+    return "MG Road has an estimated RoadIntel demo allocation of 8.4 crore rupees. For detailed budget records, open Public Spending.";
   }
 
-  if (text.includes("nh-48") || text.includes("nh48")) {
-    return "NH 48 is tracked under the National Highway workflow. You can inspect it from Road DNA, Risk Map, or the spending dashboard.";
+  if (text.includes("nh 48") || text.includes("nh48")) {
+    return "NH 48 is tracked as a high-priority highway segment. You can check its risk level in Risk Map, Road DNA, or Public Spending.";
   }
 
-  if (text.includes("contractor") || text.includes("corrupt") || text.includes("corruption")) {
-    return "Contractor risk is estimated using repeated failures, repair delays, complaint density, and spending irregularities. I am opening Contractors.";
-  }
-
-  if (text.includes("pothole") || text.includes("complaint") || text.includes("report")) {
-    return "You can file a road complaint with location, severity, issue type, and evidence. I am opening File Complaint.";
-  }
-
-  if (text.includes("sensor") || text.includes("vibration") || text.includes("iot")) {
-    return "Sensor Intel shows live vibration, road stress, anomaly alerts, and predicted failures. I am opening Sensor Intel.";
-  }
-
-  if (text.includes("risk") || text.includes("danger") || text.includes("accident")) {
-    return "The Risk Map highlights high-risk roads using complaints, sensor anomalies, repair history, and traffic impact.";
+  if (text.includes("who are you") || text.includes("what are you")) {
+    return "I am the RoadIntel voice assistant. I can navigate the website, explain road safety data, open pages, and help with complaints or analytics.";
   }
 
   if (text.includes("hello") || text.includes("hi") || text.includes("hey")) {
-    return "Hello. I am your RoadIntel voice assistant. Say a page name like dashboard, AI scan, profile, risk map, sensors, or file complaint.";
+    return "Hello. I am ready to help. You can say open dashboard, show analytics, file complaint, open sensors, or show risk map.";
   }
 
   if (text.includes("help") || text.includes("what can you do")) {
-    return "I can navigate the website, answer RoadIntel questions, open pages, help you file complaints, explain risk, show spending, and speak responses aloud.";
+    return "I can open pages, answer RoadIntel questions, explain budgets, show road risk, help file complaints, and guide you through sensor and contractor data.";
   }
 
-  return "I understood. You can say dashboard, AI scan, profile, file complaint, risk map, sensors, contractors, public spending, or emergency SOS.";
+  if (text.includes("language")) {
+    return "You can change the website language from Settings. RoadIntel supports English, Hindi, and Marathi if configured in your settings page.";
+  }
+
+  if (text.includes("dark") || text.includes("theme")) {
+    return "Theme settings are available in the Settings page. You can switch between dark and light modes there.";
+  }
+
+  return FALLBACK_REPLIES[Math.floor(Math.random() * FALLBACK_REPLIES.length)];
 }
 
-function findFemaleVoice() {
+function getFemaleVoice() {
   if (!("speechSynthesis" in window)) return null;
 
   const voices = window.speechSynthesis.getVoices();
 
-  const preferredNames = [
-    "Google UK English Female",
-    "Google US English",
+  const preferredFemaleVoices = [
     "Microsoft Neerja",
     "Microsoft Heera",
     "Microsoft Zira",
+    "Google UK English Female",
+    "Google US English",
     "Samantha",
     "Karen",
     "Moira",
     "Tessa",
-    "Female",
+    "Veena",
+    "Rishi",
   ];
 
-  for (const name of preferredNames) {
+  for (const preferred of preferredFemaleVoices) {
     const voice = voices.find((v) =>
-      v.name.toLowerCase().includes(name.toLowerCase()),
+      v.name.toLowerCase().includes(preferred.toLowerCase()),
     );
     if (voice) return voice;
   }
 
-  return (
-    voices.find(
-      (v) =>
-        v.lang.toLowerCase().includes("en-in") ||
-        v.lang.toLowerCase().includes("en-us") ||
-        v.lang.toLowerCase().includes("en-gb"),
-    ) ?? null
-  );
+  const indianEnglish = voices.find((v) => v.lang.toLowerCase() === "en-in");
+  if (indianEnglish) return indianEnglish;
+
+  const englishFemaleLike = voices.find((v) => {
+    const name = v.name.toLowerCase();
+    return (
+      v.lang.toLowerCase().startsWith("en") &&
+      (name.includes("female") ||
+        name.includes("woman") ||
+        name.includes("zira") ||
+        name.includes("samantha") ||
+        name.includes("karen"))
+    );
+  });
+
+  if (englishFemaleLike) return englishFemaleLike;
+
+  return voices.find((v) => v.lang.toLowerCase().startsWith("en")) ?? null;
 }
 
 function speakFemale(text: string) {
@@ -152,13 +225,17 @@ function speakFemale(text: string) {
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
-  const voice = findFemaleVoice();
+  const voice = getFemaleVoice();
 
-  if (voice) utterance.voice = voice;
+  if (voice) {
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+  } else {
+    utterance.lang = "en-IN";
+  }
 
-  utterance.lang = voice?.lang || "en-IN";
-  utterance.rate = 0.92;
-  utterance.pitch = 1.18;
+  utterance.rate = 0.9;
+  utterance.pitch = 1.22;
   utterance.volume = 1;
 
   window.speechSynthesis.speak(utterance);
@@ -180,7 +257,7 @@ export default function FloatingRoadIntelBot() {
     {
       id: "welcome",
       role: "assistant",
-      text: "Hi, I am your RoadIntel voice assistant. Say dashboard, AI scan, profile, risk map, sensors, or file complaint.",
+      text: "Hi, I am your RoadIntel voice assistant. Say dashboard, analytics, AI scan, profile, risk map, sensors, or file complaint.",
       time: getTime(),
     },
   ]);
@@ -195,6 +272,7 @@ export default function FloatingRoadIntelBot() {
 
   useEffect(() => {
     if ("speechSynthesis" in window) {
+      window.speechSynthesis.getVoices();
       window.speechSynthesis.onvoiceschanged = () => {
         window.speechSynthesis.getVoices();
       };
@@ -239,7 +317,7 @@ export default function FloatingRoadIntelBot() {
       try {
         recognition.stop();
       } catch {
-        // Ignore browser stop errors.
+        // ignore
       }
     };
   }, [speechSupported]);
@@ -275,18 +353,16 @@ export default function FloatingRoadIntelBot() {
       },
     ]);
 
-    const route = getRouteFromText(text);
-    const reply = getBotReply(text);
+    const routeCommand = findRouteCommand(text);
+    const reply = getSmartReply(text);
 
     window.setTimeout(() => {
       addAssistantMessage(reply);
 
-      if (route) {
+      if (routeCommand) {
         window.setTimeout(() => {
-          navigate(route);
-          setOpen(false);
-          setChatOpen(false);
-        }, 650);
+          navigate(routeCommand.route);
+        }, 700);
       }
     }, 300);
   }
@@ -312,7 +388,7 @@ export default function FloatingRoadIntelBot() {
     try {
       recognitionRef.current?.stop();
     } catch {
-      // Ignore browser stop errors.
+      // ignore
     }
     setListening(false);
   }
@@ -457,39 +533,79 @@ export default function FloatingRoadIntelBot() {
           <div
             className="px-5 py-4 flex items-center gap-3"
             style={{
-              background: "linear-gradient(135deg, #1f9d55, #1597c8)",
+              background: "linear-gradient(135deg, #12335c, #10213f)",
             }}
           >
-            <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white" />
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center text-white"
+              style={{
+                background: "linear-gradient(135deg, #2563eb, #14b8a6)",
+              }}
+            >
+              <Bot className="w-6 h-6" />
             </div>
 
             <div className="flex-1">
-              <div className="font-bold text-white">RoadIntel Assistant</div>
-              <div className="text-xs text-white/80">
-                Female voice assisted navigator
+              <div className="font-bold text-white text-lg">RoadIntel Assistant</div>
+              <div className="text-sm text-white/75">
+                Voice assisted website navigator
               </div>
             </div>
 
             <button
               onClick={() => setVoiceEnabled((current) => !current)}
-              className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/15 text-white"
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white"
               aria-label="Toggle voice"
             >
               {voiceEnabled ? (
-                <Volume2 className="w-4 h-4" />
+                <Volume2 className="w-5 h-5" />
               ) : (
-                <VolumeX className="w-4 h-4" />
+                <VolumeX className="w-5 h-5" />
               )}
             </button>
 
             <button
               onClick={() => setChatOpen(false)}
-              className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/15 text-white"
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white"
+              aria-label="Minimize chat"
+            >
+              <Maximize2 className="w-5 h-5 rotate-180" />
+            </button>
+
+            <button
+              onClick={() => {
+                stopVoice();
+                setChatOpen(false);
+                setOpen(false);
+              }}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white"
               aria-label="Close chat"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
+          </div>
+
+          <div
+            className="px-3 py-3 flex gap-2 overflow-x-auto"
+            style={{
+              background: "hsl(var(--muted))",
+              borderBottom: "1px solid hsl(var(--border))",
+            }}
+          >
+            {QUICK_COMMANDS.map((command) => (
+              <button
+                key={command}
+                onClick={() => handleUserMessage(command)}
+                className="shrink-0 px-4 py-2 rounded-full text-sm font-semibold"
+                style={{
+                  background: "rgba(20,184,166,0.12)",
+                  color: "#14b8a6",
+                  border: "1px solid rgba(20,184,166,0.24)",
+                }}
+              >
+                {command}
+              </button>
+            ))}
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -509,7 +625,7 @@ export default function FloatingRoadIntelBot() {
                   style={{
                     background:
                       message.role === "user"
-                        ? "linear-gradient(135deg, #1f9d55, #1597c8)"
+                        ? "linear-gradient(135deg, #0ea5e9, #14b8a6)"
                         : "hsl(var(--muted))",
                     border:
                       message.role === "assistant"
@@ -552,7 +668,7 @@ export default function FloatingRoadIntelBot() {
             <div className="flex items-center gap-2">
               <button
                 onClick={listening ? stopVoice : startVoice}
-                className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+                className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
                 style={{
                   background: listening
                     ? "rgba(220,38,38,0.15)"
@@ -574,7 +690,7 @@ export default function FloatingRoadIntelBot() {
                 onKeyDown={(event) => {
                   if (event.key === "Enter") handleUserMessage();
                 }}
-                placeholder="Ask or say: open sensors..."
+                placeholder="Ask or say: open sensors, show analytics..."
                 className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
                 style={{
                   background: "hsl(var(--muted))",
@@ -585,9 +701,9 @@ export default function FloatingRoadIntelBot() {
 
               <button
                 onClick={() => handleUserMessage()}
-                className="w-11 h-11 rounded-2xl flex items-center justify-center text-white shrink-0"
+                className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0"
                 style={{
-                  background: "linear-gradient(135deg, #1f9d55, #1597c8)",
+                  background: "linear-gradient(135deg, #2563eb, #14b8a6)",
                 }}
                 aria-label="Send message"
               >
@@ -597,7 +713,7 @@ export default function FloatingRoadIntelBot() {
 
             <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground mt-2">
               <Navigation className="w-3 h-3" />
-              Try: “dashboard”, “AI scan”, “profile”, “risk map”
+              Try: “open dashboard”, “analytics”, “file complaint”, “show sensors”
             </div>
           </div>
         </div>
