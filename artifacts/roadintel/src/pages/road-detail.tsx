@@ -29,6 +29,9 @@ import {
   YAxis,
 } from "recharts";
 
+type RoadStatus = "Excellent" | "Good" | "Active" | "Deteriorating";
+type RoadRisk = "Low" | "Medium" | "Critical";
+
 type RoadDetail = {
   id: string;
   name: string;
@@ -38,6 +41,8 @@ type RoadDetail = {
   builtYear: string;
   length: string;
   roadType: string;
+  riskLevel: RoadRisk;
+  status: RoadStatus;
   riskScore: number;
   healthScore: number;
   allocatedBudget: number;
@@ -46,14 +51,13 @@ type RoadDetail = {
   repeatFailures: number;
   lastRepaired: string;
   nextInspection: string;
-  status: "Stable" | "At Risk" | "Critical";
   summary: string;
   repairHistory: {
     date: string;
     work: string;
     contractor: string;
     cost: number;
-    quality: string;
+    quality: "Good" | "Average" | "Poor";
   }[];
   complaintHistory: {
     type: string;
@@ -78,177 +82,677 @@ type RoadDetail = {
 const ROAD_DATABASE: Record<string, RoadDetail> = {
   "1": {
     id: "1",
-    name: "FC Road Smart Corridor",
-    location: "Shivajinagar, Pune, Maharashtra",
-    authority: "Pune Municipal Corporation",
-    contractor: "Pune Urban Infrastructure Works",
-    builtYear: "2019",
-    length: "2.8 km",
-    roadType: "Urban arterial road",
-    riskScore: 72,
-    healthScore: 68,
-    allocatedBudget: 84000000,
-    spentBudget: 61200000,
-    totalComplaints: 48,
-    repeatFailures: 7,
-    lastRepaired: "March 2025",
+    name: "MG Road",
+    location: "Bangalore, KA",
+    authority: "Bengaluru Urban Road Division",
+    contractor: "BuildRight Infrastructure",
+    builtYear: "2018",
+    length: "3.6 km",
+    roadType: "National Highway",
+    riskLevel: "Medium",
+    status: "Active",
+    riskScore: 54,
+    healthScore: 78,
+    allocatedBudget: 126000000,
+    spentBudget: 98400000,
+    totalComplaints: 12,
+    repeatFailures: 2,
+    lastRepaired: "February 2025",
     nextInspection: "June 2025",
-    status: "At Risk",
     summary:
-      "FC Road shows moderate-to-high deterioration due to repeated pothole complaints, heavy two-wheeler traffic, drainage stress during monsoon, and multiple patch repairs. The road is usable but needs targeted resurfacing before the next monsoon cycle.",
+      "MG Road is currently stable with moderate risk. Health score remains acceptable, but recurring surface wear and traffic stress require scheduled resurfacing and improved drainage checks before monsoon.",
     repairHistory: [
       {
-        date: "Mar 2025",
-        work: "Pothole patching and surface leveling",
-        contractor: "Pune Urban Infrastructure Works",
-        cost: 8200000,
-        quality: "Average",
-      },
-      {
-        date: "Dec 2024",
-        work: "Drainage edge repair near junction",
-        contractor: "Pune Urban Infrastructure Works",
-        cost: 4600000,
+        date: "Feb 2025",
+        work: "Surface patching and lane marking",
+        contractor: "BuildRight Infrastructure",
+        cost: 12800000,
         quality: "Good",
       },
       {
-        date: "Aug 2024",
-        work: "Emergency monsoon patch repair",
-        contractor: "Ward Maintenance Unit",
-        cost: 2800000,
-        quality: "Poor",
+        date: "Oct 2024",
+        work: "Drainage shoulder correction",
+        contractor: "BuildRight Infrastructure",
+        cost: 7200000,
+        quality: "Average",
       },
       {
-        date: "Jan 2024",
-        work: "Lane marking and shoulder maintenance",
+        date: "May 2024",
+        work: "Minor crack sealing",
         contractor: "Metro Road Services",
-        cost: 3500000,
+        cost: 4100000,
         quality: "Good",
       },
     ],
     complaintHistory: [
-      { type: "Potholes", count: 18 },
-      { type: "Waterlogging", count: 11 },
-      { type: "Cracks", count: 8 },
-      { type: "Uneven Surface", count: 7 },
-      { type: "Drainage", count: 4 },
+      { type: "Potholes", count: 4 },
+      { type: "Waterlogging", count: 3 },
+      { type: "Cracks", count: 2 },
+      { type: "Uneven Surface", count: 2 },
+      { type: "Signage", count: 1 },
     ],
     healthTrend: [
-      { month: "Oct", score: 82 },
-      { month: "Nov", score: 80 },
-      { month: "Dec", score: 76 },
-      { month: "Jan", score: 74 },
-      { month: "Feb", score: 72 },
-      { month: "Mar", score: 70 },
-      { month: "Apr", score: 68 },
+      { month: "Oct", score: 84 },
+      { month: "Nov", score: 83 },
+      { month: "Dec", score: 81 },
+      { month: "Jan", score: 80 },
+      { month: "Feb", score: 79 },
+      { month: "Mar", score: 78 },
+      { month: "Apr", score: 78 },
     ],
     spendingTrend: [
-      { month: "Nov", allocated: 12, spent: 8 },
-      { month: "Dec", allocated: 18, spent: 14 },
-      { month: "Jan", allocated: 22, spent: 17 },
-      { month: "Feb", allocated: 25, spent: 20 },
-      { month: "Mar", allocated: 30, spent: 26 },
-      { month: "Apr", allocated: 34, spent: 29 },
+      { month: "Nov", allocated: 18, spent: 12 },
+      { month: "Dec", allocated: 22, spent: 17 },
+      { month: "Jan", allocated: 25, spent: 20 },
+      { month: "Feb", allocated: 30, spent: 25 },
+      { month: "Mar", allocated: 34, spent: 28 },
+      { month: "Apr", allocated: 38, spent: 31 },
     ],
     riskFactors: [
       {
-        label: "Repeated failures after patchwork",
-        value: "7 repeat failures",
-        severity: "high",
+        label: "Moderate traffic stress",
+        value: "High daily vehicle load",
+        severity: "medium",
       },
       {
         label: "Complaint density",
-        value: "48 complaints",
-        severity: "high",
-      },
-      {
-        label: "Budget utilization",
-        value: "72.8% spent",
+        value: "12 complaints",
         severity: "medium",
       },
       {
-        label: "Monsoon vulnerability",
-        value: "Waterlogging reported",
-        severity: "medium",
+        label: "Repair quality",
+        value: "Mostly good",
+        severity: "low",
       },
     ],
   },
 
   "2": {
     id: "2",
-    name: "Mumbai-Pune Expressway Segment",
-    location: "Lonavala Ghat Section, Maharashtra",
-    authority: "MSRDC",
-    contractor: "Expressway Maintenance Unit",
-    builtYear: "2002",
-    length: "11.4 km",
-    roadType: "Expressway",
-    riskScore: 81,
-    healthScore: 59,
-    allocatedBudget: 425000000,
-    spentBudget: 356000000,
-    totalComplaints: 64,
-    repeatFailures: 12,
-    lastRepaired: "February 2025",
+    name: "NH-48 Stretch",
+    location: "Delhi-Gurugram",
+    authority: "National Highways Authority of India",
+    contractor: "RoadCraft Solutions",
+    builtYear: "2015",
+    length: "9.2 km",
+    roadType: "National Highway",
+    riskLevel: "Critical",
+    status: "Deteriorating",
+    riskScore: 88,
+    healthScore: 34,
+    allocatedBudget: 284000000,
+    spentBudget: 221000000,
+    totalComplaints: 47,
+    repeatFailures: 11,
+    lastRepaired: "January 2025",
     nextInspection: "May 2025",
-    status: "Critical",
     summary:
-      "This expressway segment has high safety sensitivity because of slope, speed, rainfall, and heavy freight movement. Multiple stress points need preventive resurfacing and drainage reinforcement.",
+      "NH-48 Stretch is a critical road segment with rapid deterioration. Repeated failures, heavy freight movement, and high-speed traffic make this road a priority for resurfacing and contractor audit.",
     repairHistory: [
       {
-        date: "Feb 2025",
-        work: "Surface strengthening and guardrail repair",
-        contractor: "Expressway Maintenance Unit",
-        cost: 41000000,
-        quality: "Average",
+        date: "Jan 2025",
+        work: "Emergency pothole patching",
+        contractor: "RoadCraft Solutions",
+        cost: 26800000,
+        quality: "Poor",
       },
       {
         date: "Sep 2024",
-        work: "Drainage clearing and ghat section patching",
-        contractor: "Hill Road Infra",
-        cost: 27500000,
+        work: "Partial resurfacing",
+        contractor: "RoadCraft Solutions",
+        cost: 48500000,
+        quality: "Average",
+      },
+      {
+        date: "Apr 2024",
+        work: "Drainage repair near service lane",
+        contractor: "Highway Maintenance Unit",
+        cost: 18600000,
         quality: "Average",
       },
     ],
     complaintHistory: [
-      { type: "Surface Damage", count: 22 },
-      { type: "Cracks", count: 16 },
-      { type: "Drainage", count: 12 },
-      { type: "Signage", count: 8 },
-      { type: "Shoulder Damage", count: 6 },
+      { type: "Potholes", count: 19 },
+      { type: "Cracks", count: 12 },
+      { type: "Surface Damage", count: 8 },
+      { type: "Waterlogging", count: 5 },
+      { type: "Shoulder Damage", count: 3 },
     ],
     healthTrend: [
-      { month: "Oct", score: 75 },
-      { month: "Nov", score: 72 },
-      { month: "Dec", score: 70 },
-      { month: "Jan", score: 66 },
-      { month: "Feb", score: 63 },
-      { month: "Mar", score: 61 },
-      { month: "Apr", score: 59 },
+      { month: "Oct", score: 52 },
+      { month: "Nov", score: 48 },
+      { month: "Dec", score: 44 },
+      { month: "Jan", score: 40 },
+      { month: "Feb", score: 38 },
+      { month: "Mar", score: 36 },
+      { month: "Apr", score: 34 },
     ],
     spendingTrend: [
-      { month: "Nov", allocated: 60, spent: 48 },
-      { month: "Dec", allocated: 80, spent: 66 },
-      { month: "Jan", allocated: 95, spent: 78 },
-      { month: "Feb", allocated: 120, spent: 101 },
-      { month: "Mar", allocated: 135, spent: 113 },
-      { month: "Apr", allocated: 150, spent: 126 },
+      { month: "Nov", allocated: 42, spent: 31 },
+      { month: "Dec", allocated: 56, spent: 44 },
+      { month: "Jan", allocated: 70, spent: 58 },
+      { month: "Feb", allocated: 78, spent: 66 },
+      { month: "Mar", allocated: 86, spent: 74 },
+      { month: "Apr", allocated: 92, spent: 81 },
     ],
     riskFactors: [
       {
-        label: "High-speed traffic exposure",
-        value: "Expressway risk",
+        label: "Repeated failures",
+        value: "11 repeat failures",
+        severity: "critical",
+      },
+      {
+        label: "Low health score",
+        value: "34/100",
+        severity: "critical",
+      },
+      {
+        label: "Heavy vehicle stress",
+        value: "High freight corridor",
+        severity: "high",
+      },
+      {
+        label: "Complaint volume",
+        value: "47 complaints",
+        severity: "high",
+      },
+    ],
+  },
+
+  "3": {
+    id: "3",
+    name: "Outer Ring Road South",
+    location: "Bangalore, KA",
+    authority: "Karnataka State Highways Division",
+    contractor: "National Road Works",
+    builtYear: "2020",
+    length: "7.5 km",
+    roadType: "State Highway",
+    riskLevel: "Low",
+    status: "Good",
+    riskScore: 31,
+    healthScore: 85,
+    allocatedBudget: 164000000,
+    spentBudget: 109000000,
+    totalComplaints: 5,
+    repeatFailures: 1,
+    lastRepaired: "April 2025",
+    nextInspection: "August 2025",
+    summary:
+      "Outer Ring Road South is performing well with low risk. Preventive maintenance has kept the surface stable, and complaint volume remains low.",
+    repairHistory: [
+      {
+        date: "Apr 2025",
+        work: "Preventive resurfacing and lane repainting",
+        contractor: "National Road Works",
+        cost: 17600000,
+        quality: "Good",
+      },
+      {
+        date: "Dec 2024",
+        work: "Minor shoulder stabilization",
+        contractor: "National Road Works",
+        cost: 6200000,
+        quality: "Good",
+      },
+    ],
+    complaintHistory: [
+      { type: "Signage", count: 2 },
+      { type: "Minor Cracks", count: 1 },
+      { type: "Drainage", count: 1 },
+      { type: "Surface Wear", count: 1 },
+    ],
+    healthTrend: [
+      { month: "Oct", score: 88 },
+      { month: "Nov", score: 88 },
+      { month: "Dec", score: 87 },
+      { month: "Jan", score: 86 },
+      { month: "Feb", score: 86 },
+      { month: "Mar", score: 85 },
+      { month: "Apr", score: 85 },
+    ],
+    spendingTrend: [
+      { month: "Nov", allocated: 20, spent: 12 },
+      { month: "Dec", allocated: 25, spent: 17 },
+      { month: "Jan", allocated: 28, spent: 20 },
+      { month: "Feb", allocated: 32, spent: 23 },
+      { month: "Mar", allocated: 37, spent: 27 },
+      { month: "Apr", allocated: 42, spent: 31 },
+    ],
+    riskFactors: [
+      {
+        label: "Low complaint density",
+        value: "5 complaints",
+        severity: "low",
+      },
+      {
+        label: "Stable health trend",
+        value: "85/100",
+        severity: "low",
+      },
+      {
+        label: "Preventive maintenance",
+        value: "Completed April 2025",
+        severity: "low",
+      },
+    ],
+  },
+
+  "4": {
+    id: "4",
+    name: "Andheri-Kurla Road",
+    location: "Mumbai, MH",
+    authority: "Mumbai Municipal Roads Department",
+    contractor: "RoadCraft Solutions",
+    builtYear: "2016",
+    length: "5.1 km",
+    roadType: "Municipal Road",
+    riskLevel: "Critical",
+    status: "Deteriorating",
+    riskScore: 91,
+    healthScore: 28,
+    allocatedBudget: 196000000,
+    spentBudget: 172000000,
+    totalComplaints: 63,
+    repeatFailures: 14,
+    lastRepaired: "March 2025",
+    nextInspection: "May 2025",
+    summary:
+      "Andheri-Kurla Road is a critical urban corridor with severe deterioration. Heavy traffic, repeated pothole formation, drainage stress, and poor patch durability make this a high-priority repair and audit candidate.",
+    repairHistory: [
+      {
+        date: "Mar 2025",
+        work: "Emergency pothole filling",
+        contractor: "RoadCraft Solutions",
+        cost: 22800000,
+        quality: "Poor",
+      },
+      {
+        date: "Nov 2024",
+        work: "Surface patch repair",
+        contractor: "RoadCraft Solutions",
+        cost: 31500000,
+        quality: "Poor",
+      },
+      {
+        date: "Jul 2024",
+        work: "Monsoon drainage repair",
+        contractor: "Mumbai Ward Repair Unit",
+        cost: 14400000,
+        quality: "Average",
+      },
+    ],
+    complaintHistory: [
+      { type: "Potholes", count: 26 },
+      { type: "Waterlogging", count: 15 },
+      { type: "Uneven Surface", count: 9 },
+      { type: "Cracks", count: 8 },
+      { type: "Drainage", count: 5 },
+    ],
+    healthTrend: [
+      { month: "Oct", score: 46 },
+      { month: "Nov", score: 42 },
+      { month: "Dec", score: 39 },
+      { month: "Jan", score: 35 },
+      { month: "Feb", score: 32 },
+      { month: "Mar", score: 30 },
+      { month: "Apr", score: 28 },
+    ],
+    spendingTrend: [
+      { month: "Nov", allocated: 34, spent: 29 },
+      { month: "Dec", allocated: 42, spent: 37 },
+      { month: "Jan", allocated: 50, spent: 45 },
+      { month: "Feb", allocated: 58, spent: 52 },
+      { month: "Mar", allocated: 64, spent: 59 },
+      { month: "Apr", allocated: 70, spent: 63 },
+    ],
+    riskFactors: [
+      {
+        label: "Severe repeat failures",
+        value: "14 repeat failures",
+        severity: "critical",
+      },
+      {
+        label: "High complaint density",
+        value: "63 complaints",
+        severity: "critical",
+      },
+      {
+        label: "Poor repair durability",
+        value: "Multiple poor-quality repairs",
+        severity: "critical",
+      },
+      {
+        label: "Waterlogging stress",
+        value: "15 waterlogging complaints",
+        severity: "high",
+      },
+    ],
+  },
+
+  "5": {
+    id: "5",
+    name: "Electronic City Flyover",
+    location: "Bangalore, KA",
+    authority: "Bengaluru Elevated Corridor Authority",
+    contractor: "Infra Prime Builders",
+    builtYear: "2021",
+    length: "4.4 km",
+    roadType: "Elevated Highway",
+    riskLevel: "Low",
+    status: "Excellent",
+    riskScore: 22,
+    healthScore: 91,
+    allocatedBudget: 238000000,
+    spentBudget: 151000000,
+    totalComplaints: 2,
+    repeatFailures: 0,
+    lastRepaired: "April 2025",
+    nextInspection: "September 2025",
+    summary:
+      "Electronic City Flyover is in excellent condition. Structural and surface indicators remain strong, complaint count is minimal, and no repeat failures have been recorded.",
+    repairHistory: [
+      {
+        date: "Apr 2025",
+        work: "Expansion joint inspection and lane repainting",
+        contractor: "Infra Prime Builders",
+        cost: 11200000,
+        quality: "Good",
+      },
+      {
+        date: "Oct 2024",
+        work: "Routine structural inspection",
+        contractor: "Infra Prime Builders",
+        cost: 6800000,
+        quality: "Good",
+      },
+    ],
+    complaintHistory: [
+      { type: "Signage", count: 1 },
+      { type: "Lighting", count: 1 },
+    ],
+    healthTrend: [
+      { month: "Oct", score: 93 },
+      { month: "Nov", score: 93 },
+      { month: "Dec", score: 92 },
+      { month: "Jan", score: 92 },
+      { month: "Feb", score: 91 },
+      { month: "Mar", score: 91 },
+      { month: "Apr", score: 91 },
+    ],
+    spendingTrend: [
+      { month: "Nov", allocated: 28, spent: 16 },
+      { month: "Dec", allocated: 34, spent: 22 },
+      { month: "Jan", allocated: 39, spent: 27 },
+      { month: "Feb", allocated: 44, spent: 31 },
+      { month: "Mar", allocated: 50, spent: 36 },
+      { month: "Apr", allocated: 55, spent: 40 },
+    ],
+    riskFactors: [
+      {
+        label: "Very low complaint count",
+        value: "2 complaints",
+        severity: "low",
+      },
+      {
+        label: "No repeat failures",
+        value: "0 repeat failures",
+        severity: "low",
+      },
+      {
+        label: "Excellent health score",
+        value: "91/100",
+        severity: "low",
+      },
+    ],
+  },
+
+  "6": {
+    id: "6",
+    name: "GST Road",
+    location: "Chennai, TN",
+    authority: "Tamil Nadu Highways Department",
+    contractor: "National Road Works",
+    builtYear: "2017",
+    length: "6.8 km",
+    roadType: "National Highway",
+    riskLevel: "Medium",
+    status: "Active",
+    riskScore: 61,
+    healthScore: 62,
+    allocatedBudget: 178000000,
+    spentBudget: 132000000,
+    totalComplaints: 18,
+    repeatFailures: 4,
+    lastRepaired: "February 2025",
+    nextInspection: "July 2025",
+    summary:
+      "GST Road is active with medium risk. Surface quality is acceptable but trending downward due to heat stress, freight traffic, and moderate complaint recurrence.",
+    repairHistory: [
+      {
+        date: "Feb 2025",
+        work: "Surface strengthening and pothole repair",
+        contractor: "National Road Works",
+        cost: 18600000,
+        quality: "Average",
+      },
+      {
+        date: "Sep 2024",
+        work: "Crack sealing",
+        contractor: "National Road Works",
+        cost: 8400000,
+        quality: "Good",
+      },
+    ],
+    complaintHistory: [
+      { type: "Potholes", count: 6 },
+      { type: "Cracks", count: 5 },
+      { type: "Surface Wear", count: 4 },
+      { type: "Drainage", count: 2 },
+      { type: "Signage", count: 1 },
+    ],
+    healthTrend: [
+      { month: "Oct", score: 71 },
+      { month: "Nov", score: 69 },
+      { month: "Dec", score: 67 },
+      { month: "Jan", score: 66 },
+      { month: "Feb", score: 64 },
+      { month: "Mar", score: 63 },
+      { month: "Apr", score: 62 },
+    ],
+    spendingTrend: [
+      { month: "Nov", allocated: 24, spent: 18 },
+      { month: "Dec", allocated: 29, spent: 23 },
+      { month: "Jan", allocated: 35, spent: 28 },
+      { month: "Feb", allocated: 41, spent: 33 },
+      { month: "Mar", allocated: 46, spent: 37 },
+      { month: "Apr", allocated: 51, spent: 42 },
+    ],
+    riskFactors: [
+      {
+        label: "Freight traffic load",
+        value: "Moderate-heavy",
+        severity: "medium",
+      },
+      {
+        label: "Repeat failures",
+        value: "4 repeat failures",
+        severity: "medium",
+      },
+      {
+        label: "Health trend",
+        value: "Declining from 71 to 62",
+        severity: "medium",
+      },
+    ],
+  },
+
+  "7": {
+    id: "7",
+    name: "AIIMS Delhi Stretch",
+    location: "Delhi",
+    authority: "Delhi PWD Road Division",
+    contractor: "QuickFix Road Services",
+    builtYear: "2014",
+    length: "2.1 km",
+    roadType: "State Highway",
+    riskLevel: "Critical",
+    status: "Deteriorating",
+    riskScore: 95,
+    healthScore: 22,
+    allocatedBudget: 148000000,
+    spentBudget: 139000000,
+    totalComplaints: 89,
+    repeatFailures: 19,
+    lastRepaired: "April 2025",
+    nextInspection: "Immediate",
+    summary:
+      "AIIMS Delhi Stretch is the highest-risk road in the current dataset. Very low health score, extreme complaint volume, hospital-zone sensitivity, and repeated repair failures require immediate intervention.",
+    repairHistory: [
+      {
+        date: "Apr 2025",
+        work: "Emergency hospital-zone patching",
+        contractor: "QuickFix Road Services",
+        cost: 21800000,
+        quality: "Poor",
+      },
+      {
+        date: "Jan 2025",
+        work: "Pothole cluster repair",
+        contractor: "QuickFix Road Services",
+        cost: 18400000,
+        quality: "Poor",
+      },
+      {
+        date: "Aug 2024",
+        work: "Drainage and shoulder correction",
+        contractor: "Delhi Ward Roads Unit",
+        cost: 9600000,
+        quality: "Average",
+      },
+    ],
+    complaintHistory: [
+      { type: "Potholes", count: 31 },
+      { type: "Uneven Surface", count: 18 },
+      { type: "Waterlogging", count: 16 },
+      { type: "Cracks", count: 14 },
+      { type: "Traffic Hazard", count: 10 },
+    ],
+    healthTrend: [
+      { month: "Oct", score: 43 },
+      { month: "Nov", score: 39 },
+      { month: "Dec", score: 35 },
+      { month: "Jan", score: 31 },
+      { month: "Feb", score: 28 },
+      { month: "Mar", score: 25 },
+      { month: "Apr", score: 22 },
+    ],
+    spendingTrend: [
+      { month: "Nov", allocated: 22, spent: 20 },
+      { month: "Dec", allocated: 30, spent: 28 },
+      { month: "Jan", allocated: 38, spent: 36 },
+      { month: "Feb", allocated: 45, spent: 43 },
+      { month: "Mar", allocated: 51, spent: 49 },
+      { month: "Apr", allocated: 56, spent: 53 },
+    ],
+    riskFactors: [
+      {
+        label: "Extreme complaint volume",
+        value: "89 complaints",
+        severity: "critical",
+      },
+      {
+        label: "Very low health score",
+        value: "22/100",
         severity: "critical",
       },
       {
         label: "Repeat failures",
-        value: "12 repeat failures",
+        value: "19 repeat failures",
         severity: "critical",
       },
       {
-        label: "Rainfall stress",
-        value: "Ghat section",
-        severity: "high",
+        label: "Sensitive zone",
+        value: "Hospital corridor",
+        severity: "critical",
+      },
+    ],
+  },
+
+  "8": {
+    id: "8",
+    name: "Mumbai-Pune Expressway Sec-3",
+    location: "Pune, MH",
+    authority: "MSRDC",
+    contractor: "BuildRight Infrastructure",
+    builtYear: "2002",
+    length: "11.4 km",
+    roadType: "Expressway",
+    riskLevel: "Low",
+    status: "Excellent",
+    riskScore: 29,
+    healthScore: 88,
+    allocatedBudget: 425000000,
+    spentBudget: 287000000,
+    totalComplaints: 3,
+    repeatFailures: 0,
+    lastRepaired: "March 2025",
+    nextInspection: "August 2025",
+    summary:
+      "Mumbai-Pune Expressway Sec-3 is in excellent condition. Preventive maintenance and strong surface quality keep risk low despite high-speed traffic conditions.",
+    repairHistory: [
+      {
+        date: "Mar 2025",
+        work: "Preventive resurfacing and guardrail inspection",
+        contractor: "BuildRight Infrastructure",
+        cost: 38500000,
+        quality: "Good",
+      },
+      {
+        date: "Sep 2024",
+        work: "Drainage cleaning and lane marking",
+        contractor: "Expressway Maintenance Unit",
+        cost: 16400000,
+        quality: "Good",
+      },
+    ],
+    complaintHistory: [
+      { type: "Signage", count: 1 },
+      { type: "Minor Surface Wear", count: 1 },
+      { type: "Drainage", count: 1 },
+    ],
+    healthTrend: [
+      { month: "Oct", score: 90 },
+      { month: "Nov", score: 90 },
+      { month: "Dec", score: 89 },
+      { month: "Jan", score: 89 },
+      { month: "Feb", score: 88 },
+      { month: "Mar", score: 88 },
+      { month: "Apr", score: 88 },
+    ],
+    spendingTrend: [
+      { month: "Nov", allocated: 60, spent: 39 },
+      { month: "Dec", allocated: 72, spent: 48 },
+      { month: "Jan", allocated: 84, spent: 57 },
+      { month: "Feb", allocated: 96, spent: 66 },
+      { month: "Mar", allocated: 108, spent: 76 },
+      { month: "Apr", allocated: 120, spent: 84 },
+    ],
+    riskFactors: [
+      {
+        label: "Excellent health score",
+        value: "88/100",
+        severity: "low",
+      },
+      {
+        label: "Very low complaint count",
+        value: "3 complaints",
+        severity: "low",
+      },
+      {
+        label: "No repeat failures",
+        value: "0 repeat failures",
+        severity: "low",
       },
     ],
   },
@@ -264,14 +768,8 @@ const SEVERITY_COLORS = {
 };
 
 function formatMoney(value: number) {
-  if (value >= 10000000) {
-    return `₹${(value / 10000000).toFixed(1)} Cr`;
-  }
-
-  if (value >= 100000) {
-    return `₹${(value / 100000).toFixed(1)} L`;
-  }
-
+  if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)} Cr`;
+  if (value >= 100000) return `₹${(value / 100000).toFixed(1)} L`;
   return `₹${value.toLocaleString("en-IN")}`;
 }
 
@@ -280,6 +778,13 @@ function getRiskColor(score: number) {
   if (score >= 65) return "#F97316";
   if (score >= 45) return "#F59E0B";
   return "#16A34A";
+}
+
+function getStatusColor(status: RoadStatus) {
+  if (status === "Excellent") return "#16A34A";
+  if (status === "Good") return "#0EA5A4";
+  if (status === "Active") return "#1E88E5";
+  return "#DC2626";
 }
 
 function StatCard({
@@ -321,6 +826,7 @@ export default function RoadDetail() {
   const road = ROAD_DATABASE[params.id ?? "1"] ?? DEFAULT_ROAD;
 
   const riskColor = getRiskColor(road.riskScore);
+  const statusColor = getStatusColor(road.status);
   const spentPercent = Math.round((road.spentBudget / road.allocatedBudget) * 100);
 
   return (
@@ -362,9 +868,9 @@ export default function RoadDetail() {
         <div
           className="rounded-2xl px-5 py-3 text-sm font-bold"
           style={{
-            background: `${riskColor}18`,
-            color: riskColor,
-            border: `1px solid ${riskColor}35`,
+            background: `${statusColor}18`,
+            color: statusColor,
+            border: `1px solid ${statusColor}35`,
           }}
         >
           {road.status}
@@ -553,8 +1059,8 @@ export default function RoadDetail() {
             ))}
 
             <div className="rounded-2xl bg-teal-500/10 p-4 text-sm text-teal-300">
-              Recommendation: prioritize resurfacing, drainage correction, and
-              post-repair quality audit before the next inspection cycle.
+              Recommendation: prioritize maintenance based on current risk,
+              complaint density, repeat failures, and budget utilization.
             </div>
           </div>
         </div>
@@ -638,7 +1144,7 @@ export default function RoadDetail() {
                   dataKey="type"
                   type="category"
                   tick={{ fontSize: 12 }}
-                  width={110}
+                  width={120}
                 />
                 <Tooltip />
                 <Bar dataKey="count" radius={[0, 6, 6, 0]}>
@@ -762,7 +1268,13 @@ export default function RoadDetail() {
           <AlertTriangle className="mb-2 h-5 w-5" />
           <div className="font-bold">Action Priority</div>
           <div className="text-2xl font-bold">
-            {road.riskScore >= 80 ? "Urgent" : road.riskScore >= 65 ? "High" : "Medium"}
+            {road.riskScore >= 80
+              ? "Urgent"
+              : road.riskScore >= 65
+                ? "High"
+                : road.riskScore >= 45
+                  ? "Medium"
+                  : "Low"}
           </div>
         </div>
       </section>
