@@ -12,6 +12,7 @@ import {
   ScanLine,
   LayoutDashboard,
   Maximize2,
+  MessageCircle,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -41,7 +42,14 @@ const ROUTE_COMMANDS: RouteCommand[] = [
       "Opening the Dashboard. Here you can see the overall RoadIntel status, road risk summary, complaints, spending, and live system indicators.",
   },
   {
-    keywords: ["complaint", "complaints", "file complaint", "report pothole", "pothole", "road issue"],
+    keywords: [
+      "complaint",
+      "complaints",
+      "file complaint",
+      "report pothole",
+      "pothole",
+      "road issue",
+    ],
     route: "/complaints",
     reply:
       "Opening File Complaint. You can submit a road issue with location, severity, issue type, and evidence.",
@@ -142,7 +150,10 @@ function getSmartReply(input: string) {
   const routeCommand = findRouteCommand(text);
   if (routeCommand) return routeCommand.reply;
 
-  if (text.includes("mg road") && (text.includes("spent") || text.includes("money") || text.includes("budget"))) {
+  if (
+    text.includes("mg road") &&
+    (text.includes("spent") || text.includes("money") || text.includes("budget"))
+  ) {
     return "MG Road has an estimated RoadIntel demo allocation of 8.4 crore rupees. For detailed budget records, open Public Spending.";
   }
 
@@ -173,59 +184,58 @@ function getSmartReply(input: string) {
   return FALLBACK_REPLIES[Math.floor(Math.random() * FALLBACK_REPLIES.length)];
 }
 
-function getFemaleVoice() {
+function stopAllVoice() {
+  try {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  } catch {
+    // ignore browser speech errors
+  }
+}
+
+function getSmoothFemaleVoice() {
   if (!("speechSynthesis" in window)) return null;
 
   const voices = window.speechSynthesis.getVoices();
 
-  const preferredFemaleVoices = [
+  const preferredNames = [
+    "Google UK English Female",
+    "Google US English",
     "Microsoft Neerja",
     "Microsoft Heera",
     "Microsoft Zira",
-    "Google UK English Female",
-    "Google US English",
     "Samantha",
     "Karen",
     "Moira",
     "Tessa",
     "Veena",
-    "Rishi",
+    "Female",
   ];
 
-  for (const preferred of preferredFemaleVoices) {
+  for (const name of preferredNames) {
     const voice = voices.find((v) =>
-      v.name.toLowerCase().includes(preferred.toLowerCase()),
+      v.name.toLowerCase().includes(name.toLowerCase()),
     );
     if (voice) return voice;
   }
 
-  const indianEnglish = voices.find((v) => v.lang.toLowerCase() === "en-in");
-  if (indianEnglish) return indianEnglish;
-
-  const englishFemaleLike = voices.find((v) => {
-    const name = v.name.toLowerCase();
-    return (
-      v.lang.toLowerCase().startsWith("en") &&
-      (name.includes("female") ||
-        name.includes("woman") ||
-        name.includes("zira") ||
-        name.includes("samantha") ||
-        name.includes("karen"))
-    );
-  });
-
-  if (englishFemaleLike) return englishFemaleLike;
-
-  return voices.find((v) => v.lang.toLowerCase().startsWith("en")) ?? null;
+  return (
+    voices.find((v) => v.lang.toLowerCase().includes("en-in")) ??
+    voices.find((v) => v.lang.toLowerCase().includes("en-us")) ??
+    voices.find((v) => v.lang.toLowerCase().includes("en-gb")) ??
+    voices.find((v) => v.lang.toLowerCase().startsWith("en")) ??
+    null
+  );
 }
 
 function speakFemale(text: string) {
   if (!("speechSynthesis" in window)) return;
 
-  window.speechSynthesis.cancel();
+  stopAllVoice();
 
   const utterance = new SpeechSynthesisUtterance(text);
-  const voice = getFemaleVoice();
+  const voice = getSmoothFemaleVoice();
 
   if (voice) {
     utterance.voice = voice;
@@ -234,8 +244,9 @@ function speakFemale(text: string) {
     utterance.lang = "en-IN";
   }
 
-  utterance.rate = 0.9;
-  utterance.pitch = 1.22;
+  // This is closer to the previous smoother voice.
+  utterance.rate = 0.92;
+  utterance.pitch = 1.12;
   utterance.volume = 1;
 
   window.speechSynthesis.speak(utterance);
@@ -257,7 +268,7 @@ export default function FloatingRoadIntelBot() {
     {
       id: "welcome",
       role: "assistant",
-      text: "Hi, I am your RoadIntel voice assistant. Say dashboard, analytics, AI scan, profile, risk map, sensors, or file complaint.",
+      text: "Hi, I am your RoadIntel assistant. You can type or speak. Try dashboard, analytics, AI scan, profile, risk map, sensors, or file complaint.",
       time: getTime(),
     },
   ]);
@@ -277,6 +288,11 @@ export default function FloatingRoadIntelBot() {
         window.speechSynthesis.getVoices();
       };
     }
+
+    return () => {
+      stopAllVoice();
+      stopVoiceRecognition();
+    };
   }, []);
 
   useEffect(() => {
@@ -314,13 +330,32 @@ export default function FloatingRoadIntelBot() {
     recognitionRef.current = recognition;
 
     return () => {
-      try {
-        recognition.stop();
-      } catch {
-        // ignore
-      }
+      stopVoiceRecognition();
     };
   }, [speechSupported]);
+
+  function stopVoiceRecognition() {
+    try {
+      recognitionRef.current?.stop();
+    } catch {
+      // ignore browser stop errors
+    }
+    setListening(false);
+  }
+
+  function closeEverything() {
+    stopAllVoice();
+    stopVoiceRecognition();
+    setChatOpen(false);
+    setOpen(false);
+  }
+
+  function goBackToVoicePanel() {
+    stopAllVoice();
+    stopVoiceRecognition();
+    setChatOpen(false);
+    setOpen(true);
+  }
 
   function addAssistantMessage(text: string, shouldSpeak = voiceEnabled) {
     setMessages((current) => [
@@ -372,12 +407,15 @@ export default function FloatingRoadIntelBot() {
 
     if (!speechSupported || !recognitionRef.current) {
       addAssistantMessage(
-        "Voice input is not supported in this browser. Please use Chrome or Edge.",
+        "Voice input is not supported in this browser. You can still type your command in chat.",
+        false,
       );
+      setChatOpen(true);
       return;
     }
 
     try {
+      stopAllVoice();
       recognitionRef.current.start();
     } catch {
       setListening(false);
@@ -385,12 +423,8 @@ export default function FloatingRoadIntelBot() {
   }
 
   function stopVoice() {
-    try {
-      recognitionRef.current?.stop();
-    } catch {
-      // ignore
-    }
-    setListening(false);
+    stopAllVoice();
+    stopVoiceRecognition();
   }
 
   return (
@@ -399,16 +433,16 @@ export default function FloatingRoadIntelBot() {
         <button
           onClick={() => {
             setOpen(true);
-            window.setTimeout(() => startVoice(), 250);
+            setChatOpen(true);
           }}
           className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full flex items-center justify-center text-white transition-all hover:scale-105"
           style={{
             background: "linear-gradient(135deg, #1f9d55, #1597c8)",
             boxShadow: "0 24px 55px rgba(21, 151, 200, 0.42)",
           }}
-          aria-label="Open RoadIntel voice assistant"
+          aria-label="Open RoadIntel assistant"
         >
-          <Bot className="w-8 h-8" />
+          <MessageCircle className="w-8 h-8" />
         </button>
       )}
 
@@ -416,10 +450,7 @@ export default function FloatingRoadIntelBot() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/35 backdrop-blur-sm">
           <div className="relative w-full max-w-[520px] rounded-[32px] bg-white text-slate-900 shadow-2xl p-8 sm:p-9">
             <button
-              onClick={() => {
-                stopVoice();
-                setOpen(false);
-              }}
+              onClick={closeEverything}
               className="absolute right-6 top-6 w-11 h-11 rounded-full flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-200"
               aria-label="Close voice assistant"
             >
@@ -460,7 +491,7 @@ export default function FloatingRoadIntelBot() {
               </h2>
 
               <p className="mt-3 text-lg text-slate-500">
-                Say a page name or command in English
+                You can speak or open text chat
               </p>
 
               <div className="grid grid-cols-3 gap-3 w-full mt-7">
@@ -490,14 +521,17 @@ export default function FloatingRoadIntelBot() {
               </div>
 
               <button
-                onClick={() => setChatOpen(true)}
+                onClick={() => {
+                  stopVoice();
+                  setChatOpen(true);
+                }}
                 className="mt-6 w-full rounded-2xl py-4 px-5 text-white font-bold flex items-center justify-center gap-2"
                 style={{
                   background: "linear-gradient(135deg, #1f9d55, #1597c8)",
                 }}
               >
                 <Bot className="w-5 h-5" />
-                Open RoadIntel Chat
+                Open Text Chat
               </button>
 
               <button
@@ -548,7 +582,7 @@ export default function FloatingRoadIntelBot() {
             <div className="flex-1">
               <div className="font-bold text-white text-lg">RoadIntel Assistant</div>
               <div className="text-sm text-white/75">
-                Voice assisted website navigator
+                Type or use voice commands
               </div>
             </div>
 
@@ -565,19 +599,15 @@ export default function FloatingRoadIntelBot() {
             </button>
 
             <button
-              onClick={() => setChatOpen(false)}
+              onClick={goBackToVoicePanel}
               className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white"
-              aria-label="Minimize chat"
+              aria-label="Open voice panel"
             >
               <Maximize2 className="w-5 h-5 rotate-180" />
             </button>
 
             <button
-              onClick={() => {
-                stopVoice();
-                setChatOpen(false);
-                setOpen(false);
-              }}
+              onClick={closeEverything}
               className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white"
               aria-label="Close chat"
             >
@@ -690,7 +720,7 @@ export default function FloatingRoadIntelBot() {
                 onKeyDown={(event) => {
                   if (event.key === "Enter") handleUserMessage();
                 }}
-                placeholder="Ask or say: open sensors, show analytics..."
+                placeholder="Type or say: open sensors, show analytics..."
                 className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
                 style={{
                   background: "hsl(var(--muted))",
