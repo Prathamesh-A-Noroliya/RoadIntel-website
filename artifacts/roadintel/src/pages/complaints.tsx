@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useListComplaints } from "@workspace/api-client-react";
 import {
   Bar,
@@ -26,6 +26,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 type Severity = "critical" | "high" | "medium" | "low";
+
 type ComplaintStatus =
   | "filed"
   | "assigned"
@@ -67,6 +68,8 @@ type RoutingDecision = {
   sla: string;
   zone: string;
 };
+
+const LOCAL_COMPLAINTS_KEY = "roadintel-local-complaints-v2";
 
 const MOCK_COMPLAINTS: Complaint[] = [
   {
@@ -225,8 +228,29 @@ const BANNED_REMOTE_TERMS = [
   "NH-48",
 ];
 
+function readLocalComplaints(): Complaint[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = localStorage.getItem(LOCAL_COMPLAINTS_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as Complaint[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalComplaints(complaints: Complaint[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(LOCAL_COMPLAINTS_KEY, JSON.stringify(complaints));
+}
+
 function normalizeStatus(value: unknown): ComplaintStatus {
-  const status = String(value ?? "filed").toLowerCase().replaceAll(" ", "_");
+  const status = String(value ?? "filed")
+    .toLowerCase()
+    .replace(/\s+/g, "_");
 
   if (status === "pending") return "filed";
   if (status === "assigned") return "assigned";
@@ -422,21 +446,6 @@ function buildChartData(complaints: Complaint[], key: "status" | "issueType") {
   return Object.entries(counts).map(([name, count]) => ({ name, count }));
 }
 
-function getLocalComplaints(): Complaint[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const raw = localStorage.getItem("roadintel-local-complaints");
-    if (!raw) return [];
-
-    const parsed = JSON.parse(raw);
-
-    return Array.isArray(parsed) ? (parsed as Complaint[]) : [];
-  } catch {
-    return [];
-  }
-}
-
 function MetricCard({
   label,
   value,
@@ -559,6 +568,7 @@ function StatusStepper({ status }: { status: ComplaintStatus }) {
 function ComplaintCard({ complaint }: { complaint: Complaint }) {
   return (
     <article
+      id={`complaint-${complaint.id}`}
       className="rounded-2xl p-4"
       style={{
         background: "hsl(var(--card))",
@@ -623,13 +633,75 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
   );
 }
 
+function InputBlock({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-medium">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function RoutingPreview({ form }: { form: ComplaintForm }) {
+  const routing = getRoutingDecision(form);
+
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{
+        background: "rgba(14,165,164,0.08)",
+        border: "1px solid rgba(14,165,164,0.22)",
+      }}
+    >
+      <div className="mb-2 flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4" style={{ color: "#0EA5A4" }} />
+        <h3 className="text-sm font-semibold">Routing Preview</h3>
+      </div>
+
+      <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2">
+        <div>
+          Authority:{" "}
+          <span className="font-semibold text-foreground">
+            {routing.authority}
+          </span>
+        </div>
+
+        <div>
+          Department:{" "}
+          <span className="font-semibold text-foreground">
+            {routing.department}
+          </span>
+        </div>
+
+        <div>
+          Engineer:{" "}
+          <span className="font-semibold text-foreground">
+            {routing.engineer}
+          </span>
+        </div>
+
+        <div>
+          SLA:{" "}
+          <span className="font-semibold text-foreground">{routing.sla}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Complaints() {
   const { data: complaintData, isLoading } = useListComplaints();
 
   const [showForm, setShowForm] = useState(false);
   const [attachmentName, setAttachmentName] = useState("");
   const [localComplaints, setLocalComplaints] =
-    useState<Complaint[]>(getLocalComplaints);
+    useState<Complaint[]>(readLocalComplaints);
   const [submitResult, setSubmitResult] = useState<RoutingDecision | null>(null);
 
   const [form, setForm] = useState<ComplaintForm>({
@@ -642,10 +714,7 @@ export default function Complaints() {
   });
 
   useEffect(() => {
-    localStorage.setItem(
-      "roadintel-local-complaints",
-      JSON.stringify(localComplaints),
-    );
+    saveLocalComplaints(localComplaints);
   }, [localComplaints]);
 
   const apiComplaints = useMemo(
@@ -654,12 +723,13 @@ export default function Complaints() {
   );
 
   const complaints = useMemo(() => {
-    const merged = [...localComplaints, ...apiComplaints];
+    const localIds = new Set(localComplaints.map((item) => String(item.id)));
 
-    return merged.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    const filteredApiComplaints = apiComplaints.filter(
+      (item) => !localIds.has(String(item.id)),
     );
+
+    return [...localComplaints, ...filteredApiComplaints];
   }, [localComplaints, apiComplaints]);
 
   const statusData = useMemo(
@@ -673,7 +743,8 @@ export default function Complaints() {
   );
 
   const resolvedCount = complaints.filter(
-    (complaint) => complaint.status === "resolved",
+    (complaint) =>
+      complaint.status === "resolved" || complaint.status === "verified",
   ).length;
 
   const activeCount = complaints.filter(
@@ -704,7 +775,7 @@ export default function Complaints() {
     setAttachmentName("");
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!form.title.trim() || !form.location.trim() || !form.description.trim()) {
@@ -714,9 +785,11 @@ export default function Complaints() {
 
     const routing = getRoutingDecision(form);
 
+    const complaintNumber = localComplaints.length + apiComplaints.length + 1;
+
     const newComplaint: Complaint = {
       id: `local-${Date.now()}`,
-      complaintId: `RI-PILOT-${String(complaints.length + 1).padStart(3, "0")}`,
+      complaintId: `RI-PILOT-${String(complaintNumber).padStart(3, "0")}`,
       title: form.title.trim(),
       location: form.location.trim(),
       status: "assigned",
@@ -731,10 +804,20 @@ export default function Complaints() {
       description: form.description.trim(),
     };
 
-    setLocalComplaints((current) => [newComplaint, ...current]);
+    setLocalComplaints((current) => {
+      const updated = [newComplaint, ...current];
+      saveLocalComplaints(updated);
+      return updated;
+    });
+
     setSubmitResult(routing);
     setShowForm(false);
     resetForm();
+
+    window.setTimeout(() => {
+      const element = document.getElementById(`complaint-${newComplaint.id}`);
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
   }
 
   return (
@@ -833,9 +916,9 @@ export default function Complaints() {
         />
 
         <MetricCard
-          label="Resolved"
+          label="Resolved / Verified"
           value={resolvedCount}
-          note="Verified or repaired"
+          note="Closed or verified repairs"
           icon={CheckCircle2}
           color="#16A34A"
         />
@@ -923,7 +1006,7 @@ export default function Complaints() {
                 <YAxis
                   type="category"
                   dataKey="name"
-                  width={110}
+                  width={120}
                   tick={{ fontSize: 10 }}
                 />
                 <Tooltip />
@@ -951,8 +1034,8 @@ export default function Complaints() {
             </h2>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Mobile-friendly cards replace cluttered wide tables and make case
-              progress easier to explain to judges.
+              Newly filed complaints appear immediately at the top and are saved
+              in this browser.
             </p>
           </div>
 
@@ -1166,68 +1249,6 @@ export default function Complaints() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function InputBlock({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-medium">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function RoutingPreview({ form }: { form: ComplaintForm }) {
-  const routing = getRoutingDecision(form);
-
-  return (
-    <div
-      className="rounded-2xl p-4"
-      style={{
-        background: "rgba(14,165,164,0.08)",
-        border: "1px solid rgba(14,165,164,0.22)",
-      }}
-    >
-      <div className="mb-2 flex items-center gap-2">
-        <ShieldCheck className="h-4 w-4" style={{ color: "#0EA5A4" }} />
-        <h3 className="text-sm font-semibold">Routing Preview</h3>
-      </div>
-
-      <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2">
-        <div>
-          Authority:{" "}
-          <span className="font-semibold text-foreground">
-            {routing.authority}
-          </span>
-        </div>
-
-        <div>
-          Department:{" "}
-          <span className="font-semibold text-foreground">
-            {routing.department}
-          </span>
-        </div>
-
-        <div>
-          Engineer:{" "}
-          <span className="font-semibold text-foreground">
-            {routing.engineer}
-          </span>
-        </div>
-
-        <div>
-          SLA:{" "}
-          <span className="font-semibold text-foreground">{routing.sla}</span>
-        </div>
-      </div>
     </div>
   );
 }
