@@ -1,4 +1,5 @@
-import { Switch, Route, Redirect } from "wouter";
+import { useEffect } from "react";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/toaster";
@@ -34,6 +35,22 @@ function PublicPage({ children }: { children: React.ReactNode }) {
 }
 
 function PrivatePage({ children }: { children: React.ReactNode }) {
+  const [, navigate] = useLocation();
+
+  const isAuthenticated =
+    typeof window !== "undefined" &&
+    localStorage.getItem("roadintel-auth") === "true";
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, navigate]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return <AppLayout>{children}</AppLayout>;
 }
 
@@ -136,9 +153,6 @@ function Router() {
         </PrivatePage>
       </Route>
 
-      {/* Old full AI Assistant page removed.
-          Anyone visiting /assistant will be redirected to dashboard.
-          The working assistant is now the floating chatbot. */}
       <Route path="/assistant">
         <Redirect to="/dashboard" />
       </Route>
