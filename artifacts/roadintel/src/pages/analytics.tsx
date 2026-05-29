@@ -1,33 +1,116 @@
-import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { BarChart3, TrendingUp, TrendingDown, Activity } from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  Activity,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  TrendingUp,
+} from "lucide-react";
 
 const MOCK_ANALYTICS = {
-  complaintsOverTime: Array.from({ length: 12 }, (_, i) => ({
-    month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i],
-    filed: Math.floor(300 + Math.random() * 400),
-    resolved: Math.floor(200 + Math.random() * 300),
-    escalated: Math.floor(10 + Math.random() * 50),
-  })),
-  healthTrendAllRoads: Array.from({ length: 12 }, (_, i) => ({
-    month: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i],
-    avgHealth: 78 - i * 1.2 + Math.random() * 3,
-    critical: Math.floor(1 + i * 0.3),
-  })),
-  repairEfficiency: [
-    { contractor: "Infra Prime", onTime: 98, budget: 97, quality: 91 },
-    { contractor: "BuildRight", onTime: 88, budget: 84, quality: 82 },
-    { contractor: "National Roads", onTime: 76, budget: 72, quality: 68 },
-    { contractor: "RoadCraft", onTime: 42, budget: 31, quality: 38 },
-    { contractor: "QuickFix", onTime: 18, budget: 14, quality: 22 },
+  complaintsOverTime: [
+    { month: "Apr", filed: 18, resolved: 10, escalated: 2 },
+    { month: "May", filed: 24, resolved: 16, escalated: 3 },
+    { month: "Jun", filed: 39, resolved: 25, escalated: 5 },
+    { month: "Jul", filed: 52, resolved: 31, escalated: 7 },
+    { month: "Aug", filed: 46, resolved: 34, escalated: 6 },
+    { month: "Sep", filed: 41, resolved: 33, escalated: 4 },
   ],
+
+  healthTrendAllRoads: [
+    { month: "Apr", avgHealth: 78, critical: 1 },
+    { month: "May", avgHealth: 76, critical: 1 },
+    { month: "Jun", avgHealth: 72, critical: 2 },
+    { month: "Jul", avgHealth: 68, critical: 3 },
+    { month: "Aug", avgHealth: 70, critical: 2 },
+    { month: "Sep", avgHealth: 74, critical: 2 },
+  ],
+
+  repairEfficiency: [
+    {
+      contractor: "Pune Infra Works",
+      onTime: 91,
+      budget: 88,
+      quality: 86,
+    },
+    {
+      contractor: "MahaRoad Services",
+      onTime: 84,
+      budget: 81,
+      quality: 79,
+    },
+    {
+      contractor: "UrbanBuild Pune",
+      onTime: 76,
+      budget: 72,
+      quality: 74,
+    },
+    {
+      contractor: "RoadCraft Solutions",
+      onTime: 62,
+      budget: 58,
+      quality: 61,
+    },
+    {
+      contractor: "QuickPatch Infra",
+      onTime: 49,
+      budget: 46,
+      quality: 52,
+    },
+  ],
+
   issuesByCity: [
-    { city: "Mumbai", critical: 28, high: 45, medium: 62, low: 30 },
-    { city: "Delhi", critical: 19, high: 38, medium: 51, low: 25 },
-    { city: "Bangalore", critical: 12, high: 28, medium: 42, low: 38 },
-    { city: "Chennai", critical: 8, high: 22, medium: 35, low: 45 },
-    { city: "Pune", critical: 5, high: 15, medium: 25, low: 52 },
+    { city: "Pune", critical: 6, high: 14, medium: 31, low: 22 },
+    { city: "PCMC", critical: 4, high: 11, medium: 24, low: 18 },
+    { city: "Mumbai", critical: 3, high: 9, medium: 19, low: 16 },
+    { city: "Nagpur", critical: 2, high: 7, medium: 15, low: 13 },
+    { city: "Nashik", critical: 1, high: 5, medium: 12, low: 9 },
   ],
 };
+
+const KPI_CARDS = [
+  {
+    label: "Complaints Filed",
+    value: "220",
+    note: "Pilot total",
+    icon: BarChart3,
+    color: "#0EA5A4",
+  },
+  {
+    label: "Resolved Cases",
+    value: "149",
+    note: "67.7% closure",
+    icon: CheckCircle2,
+    color: "#16A34A",
+  },
+  {
+    label: "Avg Resolution Time",
+    value: "4.8 days",
+    note: "PMC / PCMC pilot",
+    icon: Clock,
+    color: "#F59E0B",
+  },
+  {
+    label: "Network Health",
+    value: "74/100",
+    note: "8 monitored roads",
+    icon: Activity,
+    color: "#3B82F6",
+  },
+];
 
 export default function Analytics() {
   const data = MOCK_ANALYTICS;
@@ -35,94 +118,247 @@ export default function Analytics() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold" style={{ fontFamily: "Sora, sans-serif" }}>Analytics</h1>
-        <p className="text-sm text-muted-foreground mt-1">Comprehensive platform performance metrics</p>
+        <h1
+          className="text-2xl font-bold"
+          style={{ fontFamily: "Sora, sans-serif" }}
+        >
+          Analytics
+        </h1>
+
+        <p className="text-sm text-muted-foreground mt-1">
+          Realistic pilot-stage analytics for Pune, PCMC and Maharashtra road
+          monitoring
+        </p>
       </div>
 
-      {/* KPI strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Complaints Filed (YTD)", value: "4,328", icon: BarChart3, color: "#0EA5A4", trend: "+12.4%" },
-          { label: "Resolution Rate", value: "72%", icon: TrendingUp, color: "#16A34A", trend: "+4%" },
-          { label: "Avg Resolution Time", value: "18 days", icon: Activity, color: "#F59E0B", trend: "-2 days" },
-          { label: "Network Health", value: "62/100", icon: TrendingDown, color: "#DC2626", trend: "-6 pts" },
-        ].map(({ label, value, icon: Icon, color, trend }) => (
-          <div key={label} className="p-4 rounded-2xl" style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}>
+        {KPI_CARDS.map(({ label, value, note, icon: Icon, color }) => (
+          <div
+            key={label}
+            className="p-4 rounded-2xl"
+            style={{
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
+            }}
+          >
             <div className="flex items-center justify-between mb-2">
               <Icon className="w-5 h-5" style={{ color }} />
-              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: `${color}15`, color }}>{trend}</span>
+
+              <span
+                className="text-xs px-1.5 py-0.5 rounded-full"
+                style={{
+                  background: `${color}15`,
+                  color,
+                }}
+              >
+                New pilot
+              </span>
             </div>
-            <div className="text-2xl font-bold" style={{ fontFamily: "Sora, sans-serif" }}>{value}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
+
+            <div
+              className="text-2xl font-bold"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              {value}
+            </div>
+
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {label}
+            </div>
+
+            <div className="text-[11px] text-muted-foreground mt-1">
+              {note}
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Complaints over time */}
-      <div className="p-5 rounded-2xl" style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}>
-        <h3 className="font-semibold mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Complaints Filed vs Resolved (Monthly)</h3>
-        <ResponsiveContainer width="100%" height={250}>
+      <div
+        className="p-5 rounded-2xl"
+        style={{
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
+        }}
+      >
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3
+              className="font-semibold"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              Complaints Filed vs Resolved
+            </h3>
+
+            <p className="text-xs text-muted-foreground mt-1">
+              April to September pilot data. Complaint volume intentionally kept
+              realistic for a newly launched civic-tech project.
+            </p>
+          </div>
+
+          <TrendingUp className="w-5 h-5 text-muted-foreground" />
+        </div>
+
+        <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={data.complaintsOverTime}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="hsl(var(--border))"
+            />
             <XAxis dataKey="month" tick={{ fontSize: 10 }} />
             <YAxis tick={{ fontSize: 10 }} />
             <Tooltip />
             <Legend />
-            <Area type="monotone" dataKey="filed" name="Filed" stroke="#0EA5A4" fill="rgba(14,165,164,0.12)" strokeWidth={2} />
-            <Area type="monotone" dataKey="resolved" name="Resolved" stroke="#16A34A" fill="rgba(22,163,74,0.10)" strokeWidth={2} />
-            <Area type="monotone" dataKey="escalated" name="Escalated" stroke="#DC2626" fill="rgba(220,38,38,0.08)" strokeWidth={2} />
+            <Area
+              type="monotone"
+              dataKey="filed"
+              name="Filed"
+              stroke="#0EA5A4"
+              fill="rgba(14,165,164,0.12)"
+              strokeWidth={2}
+            />
+            <Area
+              type="monotone"
+              dataKey="resolved"
+              name="Resolved"
+              stroke="#16A34A"
+              fill="rgba(22,163,74,0.12)"
+              strokeWidth={2}
+            />
+            <Area
+              type="monotone"
+              dataKey="escalated"
+              name="Escalated"
+              stroke="#F59E0B"
+              fill="rgba(245,158,11,0.12)"
+              strokeWidth={2}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Health trend */}
-        <div className="p-5 rounded-2xl" style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}>
-          <h3 className="font-semibold mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Network Health Trend</h3>
-          <ResponsiveContainer width="100%" height={200}>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div
+          className="p-5 rounded-2xl"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <h3
+            className="font-semibold mb-1"
+            style={{ fontFamily: "Sora, sans-serif" }}
+          >
+            Road Health Trend
+          </h3>
+
+          <p className="text-xs text-muted-foreground mb-4">
+            Average health score dipped during monsoon and recovered slightly
+            after patch repairs.
+          </p>
+
+          <ResponsiveContainer width="100%" height={260}>
             <LineChart data={data.healthTrendAllRoads}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--border))"
+              />
               <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-              <YAxis domain={[50, 90]} tick={{ fontSize: 10 }} />
+              <YAxis domain={[50, 100]} tick={{ fontSize: 10 }} />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="avgHealth" name="Avg Health" stroke="#0EA5A4" strokeWidth={2} />
-              <Line type="monotone" dataKey="critical" name="Critical Roads" stroke="#DC2626" strokeWidth={2} yAxisId={0} />
+              <Line
+                type="monotone"
+                dataKey="avgHealth"
+                name="Avg Health"
+                stroke="#3B82F6"
+                strokeWidth={3}
+                dot={{ r: 4 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="critical"
+                name="Critical Roads"
+                stroke="#DC2626"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Contractor efficiency */}
-        <div className="p-5 rounded-2xl" style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}>
-          <h3 className="font-semibold mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Contractor Efficiency Comparison</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={data.repairEfficiency} layout="vertical">
-              <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} />
-              <YAxis dataKey="contractor" type="category" tick={{ fontSize: 9 }} width={70} />
+        <div
+          className="p-5 rounded-2xl"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <h3
+            className="font-semibold mb-1"
+            style={{ fontFamily: "Sora, sans-serif" }}
+          >
+            Contractor Repair Efficiency
+          </h3>
+
+          <p className="text-xs text-muted-foreground mb-4">
+            Contractor comparison using on-time completion, budget discipline
+            and repair quality.
+          </p>
+
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={data.repairEfficiency}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--border))"
+              />
+              <XAxis
+                dataKey="contractor"
+                tick={{ fontSize: 9 }}
+                interval={0}
+                angle={-15}
+                textAnchor="end"
+                height={65}
+              />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="quality" name="Quality" fill="#0EA5A4" radius={[0, 3, 3, 0]} />
-              <Bar dataKey="onTime" name="On-Time" fill="#16A34A" radius={[0, 3, 3, 0]} />
-              <Bar dataKey="budget" name="Budget" fill="#F59E0B" radius={[0, 3, 3, 0]} />
+              <Bar dataKey="onTime" name="On Time %" fill="#0EA5A4" />
+              <Bar dataKey="budget" name="Budget %" fill="#3B82F6" />
+              <Bar dataKey="quality" name="Quality %" fill="#16A34A" />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Issues by city */}
-      <div className="p-5 rounded-2xl" style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}>
-        <h3 className="font-semibold mb-4" style={{ fontFamily: "Sora, sans-serif" }}>Issues by City & Severity</h3>
-        <ResponsiveContainer width="100%" height={250}>
+      <div
+        className="p-5 rounded-2xl"
+        style={{
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
+        }}
+      >
+        <h3
+          className="font-semibold mb-1"
+          style={{ fontFamily: "Sora, sans-serif" }}
+        >
+          Issue Severity by City
+        </h3>
+
+        <p className="text-xs text-muted-foreground mb-4">
+          Smaller, believable issue counts across Maharashtra pilot zones.
+        </p>
+
+        <ResponsiveContainer width="100%" height={280}>
           <BarChart data={data.issuesByCity}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="city" tick={{ fontSize: 11 }} />
+            <XAxis dataKey="city" tick={{ fontSize: 10 }} />
             <YAxis tick={{ fontSize: 10 }} />
             <Tooltip />
             <Legend />
             <Bar dataKey="critical" name="Critical" stackId="a" fill="#DC2626" />
-            <Bar dataKey="high" name="High" stackId="a" fill="#F59E0B" />
-            <Bar dataKey="medium" name="Medium" stackId="a" fill="#0EA5A4" />
-            <Bar dataKey="low" name="Low" stackId="a" fill="#16A34A" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="high" name="High" stackId="a" fill="#F97316" />
+            <Bar dataKey="medium" name="Medium" stackId="a" fill="#F59E0B" />
+            <Bar dataKey="low" name="Low" stackId="a" fill="#16A34A" />
           </BarChart>
         </ResponsiveContainer>
       </div>
