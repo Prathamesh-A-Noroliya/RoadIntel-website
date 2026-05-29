@@ -1,1160 +1,1233 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useListComplaints } from "@workspace/api-client-react";
 import {
-  useListComplaints,
-  useCreateComplaint,
-  useGetComplaintStats,
-} from "@workspace/api-client-react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
   Bar,
+  BarChart,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts";
 import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  FileText,
   MapPin,
-  CheckCircle,
   Plus,
-  X,
-  WifiOff,
+  Route,
+  ShieldCheck,
   Upload,
-  Eye,
-  EyeOff,
+  X,
 } from "lucide-react";
-import { getRiskColor } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
+
+type Severity = "critical" | "high" | "medium" | "low";
+type ComplaintStatus =
+  | "filed"
+  | "assigned"
+  | "in_progress"
+  | "verified"
+  | "resolved"
+  | "escalated";
 
 type Complaint = {
   id: string | number;
   complaintId: string;
   title: string;
   location: string;
-  status: string;
-  severity: string;
+  status: ComplaintStatus;
+  severity: Severity;
   issueType: string;
   createdAt: string;
   assignedDepartment: string;
-};
-
-type ChartItem = {
-  status?: string;
-  type?: string;
-  count: number;
-};
-
-type ComplaintStats = {
-  byStatus: ChartItem[];
-  byType: ChartItem[];
-};
-
-type SubmitResult = {
-  complaintId: string;
+  assignedEngineer: string;
+  sla: string;
   authority: string;
-  engineer: string;
-  timeline: string;
   zone: string;
-} | null;
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: "#F59E0B",
-  in_progress: "#0EA5A4",
-  resolved: "#16A34A",
-  escalated: "#DC2626",
+  description: string;
 };
 
-const PIE_COLORS = ["#F59E0B", "#0EA5A4", "#16A34A", "#DC2626"];
+type ComplaintForm = {
+  title: string;
+  location: string;
+  issueType: string;
+  severity: Severity;
+  roadType: "urban" | "pcmc" | "state" | "national";
+  description: string;
+};
+
+type RoutingDecision = {
+  authority: string;
+  department: string;
+  engineer: string;
+  sla: string;
+  zone: string;
+};
 
 const MOCK_COMPLAINTS: Complaint[] = [
   {
     id: 1,
-    complaintId: "CMP-2025-001",
+    complaintId: "RI-PUN-2026-001",
     title: "Large pothole near bus stop",
-    location: "FC Road, Pune",
+    location: "FC Road Junction, Pune",
     status: "in_progress",
     severity: "high",
     issueType: "Pothole",
-    createdAt: "2025-04-10",
+    createdAt: "2026-04-18",
     assignedDepartment: "PMC Roads Department",
+    assignedEngineer: "Ward Engineer — Shivajinagar",
+    sla: "48 hours",
+    authority: "PMC",
+    zone: "Pune Central",
+    description:
+      "Citizen reported a large pothole near the bus stop after recent rainfall. Two-wheeler risk is high.",
   },
   {
     id: 2,
-    complaintId: "CMP-2025-002",
-    title: "Waterlogging causing traffic risk",
-    location: "Baner Road, Pune",
-    status: "pending",
+    complaintId: "RI-PUN-2026-002",
+    title: "Waterlogging near school entrance",
+    location: "Baner Link Road, Pune",
+    status: "assigned",
     severity: "medium",
     issueType: "Waterlogging",
-    createdAt: "2025-04-12",
-    assignedDepartment: "PMC Stormwater Cell",
+    createdAt: "2026-04-19",
+    assignedDepartment: "PMC Stormwater + Roads Cell",
+    assignedEngineer: "Assistant Engineer — Baner Ward",
+    sla: "5 days",
+    authority: "PMC",
+    zone: "Pune West",
+    description:
+      "Water accumulation near school gate is creating pedestrian and traffic risk during morning hours.",
   },
   {
     id: 3,
-    complaintId: "CMP-2025-003",
-    title: "Cracked road surface on highway stretch",
-    location: "Mumbai-Pune Expressway",
-    status: "resolved",
-    severity: "high",
+    complaintId: "RI-PCMC-2026-003",
+    title: "Cracked road surface",
+    location: "Wakad-Hinjewadi Road, PCMC",
+    status: "verified",
+    severity: "medium",
     issueType: "Cracking",
-    createdAt: "2025-04-05",
-    assignedDepartment: "MSRDC",
+    createdAt: "2026-04-16",
+    assignedDepartment: "PCMC Roads Department",
+    assignedEngineer: "Junior Engineer — Wakad Zone",
+    sla: "7 days",
+    authority: "PCMC",
+    zone: "PCMC Corridor",
+    description:
+      "Longitudinal cracking observed near high-traffic IT corridor. Preventive sealing recommended.",
   },
   {
     id: 4,
-    complaintId: "CMP-2025-004",
-    title: "Damaged road edge near market area",
+    complaintId: "RI-PUN-2026-004",
+    title: "Broken road edge near market",
     location: "Sinhagad Road, Pune",
-    status: "pending",
-    severity: "medium",
+    status: "filed",
+    severity: "low",
     issueType: "Edge Damage",
-    createdAt: "2025-04-14",
+    createdAt: "2026-04-20",
     assignedDepartment: "PMC Ward Roads Team",
+    assignedEngineer: "Ward Review Pending",
+    sla: "10 days",
+    authority: "PMC",
+    zone: "Pune South",
+    description:
+      "Minor edge damage near roadside parking area. Needs inspection before monsoon escalation.",
   },
   {
     id: 5,
-    complaintId: "CMP-2025-005",
-    title: "Dangerous broken road near hospital",
-    location: "Sassoon Hospital Road, Pune",
+    complaintId: "RI-PUN-2026-005",
+    title: "Repeated patch failure",
+    location: "JM Road Patch Zone, Pune",
     status: "escalated",
     severity: "critical",
-    issueType: "Surface Damage",
-    createdAt: "2025-04-15",
+    issueType: "Repeat Repair Failure",
+    createdAt: "2026-04-21",
     assignedDepartment: "PMC Emergency Roads Cell",
+    assignedEngineer: "Executive Engineer — Roads",
+    sla: "24 hours",
+    authority: "PMC",
+    zone: "Pune Central",
+    description:
+      "Same patch failed again after repair. Case escalated for contractor quality review.",
   },
   {
     id: 6,
-    complaintId: "CMP-2025-006",
+    complaintId: "RI-PCMC-2026-006",
     title: "Potholes on service road",
-    location: "Wakad-Hinjewadi Road",
+    location: "Ravet BRT Service Road, PCMC",
     status: "resolved",
     severity: "medium",
     issueType: "Pothole",
-    createdAt: "2025-04-08",
+    createdAt: "2026-04-12",
     assignedDepartment: "PCMC Roads Department",
+    assignedEngineer: "Assistant Engineer — Ravet",
+    sla: "5 days",
+    authority: "PCMC",
+    zone: "PCMC Corridor",
+    description:
+      "Multiple small potholes reported. Repair was verified through field image and citizen confirmation.",
   },
 ];
 
-const MOCK_STATS: ComplaintStats = {
-  byStatus: [
-    { status: "Pending", count: 2 },
-    { status: "In Progress", count: 1 },
-    { status: "Resolved", count: 2 },
-    { status: "Escalated", count: 1 },
-  ],
-  byType: [
-    { type: "Pothole", count: 2 },
-    { type: "Waterlogging", count: 1 },
-    { type: "Cracking", count: 1 },
-    { type: "Surface Damage", count: 1 },
-    { type: "Edge Damage", count: 1 },
-  ],
+const STATUS_FLOW: ComplaintStatus[] = [
+  "filed",
+  "assigned",
+  "in_progress",
+  "verified",
+  "resolved",
+];
+
+const STATUS_LABELS: Record<ComplaintStatus, string> = {
+  filed: "Filed",
+  assigned: "Assigned",
+  in_progress: "In Progress",
+  verified: "Verified",
+  resolved: "Resolved",
+  escalated: "Escalated",
 };
 
-const ROUTING_ENGINE: Record<
-  string,
-  { authority: string; engineer: string; timeline: string; zone: string }
-> = {
-  "NH-critical": {
-    authority: "National Highways Authority of India",
-    engineer: "Executive Engineer, NHAI",
-    timeline: "24-48 hours",
-    zone: "National",
-  },
-  "NH-high": {
-    authority: "National Highways Authority of India",
-    engineer: "Assistant Engineer, NHAI",
-    timeline: "3-5 days",
-    zone: "National",
-  },
-  "NH-medium": {
-    authority: "NHAI State Unit",
-    engineer: "Junior Engineer, NHAI",
-    timeline: "7-10 days",
-    zone: "State-National",
-  },
-  "NH-low": {
-    authority: "NHAI State Unit",
-    engineer: "NHAI Field Inspector",
-    timeline: "15-20 days",
-    zone: "State-National",
-  },
-
-  "SH-critical": {
-    authority: "Maharashtra PWD Emergency Cell",
-    engineer: "Executive Engineer, PWD",
-    timeline: "24-72 hours",
-    zone: "State",
-  },
-  "SH-high": {
-    authority: "Maharashtra Public Works Department",
-    engineer: "Assistant Engineer, PWD",
-    timeline: "3-7 days",
-    zone: "State",
-  },
-  "SH-medium": {
-    authority: "Maharashtra Public Works Department",
-    engineer: "Junior Engineer, PWD",
-    timeline: "10-15 days",
-    zone: "State",
-  },
-  "SH-low": {
-    authority: "PWD District Unit",
-    engineer: "Road Inspector, PWD",
-    timeline: "20-30 days",
-    zone: "State",
-  },
-
-  "MDR-critical": {
-    authority: "District Roads Division",
-    engineer: "Executive Engineer, District Roads",
-    timeline: "48-72 hours",
-    zone: "District",
-  },
-  "MDR-high": {
-    authority: "District Roads Division",
-    engineer: "Assistant Engineer, District Roads",
-    timeline: "5-7 days",
-    zone: "District",
-  },
-  "MDR-medium": {
-    authority: "District Roads Division",
-    engineer: "Junior Engineer, District Roads",
-    timeline: "10-15 days",
-    zone: "District",
-  },
-  "MDR-low": {
-    authority: "District Roads Division",
-    engineer: "Road Inspector",
-    timeline: "30 days",
-    zone: "District",
-  },
-
-  "Urban-critical": {
-    authority: "Municipal Corporation Emergency Roads Cell",
-    engineer: "Executive Engineer, Municipal Roads",
-    timeline: "12-24 hours",
-    zone: "Municipal",
-  },
-  "Urban-high": {
-    authority: "Municipal Corporation Roads Department",
-    engineer: "Assistant Engineer, Roads",
-    timeline: "3-5 days",
-    zone: "Municipal",
-  },
-  "Urban-medium": {
-    authority: "Ward Roads Department",
-    engineer: "Junior Engineer, Ward Roads",
-    timeline: "7-14 days",
-    zone: "Municipal",
-  },
-  "Urban-low": {
-    authority: "Ward Committee",
-    engineer: "Ward Road Inspector",
-    timeline: "30 days",
-    zone: "Municipal",
-  },
+const STATUS_COLORS: Record<ComplaintStatus, string> = {
+  filed: "#64748B",
+  assigned: "#3B82F6",
+  in_progress: "#0EA5A4",
+  verified: "#8B5CF6",
+  resolved: "#16A34A",
+  escalated: "#DC2626",
 };
 
-const ROAD_AUTOFILL: Record<
-  string,
-  {
-    roadType: string;
-    authority: string;
-    contractor: string;
-    lastRelaying: string;
-    budgetRef: string;
-    jurisdiction: string;
-  }
-> = {
-  "FC Road": {
-    roadType: "Urban",
-    authority: "PMC Roads Department",
-    contractor: "Pune Urban Infrastructure Works",
-    lastRelaying: "March 2023",
-    budgetRef: "₹8.4 Cr",
-    jurisdiction: "Pune Municipal",
-  },
-  Baner: {
-    roadType: "Urban",
-    authority: "PMC Ward Roads Team",
-    contractor: "Maharashtra RoadBuild Services",
-    lastRelaying: "June 2022",
-    budgetRef: "₹11.2 Cr",
-    jurisdiction: "Pune Municipal",
-  },
-  Hinjewadi: {
-    roadType: "Urban",
-    authority: "PCMC Roads Department",
-    contractor: "Metro Road Contractors",
-    lastRelaying: "January 2023",
-    budgetRef: "₹14.8 Cr",
-    jurisdiction: "PCMC",
-  },
-  "Mumbai-Pune": {
-    roadType: "NH",
-    authority: "MSRDC",
-    contractor: "Expressway Maintenance Unit",
-    lastRelaying: "September 2022",
-    budgetRef: "₹42.5 Cr",
-    jurisdiction: "State-National",
-  },
-  Sinhagad: {
-    roadType: "Urban",
-    authority: "PMC Roads Department",
-    contractor: "Urban Road Maintenance Pvt Ltd",
-    lastRelaying: "December 2022",
-    budgetRef: "₹6.9 Cr",
-    jurisdiction: "Pune Municipal",
-  },
+const SEVERITY_COLORS: Record<Severity, string> = {
+  critical: "#DC2626",
+  high: "#F97316",
+  medium: "#F59E0B",
+  low: "#16A34A",
 };
 
-function safeArray<T>(value: unknown): T[] {
-  return Array.isArray(value) ? value : [];
+const ISSUE_TYPES = [
+  "Pothole",
+  "Cracking",
+  "Waterlogging",
+  "Edge Damage",
+  "Surface Damage",
+  "Repeat Repair Failure",
+  "Missing Road Marking",
+];
+
+const BANNED_REMOTE_TERMS = [
+  "AIIMS",
+  "Delhi",
+  "Bangalore",
+  "Andheri",
+  "Outer Ring",
+  "NH-48",
+];
+
+function normalizeStatus(value: unknown): ComplaintStatus {
+  const status = String(value ?? "filed").toLowerCase().replaceAll(" ", "_");
+
+  if (status === "pending") return "filed";
+  if (status === "assigned") return "assigned";
+  if (status === "in_progress") return "in_progress";
+  if (status === "verified") return "verified";
+  if (status === "resolved") return "resolved";
+  if (status === "escalated") return "escalated";
+
+  return "filed";
 }
 
-function normalizeComplaints(data: unknown): Complaint[] {
-  const source =
-    Array.isArray(data)
-      ? data
-      : Array.isArray((data as any)?.complaints)
-        ? (data as any).complaints
-        : Array.isArray((data as any)?.data)
-          ? (data as any).data
-          : Array.isArray((data as any)?.items)
-            ? (data as any).items
-            : [];
+function normalizeSeverity(value: unknown): Severity {
+  const severity = String(value ?? "medium").toLowerCase();
 
-  return source.map((item: any, index: number): Complaint => ({
-    id: item?.id ?? item?._id ?? index + 1,
-    complaintId:
-      item?.complaintId ??
-      item?.complaint_id ??
-      item?.referenceId ??
-      `CMP-${String(index + 1).padStart(3, "0")}`,
-    title: item?.title ?? item?.name ?? item?.description ?? "Road complaint",
-    location: item?.location ?? item?.address ?? "Location not available",
-    status: item?.status ?? "pending",
-    severity: item?.severity ?? item?.riskLevel ?? "medium",
-    issueType: item?.issueType ?? item?.type ?? item?.category ?? "Road Issue",
-    createdAt: item?.createdAt ?? item?.created_at ?? new Date().toISOString(),
-    assignedDepartment:
-      item?.assignedDepartment ??
-      item?.department ??
-      item?.authority ??
-      "Municipal Roads Department",
-  }));
+  if (severity === "critical") return "critical";
+  if (severity === "high") return "high";
+  if (severity === "low") return "low";
+
+  return "medium";
 }
 
-function normalizeStats(data: unknown, complaints: Complaint[]): ComplaintStats {
-  const rawStatus =
-    safeArray<ChartItem>((data as any)?.byStatus).length > 0
-      ? safeArray<ChartItem>((data as any)?.byStatus)
-      : safeArray<ChartItem>((data as any)?.status);
+function toArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
 
-  const rawType =
-    safeArray<ChartItem>((data as any)?.byType).length > 0
-      ? safeArray<ChartItem>((data as any)?.byType)
-      : safeArray<ChartItem>((data as any)?.types);
+  if (!value || typeof value !== "object") return [];
 
-  if (rawStatus.length > 0 && rawType.length > 0) {
-    return {
-      byStatus: rawStatus.map((item: any) => ({
-        status: item.status ?? item.name ?? item.label ?? "Unknown",
-        count: Number(item.count ?? item.value ?? 0),
-      })),
-      byType: rawType.map((item: any) => ({
-        type: item.type ?? item.name ?? item.label ?? "Other",
-        count: Number(item.count ?? item.value ?? 0),
-      })),
-    };
-  }
+  const record = value as Record<string, unknown>;
 
-  const statusCounts = complaints.reduce<Record<string, number>>((acc, c) => {
-    const key = c.status || "pending";
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {});
+  for (const key of ["data", "complaints", "items", "results", "rows", "list"]) {
+    const item = record[key];
 
-  const typeCounts = complaints.reduce<Record<string, number>>((acc, c) => {
-    const key = c.issueType || "Other";
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {});
+    if (Array.isArray(item)) return item as T[];
 
-  return {
-    byStatus: Object.entries(statusCounts).map(([status, count]) => ({
-      status: status.replace("_", " ").replace(/\b\w/g, (m) => m.toUpperCase()),
-      count,
-    })),
-    byType: Object.entries(typeCounts).map(([type, count]) => ({
-      type,
-      count,
-    })),
-  };
-}
-
-function getRouting(roadType: string, severity: string) {
-  const key = `${roadType}-${severity}`;
-  return (
-    ROUTING_ENGINE[key] ??
-    ROUTING_ENGINE[`${roadType}-medium`] ?? {
-      authority: "Local Municipal Corporation / PWD",
-      engineer: "Executive Engineer",
-      timeline: "7-14 days",
-      zone: "Local",
+    if (item && typeof item === "object") {
+      const nested = toArray<T>(item);
+      if (nested.length > 0) return nested;
     }
+  }
+
+  return [];
+}
+
+function isPilotLocation(location: string) {
+  return !BANNED_REMOTE_TERMS.some((term) =>
+    location.toLowerCase().includes(term.toLowerCase()),
   );
 }
 
-function getAutofill(roadName: string) {
-  for (const [key, value] of Object.entries(ROAD_AUTOFILL)) {
-    if (roadName.toLowerCase().includes(key.toLowerCase())) {
-      return value;
-    }
-  }
+function normalizeComplaints(value: unknown): Complaint[] {
+  const source = toArray<Record<string, unknown>>(value);
 
-  return null;
-}
+  if (source.length === 0) return MOCK_COMPLAINTS;
 
-function saveOffline(data: object) {
-  try {
-    if (typeof window === "undefined") return false;
+  const normalized = source.map((item, index): Complaint => {
+    const location = String(item.location ?? item.address ?? "Pune Pilot Zone");
 
-    const existingRaw = localStorage.getItem("ri_offline_complaints");
-    const existing = Array.isArray(JSON.parse(existingRaw || "[]"))
-      ? JSON.parse(existingRaw || "[]")
-      : [];
-
-    existing.push({
-      ...data,
-      savedAt: new Date().toISOString(),
-      offlineId: `OFL-${Date.now()}`,
-    });
-
-    localStorage.setItem("ri_offline_complaints", JSON.stringify(existing));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function NewComplaintModal({ onClose }: { onClose: () => void }) {
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    location: "",
-    severity: "medium",
-    issueType: "Pothole",
-    reportedBy: "",
-    roadType: "Urban",
-    priority: "normal",
-    anonymous: false,
-    notes: "",
+    return {
+      id: item.id ?? index + 1,
+      complaintId: String(
+        item.complaintId ?? item.complaint_id ?? `RI-PILOT-${index + 1}`,
+      ),
+      title: String(item.title ?? item.subject ?? "Road issue reported"),
+      location,
+      status: normalizeStatus(item.status),
+      severity: normalizeSeverity(item.severity),
+      issueType: String(item.issueType ?? item.issue_type ?? "Road Damage"),
+      createdAt: String(item.createdAt ?? item.created_at ?? "2026-04-20"),
+      assignedDepartment: String(
+        item.assignedDepartment ??
+          item.assigned_department ??
+          "PMC Roads Department",
+      ),
+      assignedEngineer: String(
+        item.assignedEngineer ?? item.assigned_engineer ?? "Ward Engineer",
+      ),
+      sla: String(item.sla ?? "5 days"),
+      authority: String(item.authority ?? "PMC"),
+      zone: String(item.zone ?? "Pune Pilot"),
+      description: String(
+        item.description ??
+          "Citizen complaint routed through RoadIntel pilot workflow.",
+      ),
+    };
   });
 
-  const [autofill, setAutofill] = useState<ReturnType<typeof getAutofill>>(null);
-  const [result, setResult] = useState<SubmitResult>(null);
-  const [offlineSaved, setOfflineSaved] = useState(false);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
-
-  const create = useCreateComplaint();
-  const routing = getRouting(form.roadType, form.severity);
-
-  const setField =
-    (key: keyof typeof form) =>
-    (
-      event: React.ChangeEvent<
-        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >,
-    ) => {
-      const target = event.target as HTMLInputElement;
-      const value =
-        target.type === "checkbox" ? target.checked : event.target.value;
-
-      setForm((current) => {
-        const next = { ...current, [key]: value };
-
-        if (key === "location") {
-          const matched = getAutofill(String(value));
-          setAutofill(matched);
-
-          if (matched) {
-            next.roadType = matched.roadType;
-          }
-        }
-
-        return next;
-      });
-    };
-
-  const submit = async () => {
-    try {
-      await create.mutateAsync({
-        ...form,
-        title: form.title || form.issueType,
-      });
-    } catch {
-      saveOffline(form);
-    }
-
-    setResult({
-      complaintId: `CMP-${Date.now().toString().slice(-6)}`,
-      ...routing,
-    });
-  };
-
-  const inputCls = "w-full px-4 py-2.5 rounded-xl text-sm outline-none";
-  const inputStyle: React.CSSProperties = {
-    background: "hsl(var(--muted))",
-    border: "1px solid hsl(var(--border))",
-    color: "hsl(var(--foreground))",
-  };
-
-  if (result) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-        <div
-          className="w-full max-w-lg rounded-2xl p-6 space-y-5"
-          style={{
-            background: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(22,163,74,0.15)" }}
-            >
-              <CheckCircle className="w-5 h-5" style={{ color: "#16A34A" }} />
-            </div>
-            <div>
-              <div className="font-bold" style={{ fontFamily: "Sora, sans-serif" }}>
-                Complaint Filed Successfully
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Smart routing completed
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Complaint ID", value: result.complaintId, highlight: true },
-              { label: "Expected Timeline", value: result.timeline },
-              { label: "Assigned Authority", value: result.authority },
-              { label: "Executive Engineer", value: result.engineer },
-              { label: "Jurisdiction Zone", value: result.zone },
-              { label: "Status", value: "Pending Review" },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-xl p-3"
-                style={{ background: "hsl(var(--muted))" }}
-              >
-                <div className="text-xs text-muted-foreground mb-0.5">
-                  {item.label}
-                </div>
-                <div
-                  className="text-sm font-semibold"
-                  style={item.highlight ? { color: "#0EA5A4" } : undefined}
-                >
-                  {item.value}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button
-            onClick={onClose}
-            className="w-full py-3 rounded-xl text-sm font-semibold text-white"
-            style={{ background: "#0EA5A4" }}
-          >
-            Done
-          </button>
-        </div>
-      </div>
-    );
+  if (normalized.some((item) => !isPilotLocation(item.location))) {
+    return MOCK_COMPLAINTS;
   }
 
+  return normalized;
+}
+
+function getRoutingDecision(form: ComplaintForm): RoutingDecision {
+  const location = form.location.toLowerCase();
+
+  if (form.roadType === "national") {
+    return {
+      authority: "NHAI / MSRDC",
+      department: "Highway Maintenance Unit",
+      engineer:
+        form.severity === "critical"
+          ? "Executive Engineer — Highway Safety"
+          : "Assistant Engineer — Highway Maintenance",
+      sla: form.severity === "critical" ? "24-48 hours" : "5-7 days",
+      zone: "Highway Corridor",
+    };
+  }
+
+  if (
+    form.roadType === "pcmc" ||
+    location.includes("wakad") ||
+    location.includes("hinjewadi") ||
+    location.includes("ravet") ||
+    location.includes("pimpri") ||
+    location.includes("chinchwad")
+  ) {
+    return {
+      authority: "PCMC",
+      department: "PCMC Roads Department",
+      engineer:
+        form.severity === "critical"
+          ? "Executive Engineer — PCMC Roads"
+          : "Ward Engineer — PCMC Zone",
+      sla:
+        form.severity === "critical"
+          ? "24 hours"
+          : form.severity === "high"
+            ? "48 hours"
+            : "5 days",
+      zone: "PCMC Corridor",
+    };
+  }
+
+  if (form.roadType === "state") {
+    return {
+      authority: "PWD Maharashtra",
+      department: "PWD Road Maintenance Division",
+      engineer:
+        form.severity === "critical"
+          ? "Executive Engineer — PWD"
+          : "Assistant Engineer — PWD",
+      sla: form.severity === "critical" ? "48 hours" : "7 days",
+      zone: "State Road",
+    };
+  }
+
+  return {
+    authority: "PMC",
+    department:
+      form.issueType === "Waterlogging"
+        ? "PMC Stormwater + Roads Cell"
+        : "PMC Roads Department",
+    engineer:
+      form.severity === "critical"
+        ? "Executive Engineer — PMC Roads"
+        : "Ward Engineer — PMC Zone",
+    sla:
+      form.severity === "critical"
+        ? "24 hours"
+        : form.severity === "high"
+          ? "48 hours"
+          : "5-10 days",
+    zone: "Pune Urban",
+  };
+}
+
+function getStatusIndex(status: ComplaintStatus) {
+  if (status === "escalated") return 1;
+  return Math.max(0, STATUS_FLOW.indexOf(status));
+}
+
+function formatDate(date: string) {
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) return date;
+
+  return parsed.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function buildChartData(complaints: Complaint[], key: "status" | "issueType") {
+  const counts = complaints.reduce<Record<string, number>>((acc, complaint) => {
+    const value =
+      key === "status" ? STATUS_LABELS[complaint.status] : complaint.issueType;
+
+    acc[value] = (acc[value] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(counts).map(([name, count]) => ({ name, count }));
+}
+
+function getLocalComplaints(): Complaint[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = localStorage.getItem("roadintel-local-complaints");
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+
+    return Array.isArray(parsed) ? (parsed as Complaint[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function MetricCard({
+  label,
+  value,
+  note,
+  icon: Icon,
+  color,
+}: {
+  label: string;
+  value: string | number;
+  note: string;
+  icon: LucideIcon;
+  color: string;
+}) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 overflow-y-auto">
-      <div
-        className="w-full max-w-2xl rounded-2xl my-4"
-        style={{
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-        }}
-      >
+    <div
+      className="rounded-2xl p-5"
+      style={{
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
+      }}
+    >
+      <div className="mb-4 flex items-center justify-between">
         <div
-          className="flex items-center justify-between px-6 py-4 border-b"
-          style={{ borderColor: "hsl(var(--border))" }}
+          className="flex h-10 w-10 items-center justify-center rounded-xl"
+          style={{ background: `${color}18` }}
         >
-          <h2 className="font-bold" style={{ fontFamily: "Sora, sans-serif" }}>
-            File New Complaint
-          </h2>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() =>
-                setForm((current) => ({
-                  ...current,
-                  anonymous: !current.anonymous,
-                }))
-              }
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border"
-              style={{
-                borderColor: form.anonymous ? "#F5A623" : "hsl(var(--border))",
-                color: form.anonymous
-                  ? "#F5A623"
-                  : "hsl(var(--muted-foreground))",
-                background: form.anonymous
-                  ? "rgba(245,166,35,0.1)"
-                  : "transparent",
-              }}
-            >
-              {form.anonymous ? (
-                <EyeOff className="w-3 h-3" />
-              ) : (
-                <Eye className="w-3 h-3" />
-              )}
-              {form.anonymous ? "Anonymous" : "Show Name"}
-            </button>
-
-            <button onClick={onClose} aria-label="Close">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <Icon className="h-5 w-5" style={{ color }} />
         </div>
 
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1.5 text-muted-foreground">
-              Complaint Title
-            </label>
-            <input
-              value={form.title}
-              onChange={setField("title")}
-              placeholder="Brief description of the issue"
-              className={inputCls}
-              style={inputStyle}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1.5 text-muted-foreground">
-                Issue Type
-              </label>
-              <select
-                value={form.issueType}
-                onChange={setField("issueType")}
-                className={inputCls}
-                style={inputStyle}
-              >
-                {[
-                  "Pothole",
-                  "Cracking",
-                  "Road Collapse",
-                  "Waterlogging",
-                  "Surface Damage",
-                  "Edge Damage",
-                  "Signage",
-                  "Drainage",
-                  "Other",
-                ].map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1.5 text-muted-foreground">
-                Severity
-              </label>
-              <select
-                value={form.severity}
-                onChange={setField("severity")}
-                className={inputCls}
-                style={inputStyle}
-              >
-                {["low", "medium", "high", "critical"].map((severity) => (
-                  <option key={severity} value={severity}>
-                    {severity.charAt(0).toUpperCase() + severity.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1.5 text-muted-foreground">
-                Road Type
-              </label>
-              <select
-                value={form.roadType}
-                onChange={setField("roadType")}
-                className={inputCls}
-                style={inputStyle}
-              >
-                <option value="NH">National Highway</option>
-                <option value="SH">State Highway</option>
-                <option value="MDR">Major District Road</option>
-                <option value="Urban">Urban / Municipal Road</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1.5 text-muted-foreground">
-                Priority
-              </label>
-              <select
-                value={form.priority}
-                onChange={setField("priority")}
-                className={inputCls}
-                style={inputStyle}
-              >
-                <option value="normal">Normal</option>
-                <option value="urgent">Urgent</option>
-                <option value="emergency">Emergency</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1.5 text-muted-foreground">
-              Road Name / Location
-            </label>
-            <input
-              value={form.location}
-              onChange={setField("location")}
-              placeholder="e.g. FC Road, Baner Road, Mumbai-Pune Expressway"
-              className={inputCls}
-              style={inputStyle}
-            />
-          </div>
-
-          {autofill && (
-            <div
-              className="rounded-xl p-4 space-y-2 text-sm"
-              style={{
-                background: "rgba(14,165,164,0.08)",
-                border: "1px solid rgba(14,165,164,0.2)",
-              }}
-            >
-              <div className="text-xs font-semibold" style={{ color: "#0EA5A4" }}>
-                Smart Autofill — Road Data Detected
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                {[
-                  { label: "Contractor", value: autofill.contractor },
-                  { label: "Last Relaying", value: autofill.lastRelaying },
-                  { label: "Authority", value: autofill.authority },
-                  { label: "Budget Ref", value: autofill.budgetRef },
-                  { label: "Jurisdiction", value: autofill.jurisdiction },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-lg p-2"
-                    style={{ background: "hsl(var(--muted))" }}
-                  >
-                    <div className="text-muted-foreground">{item.label}</div>
-                    <div className="font-semibold">{item.value}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium mb-1.5 text-muted-foreground">
-              Description
-            </label>
-            <textarea
-              value={form.description}
-              onChange={setField("description")}
-              placeholder="Describe the issue in detail"
-              rows={3}
-              className={`${inputCls} resize-none`}
-              style={inputStyle}
-            />
-          </div>
-
-          {!form.anonymous && (
-            <div>
-              <label className="block text-sm font-medium mb-1.5 text-muted-foreground">
-                Your Name / Contact
-              </label>
-              <input
-                value={form.reportedBy}
-                onChange={setField("reportedBy")}
-                placeholder="Name or phone number"
-                className={inputCls}
-                style={inputStyle}
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium mb-1.5 text-muted-foreground">
-              Upload Evidence
-            </label>
-            <label
-              className="flex items-center gap-3 cursor-pointer px-4 py-3 rounded-xl border-2 border-dashed"
-              style={{
-                borderColor: "hsl(var(--border))",
-                color: "hsl(var(--muted-foreground))",
-              }}
-            >
-              <Upload className="w-5 h-5 shrink-0" />
-              <span className="text-sm">
-                {filePreview ? "File selected" : "Click to upload photo or video"}
-              </span>
-              <input
-                type="file"
-                accept="image/*,video/*"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) setFilePreview(file.name);
-                }}
-              />
-            </label>
-
-            {filePreview && (
-              <div className="mt-1 text-xs text-muted-foreground px-1">
-                {filePreview}
-              </div>
-            )}
-          </div>
-
-          <div
-            className="p-3 rounded-xl text-xs space-y-1.5"
-            style={{
-              background: "rgba(30,136,229,0.08)",
-              border: "1px solid rgba(30,136,229,0.2)",
-            }}
-          >
-            <div className="font-semibold" style={{ color: "#1E88E5" }}>
-              Routing Preview
-            </div>
-            <div>
-              <span className="text-muted-foreground">Authority: </span>
-              <strong>{routing.authority}</strong>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Engineer: </span>
-              {routing.engineer}
-            </div>
-            <div>
-              <span className="text-muted-foreground">Expected Resolution: </span>
-              {routing.timeline}
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => setOfflineSaved(saveOffline(form))}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border"
-              style={{
-                borderColor: "hsl(var(--border))",
-                color: offlineSaved ? "#16A34A" : "hsl(var(--muted-foreground))",
-              }}
-            >
-              <WifiOff className="w-4 h-4" />
-              {offlineSaved ? "Saved Offline" : "Save Offline"}
-            </button>
-
-            <button
-              onClick={submit}
-              disabled={create.isPending}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
-              style={{ background: "#0EA5A4" }}
-            >
-              {create.isPending ? "Filing..." : "Submit Complaint"}
-            </button>
-          </div>
-        </div>
+        <span
+          className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
+          style={{ background: `${color}14`, color }}
+        >
+          Pilot
+        </span>
       </div>
+
+      <div
+        className="text-2xl font-bold"
+        style={{ fontFamily: "Sora, sans-serif" }}
+      >
+        {value}
+      </div>
+
+      <div className="mt-1 text-sm font-medium">{label}</div>
+
+      <div className="mt-1 text-xs text-muted-foreground">{note}</div>
     </div>
   );
 }
 
-export default function Complaints() {
-  const { data: complaintsData, isLoading } = useListComplaints();
-  const { data: statsData } = useGetComplaintStats();
-  const [showModal, setShowModal] = useState(false);
-
-  const list = useMemo(() => {
-    const normalized = normalizeComplaints(complaintsData);
-    return normalized.length > 0 ? normalized : MOCK_COMPLAINTS;
-  }, [complaintsData]);
-
-  const stats = useMemo(() => {
-    return normalizeStats(statsData, list);
-  }, [statsData, list]);
-
-  const byStatus = Array.isArray(stats.byStatus) ? stats.byStatus : MOCK_STATS.byStatus;
-  const byType = Array.isArray(stats.byType) ? stats.byType : MOCK_STATS.byType;
+function SeverityPill({ severity }: { severity: Severity }) {
+  const color = SEVERITY_COLORS[severity];
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1
-            className="text-2xl font-bold"
+    <span
+      className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase"
+      style={{
+        background: `${color}18`,
+        color,
+      }}
+    >
+      {severity}
+    </span>
+  );
+}
+
+function StatusPill({ status }: { status: ComplaintStatus }) {
+  const color = STATUS_COLORS[status];
+
+  return (
+    <span
+      className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase"
+      style={{
+        background: `${color}18`,
+        color,
+      }}
+    >
+      {STATUS_LABELS[status]}
+    </span>
+  );
+}
+
+function StatusStepper({ status }: { status: ComplaintStatus }) {
+  const activeIndex = getStatusIndex(status);
+
+  return (
+    <div>
+      <div className="grid grid-cols-5 gap-1.5">
+        {STATUS_FLOW.map((step, index) => {
+          const isDone = index <= activeIndex;
+          const color = status === "escalated" ? "#DC2626" : "#0EA5A4";
+
+          return (
+            <div key={step} className="flex flex-col items-center gap-1">
+              <div
+                className="h-2 w-full rounded-full"
+                style={{
+                  background: isDone ? color : "hsl(var(--border))",
+                }}
+              />
+
+              <span className="hidden text-[10px] text-muted-foreground sm:block">
+                {STATUS_LABELS[step]}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {status === "escalated" && (
+        <p className="mt-2 text-xs font-medium text-red-400">
+          Escalated for senior engineer / contractor audit review.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ComplaintCard({ complaint }: { complaint: Complaint }) {
+  return (
+    <article
+      className="rounded-2xl p-4"
+      style={{
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
+      }}
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-xs text-muted-foreground">
+              {complaint.complaintId}
+            </span>
+
+            <SeverityPill severity={complaint.severity} />
+            <StatusPill status={complaint.status} />
+          </div>
+
+          <h3
+            className="mt-2 text-lg font-bold"
             style={{ fontFamily: "Sora, sans-serif" }}
           >
-            Complaint Management
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            File, track, and monitor road complaints with smart routing
+            {complaint.title}
+          </h3>
+
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            {complaint.location}
+          </p>
+
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            {complaint.description}
           </p>
         </div>
 
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
-          style={{ background: "#0EA5A4" }}
+        <div
+          className="rounded-2xl p-3 lg:min-w-[230px]"
+          style={{
+            background: "hsl(var(--muted))",
+            border: "1px solid hsl(var(--border))",
+          }}
         >
-          <Plus className="w-4 h-4" />
-          File Complaint
-        </button>
+          <p className="text-xs text-muted-foreground">Assigned Authority</p>
+          <p className="mt-1 font-semibold">{complaint.authority}</p>
+
+          <p className="mt-3 text-xs text-muted-foreground">Department</p>
+          <p className="mt-1 text-sm">{complaint.assignedDepartment}</p>
+
+          <p className="mt-3 text-xs text-muted-foreground">SLA</p>
+          <p className="mt-1 text-sm font-semibold">{complaint.sla}</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="mt-4">
+        <StatusStepper status={complaint.status} />
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>Created: {formatDate(complaint.createdAt)}</span>
+        <span>{complaint.assignedEngineer}</span>
+      </div>
+    </article>
+  );
+}
+
+export default function Complaints() {
+  const { data: complaintData, isLoading } = useListComplaints();
+
+  const [showForm, setShowForm] = useState(false);
+  const [attachmentName, setAttachmentName] = useState("");
+  const [localComplaints, setLocalComplaints] =
+    useState<Complaint[]>(getLocalComplaints);
+  const [submitResult, setSubmitResult] = useState<RoutingDecision | null>(null);
+
+  const [form, setForm] = useState<ComplaintForm>({
+    title: "",
+    location: "",
+    issueType: "Pothole",
+    severity: "medium",
+    roadType: "urban",
+    description: "",
+  });
+
+  useEffect(() => {
+    localStorage.setItem(
+      "roadintel-local-complaints",
+      JSON.stringify(localComplaints),
+    );
+  }, [localComplaints]);
+
+  const apiComplaints = useMemo(
+    () => normalizeComplaints(complaintData),
+    [complaintData],
+  );
+
+  const complaints = useMemo(() => {
+    const merged = [...localComplaints, ...apiComplaints];
+
+    return merged.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [localComplaints, apiComplaints]);
+
+  const statusData = useMemo(
+    () => buildChartData(complaints, "status"),
+    [complaints],
+  );
+
+  const typeData = useMemo(
+    () => buildChartData(complaints, "issueType"),
+    [complaints],
+  );
+
+  const resolvedCount = complaints.filter(
+    (complaint) => complaint.status === "resolved",
+  ).length;
+
+  const activeCount = complaints.filter(
+    (complaint) =>
+      complaint.status !== "resolved" && complaint.status !== "verified",
+  ).length;
+
+  const escalatedCount = complaints.filter(
+    (complaint) => complaint.status === "escalated",
+  ).length;
+
+  function updateForm<K extends keyof ComplaintForm>(
+    key: K,
+    value: ComplaintForm[K],
+  ) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function resetForm() {
+    setForm({
+      title: "",
+      location: "",
+      issueType: "Pothole",
+      severity: "medium",
+      roadType: "urban",
+      description: "",
+    });
+    setAttachmentName("");
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!form.title.trim() || !form.location.trim() || !form.description.trim()) {
+      alert("Please fill title, location and description.");
+      return;
+    }
+
+    const routing = getRoutingDecision(form);
+
+    const newComplaint: Complaint = {
+      id: `local-${Date.now()}`,
+      complaintId: `RI-PILOT-${String(complaints.length + 1).padStart(3, "0")}`,
+      title: form.title.trim(),
+      location: form.location.trim(),
+      status: "assigned",
+      severity: form.severity,
+      issueType: form.issueType,
+      createdAt: new Date().toISOString(),
+      assignedDepartment: routing.department,
+      assignedEngineer: routing.engineer,
+      sla: routing.sla,
+      authority: routing.authority,
+      zone: routing.zone,
+      description: form.description.trim(),
+    };
+
+    setLocalComplaints((current) => [newComplaint, ...current]);
+    setSubmitResult(routing);
+    setShowForm(false);
+    resetForm();
+  }
+
+  return (
+    <div className="space-y-6 p-6">
+      <section
+        className="overflow-hidden rounded-3xl p-6"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(14,165,164,0.20), rgba(59,130,246,0.10), hsl(var(--card)))",
+          border: "1px solid hsl(var(--border))",
+        }}
+      >
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div
+              className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+              style={{
+                background: "rgba(14,165,164,0.14)",
+                color: "#0EA5A4",
+              }}
+            >
+              <Route className="h-3.5 w-3.5" />
+              ROUTING_ENGINE active
+            </div>
+
+            <h1
+              className="text-2xl font-bold md:text-3xl"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              Citizen Complaint Routing
+            </h1>
+
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+              File road complaints, route them to PMC / PCMC / PWD / NHAI, and
+              track every case through a transparent status timeline.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-cyan-500/20 transition hover:scale-[1.02]"
+          >
+            <Plus className="h-4 w-4" />
+            File New Complaint
+          </button>
+        </div>
+      </section>
+
+      {submitResult && (
+        <section
+          className="rounded-2xl p-4"
+          style={{
+            background: "rgba(22,163,74,0.10)",
+            border: "1px solid rgba(22,163,74,0.28)",
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-500" />
+
+            <div>
+              <h3 className="font-semibold">Complaint routed successfully</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Assigned to {submitResult.authority} · {submitResult.engineer} ·
+                SLA: {submitResult.sla}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSubmitResult(null)}
+              className="ml-auto rounded-xl p-1.5 text-muted-foreground hover:bg-white/10"
+              aria-label="Dismiss routing result"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </section>
+      )}
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Complaints Filed"
+          value={complaints.length}
+          note="Pilot complaint records"
+          icon={FileText}
+          color="#0EA5A4"
+        />
+
+        <MetricCard
+          label="Active Cases"
+          value={activeCount}
+          note="Open / assigned / in progress"
+          icon={Clock3}
+          color="#F97316"
+        />
+
+        <MetricCard
+          label="Resolved"
+          value={resolvedCount}
+          note="Verified or repaired"
+          icon={CheckCircle2}
+          color="#16A34A"
+        />
+
+        <MetricCard
+          label="Escalated"
+          value={escalatedCount}
+          note="Audit or urgent review"
+          icon={AlertTriangle}
+          color="#DC2626"
+        />
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <div
-          className="p-5 rounded-2xl"
+          className="rounded-3xl p-5"
           style={{
             background: "hsl(var(--card))",
             border: "1px solid hsl(var(--border))",
           }}
         >
-          <h3
-            className="font-semibold mb-4"
+          <h2
+            className="font-semibold"
             style={{ fontFamily: "Sora, sans-serif" }}
           >
-            Complaints by Status
-          </h3>
+            Complaint Status Distribution
+          </h2>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="w-full sm:w-[140px] h-[140px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={byStatus}
-                    dataKey="count"
-                    nameKey="status"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={35}
-                    outerRadius={55}
-                  >
-                    {byStatus.map((_, index) => (
-                      <Cell
-                        key={`status-${index}`}
-                        fill={PIE_COLORS[index % PIE_COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Transparent view of where each citizen complaint stands.
+          </p>
 
-            <div className="space-y-2 w-full">
-              {byStatus.map((item, index) => (
-                <div
-                  key={`${item.status}-${index}`}
-                  className="flex items-center gap-2 text-sm"
+          <div className="mt-4 h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  dataKey="count"
+                  nameKey="name"
+                  innerRadius={55}
+                  outerRadius={90}
+                  paddingAngle={4}
                 >
-                  <span
-                    className="w-3 h-3 rounded-full"
-                    style={{
-                      background: PIE_COLORS[index % PIE_COLORS.length],
-                    }}
-                  />
-                  <span className="text-muted-foreground">
-                    {item.status ?? "Unknown"}
-                  </span>
-                  <span className="font-bold ml-auto">{item.count}</span>
-                </div>
-              ))}
-            </div>
+                  {statusData.map((item) => {
+                    const statusEntry = Object.entries(STATUS_LABELS).find(
+                      ([, label]) => label === item.name,
+                    );
+
+                    const color = statusEntry
+                      ? STATUS_COLORS[statusEntry[0] as ComplaintStatus]
+                      : "#0EA5A4";
+
+                    return <Cell key={item.name} fill={color} />;
+                  })}
+                </Pie>
+
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
         <div
-          className="p-5 rounded-2xl"
+          className="rounded-3xl p-5"
           style={{
             background: "hsl(var(--card))",
             border: "1px solid hsl(var(--border))",
           }}
         >
-          <h3
-            className="font-semibold mb-4"
+          <h2
+            className="font-semibold"
             style={{ fontFamily: "Sora, sans-serif" }}
           >
-            Issue Type Breakdown
-          </h3>
+            Issue Type Mix
+          </h2>
 
-          <div className="w-full h-[160px]">
+          <p className="mt-1 text-xs text-muted-foreground">
+            Helps authorities plan material, manpower and inspection routes.
+          </p>
+
+          <div className="mt-4 h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={byType} layout="vertical">
+              <BarChart data={typeData} layout="vertical">
                 <XAxis type="number" tick={{ fontSize: 10 }} />
                 <YAxis
-                  dataKey="type"
                   type="category"
+                  dataKey="name"
+                  width={110}
                   tick={{ fontSize: 10 }}
-                  width={90}
                 />
                 <Tooltip />
-                <Bar dataKey="count" fill="#0EA5A4" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="count" fill="#0EA5A4" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div
-        className="rounded-2xl overflow-hidden"
+      <section
+        className="rounded-3xl p-5"
         style={{
           background: "hsl(var(--card))",
           border: "1px solid hsl(var(--border))",
         }}
       >
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[950px]">
-            <thead>
-              <tr
-                className="border-b"
-                style={{
-                  borderColor: "hsl(var(--border))",
-                  background: "hsl(var(--muted))",
-                }}
-              >
-                {[
-                  "ID",
-                  "Complaint",
-                  "Location",
-                  "Type",
-                  "Severity",
-                  "Department",
-                  "Status",
-                  "Date",
-                ].map((heading) => (
-                  <th
-                    key={heading}
-                    className="text-left text-xs font-semibold px-4 py-3 text-muted-foreground uppercase tracking-wide whitespace-nowrap"
-                  >
-                    {heading}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+        <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2
+              className="font-semibold"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              Complaint Timeline Board
+            </h2>
 
-            <tbody className="divide-y" style={{ borderColor: "hsl(var(--border))" }}>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, index) => (
-                  <tr key={`loading-${index}`}>
-                    <td colSpan={8} className="px-4 py-3">
-                      <div
-                        className="h-4 rounded animate-pulse"
-                        style={{ background: "hsl(var(--muted))" }}
-                      />
-                    </td>
-                  </tr>
-                ))
-              ) : list.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-8 text-center text-sm text-muted-foreground"
-                  >
-                    No complaints found.
-                  </td>
-                </tr>
-              ) : (
-                list.map((complaint) => {
-                  const statusColor =
-                    STATUS_COLORS[complaint.status] ?? "#64748B";
-                  const severityColor = getRiskColor(complaint.severity);
+            <p className="mt-1 text-xs text-muted-foreground">
+              Mobile-friendly cards replace cluttered wide tables and make case
+              progress easier to explain to judges.
+            </p>
+          </div>
 
-                  return (
-                    <tr
-                      key={complaint.id}
-                      className="hover:opacity-80 transition-opacity"
-                    >
-                      <td
-                        className="px-4 py-3 text-xs font-mono whitespace-nowrap"
-                        style={{ color: "#0EA5A4" }}
-                      >
-                        {complaint.complaintId}
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-sm max-w-[220px] truncate">
-                          {complaint.title}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-                          <MapPin className="w-3 h-3" />
-                          {complaint.location}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">
-                        {complaint.issueType}
-                      </td>
-
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span
-                          className="text-xs px-2 py-0.5 rounded-full font-medium capitalize"
-                          style={{
-                            background: `${severityColor}20`,
-                            color: severityColor,
-                          }}
-                        >
-                          {complaint.severity}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-3 text-xs text-muted-foreground max-w-[160px] truncate">
-                        {complaint.assignedDepartment}
-                      </td>
-
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span
-                          className="text-xs px-2 py-0.5 rounded-full capitalize"
-                          style={{
-                            background: `${statusColor}20`,
-                            color: statusColor,
-                          }}
-                        >
-                          {complaint.status.replace("_", " ")}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                        {complaint.createdAt.slice(0, 10)}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+          {isLoading && (
+            <span className="text-xs text-muted-foreground">
+              Syncing complaint records...
+            </span>
+          )}
         </div>
+
+        <div className="space-y-4">
+          {complaints.map((complaint) => (
+            <ComplaintCard key={complaint.id} complaint={complaint} />
+          ))}
+        </div>
+      </section>
+
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div
+            className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl"
+            style={{
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
+            }}
+          >
+            <div
+              className="flex items-center justify-between border-b px-5 py-4"
+              style={{ borderColor: "hsl(var(--border))" }}
+            >
+              <div>
+                <h2
+                  className="text-lg font-bold"
+                  style={{ fontFamily: "Sora, sans-serif" }}
+                >
+                  File Road Complaint
+                </h2>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  RoadIntel routes the issue to the most relevant authority.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="rounded-xl p-2 text-muted-foreground hover:bg-white/10"
+                aria-label="Close complaint form"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5 p-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <InputBlock label="Complaint Title">
+                  <input
+                    value={form.title}
+                    onChange={(event) => updateForm("title", event.target.value)}
+                    placeholder="Example: Large pothole near bus stop"
+                    className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                    style={{
+                      background: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--border))",
+                    }}
+                  />
+                </InputBlock>
+
+                <InputBlock label="Location">
+                  <input
+                    value={form.location}
+                    onChange={(event) =>
+                      updateForm("location", event.target.value)
+                    }
+                    placeholder="Example: FC Road Junction, Pune"
+                    className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                    style={{
+                      background: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--border))",
+                    }}
+                  />
+                </InputBlock>
+
+                <InputBlock label="Issue Type">
+                  <select
+                    value={form.issueType}
+                    onChange={(event) =>
+                      updateForm("issueType", event.target.value)
+                    }
+                    className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                    style={{
+                      background: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--border))",
+                    }}
+                  >
+                    {ISSUE_TYPES.map((issue) => (
+                      <option key={issue} value={issue}>
+                        {issue}
+                      </option>
+                    ))}
+                  </select>
+                </InputBlock>
+
+                <InputBlock label="Severity">
+                  <select
+                    value={form.severity}
+                    onChange={(event) =>
+                      updateForm("severity", event.target.value as Severity)
+                    }
+                    className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                    style={{
+                      background: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--border))",
+                    }}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </InputBlock>
+
+                <InputBlock label="Road Ownership">
+                  <select
+                    value={form.roadType}
+                    onChange={(event) =>
+                      updateForm(
+                        "roadType",
+                        event.target.value as ComplaintForm["roadType"],
+                      )
+                    }
+                    className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                    style={{
+                      background: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--border))",
+                    }}
+                  >
+                    <option value="urban">PMC Urban Road</option>
+                    <option value="pcmc">PCMC Road</option>
+                    <option value="state">PWD / State Road</option>
+                    <option value="national">NHAI / Expressway</option>
+                  </select>
+                </InputBlock>
+
+                <InputBlock label="Upload Photo">
+                  <label
+                    className="flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3 text-sm"
+                    style={{
+                      background: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--border))",
+                    }}
+                  >
+                    <span className="truncate text-muted-foreground">
+                      {attachmentName || "Choose road image"}
+                    </span>
+
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) setAttachmentName(file.name);
+                      }}
+                    />
+                  </label>
+                </InputBlock>
+              </div>
+
+              <InputBlock label="Description">
+                <textarea
+                  value={form.description}
+                  onChange={(event) =>
+                    updateForm("description", event.target.value)
+                  }
+                  rows={4}
+                  placeholder="Describe the road issue, nearby landmark, danger level, and when it was observed."
+                  className="w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none"
+                  style={{
+                    background: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                  }}
+                />
+              </InputBlock>
+
+              <RoutingPreview form={form} />
+
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="rounded-2xl px-5 py-3 text-sm font-semibold"
+                  style={{
+                    background: "hsl(var(--muted))",
+                    color: "hsl(var(--foreground))",
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-5 py-3 text-sm font-bold text-white"
+                >
+                  Submit & Route Complaint
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InputBlock({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-medium">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function RoutingPreview({ form }: { form: ComplaintForm }) {
+  const routing = getRoutingDecision(form);
+
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{
+        background: "rgba(14,165,164,0.08)",
+        border: "1px solid rgba(14,165,164,0.22)",
+      }}
+    >
+      <div className="mb-2 flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4" style={{ color: "#0EA5A4" }} />
+        <h3 className="text-sm font-semibold">Routing Preview</h3>
       </div>
 
-      {showModal && <NewComplaintModal onClose={() => setShowModal(false)} />}
+      <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2">
+        <div>
+          Authority:{" "}
+          <span className="font-semibold text-foreground">
+            {routing.authority}
+          </span>
+        </div>
+
+        <div>
+          Department:{" "}
+          <span className="font-semibold text-foreground">
+            {routing.department}
+          </span>
+        </div>
+
+        <div>
+          Engineer:{" "}
+          <span className="font-semibold text-foreground">
+            {routing.engineer}
+          </span>
+        </div>
+
+        <div>
+          SLA:{" "}
+          <span className="font-semibold text-foreground">{routing.sla}</span>
+        </div>
+      </div>
     </div>
   );
 }
