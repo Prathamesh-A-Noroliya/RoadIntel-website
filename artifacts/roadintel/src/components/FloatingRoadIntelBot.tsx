@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "wouter";
 import {
   Bot,
   X,
@@ -9,18 +10,37 @@ import {
   VolumeX,
   Navigation,
   User,
-  ScanLine,
-  LayoutDashboard,
-  Maximize2,
   MessageCircle,
+  Maximize2,
+  Minimize2,
+  ShieldCheck,
+  Route,
+  Wallet,
+  Radio,
+  FileText,
+  ScanLine,
+  TrendingDown,
+  Users,
+  BarChart3,
+  Settings,
+  Siren,
 } from "lucide-react";
-import { useLocation } from "wouter";
+import type { LucideIcon } from "lucide-react";
 
 type Message = {
   id: string;
   role: "user" | "assistant";
   text: string;
   time: string;
+  intent?: string;
+};
+
+type RouteCommand = {
+  label: string;
+  route: string;
+  icon: LucideIcon;
+  keywords: string[];
+  reply: string;
 };
 
 type SpeechRecognitionWindow = typeof window & {
@@ -28,108 +48,231 @@ type SpeechRecognitionWindow = typeof window & {
   webkitSpeechRecognition?: any;
 };
 
-type RouteCommand = {
-  keywords: string[];
-  route: string;
-  reply: string;
+type RoadRecord = {
+  name: string;
+  city: string;
+  health: number;
+  risk: number;
+  level: "critical" | "high" | "medium" | "low";
+  failureWindow: string;
+  action: string;
+};
+
+type ContractorRecord = {
+  name: string;
+  ras: number;
+  quality: number;
+  issue: string;
 };
 
 const ROUTE_COMMANDS: RouteCommand[] = [
   {
-    keywords: ["dashboard", "home", "main page", "overview"],
+    label: "Dashboard",
     route: "/dashboard",
+    icon: ShieldCheck,
+    keywords: ["dashboard", "home", "main page", "overview", "summary"],
     reply:
-      "Opening the Dashboard. Here you can see the overall RoadIntel status, road risk summary, complaints, spending, and live system indicators.",
+      "Opening Dashboard. It gives a clean overview of complaints, road health, risk, spending, and pilot activity.",
   },
   {
+    label: "File Complaint",
+    route: "/complaints",
+    icon: FileText,
     keywords: [
       "complaint",
       "complaints",
       "file complaint",
       "report pothole",
-      "pothole",
+      "report issue",
       "road issue",
+      "citizen complaint",
     ],
-    route: "/complaints",
     reply:
-      "Opening File Complaint. You can submit a road issue with location, severity, issue type, and evidence.",
+      "Opening File Complaint. You can submit a road issue and RoadIntel will route it to the correct authority.",
   },
   {
-    keywords: ["scan", "ai scan", "quick scan", "road scan"],
+    label: "Quick Scan",
     route: "/scan",
+    icon: ScanLine,
+    keywords: ["scan", "quick scan", "road scan", "image scan", "pothole scan"],
     reply:
-      "Opening AI Scan. Use this section to scan road damage and classify issues like potholes, cracks, or surface damage.",
+      "Opening Quick Scan. You can upload or select a road image to classify potholes, cracks, and surface damage.",
   },
   {
-    keywords: ["road dna", "roads", "road details", "road profile"],
+    label: "Road DNA",
     route: "/roads",
+    icon: Route,
+    keywords: ["road dna", "roads", "road profile", "road details", "road history"],
     reply:
-      "Opening Road DNA. This page shows road-level details such as condition, repair history, risk patterns, and maintenance records.",
+      "Opening Road DNA. This shows road-level condition, repair history, risk signals, and maintenance context.",
   },
   {
-    keywords: ["risk", "risk map", "danger map", "accident risk", "high risk"],
+    label: "Risk Map",
     route: "/risk-map",
+    icon: TrendingDown,
+    keywords: [
+      "risk",
+      "risk map",
+      "danger map",
+      "failure map",
+      "high risk",
+      "future risk",
+      "predict failure",
+    ],
     reply:
-      "Opening Risk Map. This helps identify dangerous road segments using complaints, sensor anomalies, repair history, and failure urgency.",
+      "Opening Risk Map. This shows predicted road failure zones and priority actions for Pune / PCMC pilot roads.",
   },
   {
-    keywords: ["spending", "public spending", "budget", "money", "funds", "expense"],
+    label: "Public Spending",
     route: "/spending",
+    icon: Wallet,
+    keywords: [
+      "spending",
+      "public spending",
+      "budget",
+      "money",
+      "funds",
+      "corruption",
+      "flag",
+      "audit",
+    ],
     reply:
-      "Opening Public Spending. Here you can inspect road budgets, spending patterns, repair allocations, and possible irregularities.",
+      "Opening Public Spending. This helps compare road budget, spending, contractor quality, and repeat-repair flags.",
   },
   {
-    keywords: ["sensor", "sensors", "sensor intel", "iot", "vibration", "road stress"],
+    label: "Sensor Intel",
     route: "/sensors",
+    icon: Radio,
+    keywords: [
+      "sensor",
+      "sensors",
+      "sensor intel",
+      "vibration",
+      "iot",
+      "roughness",
+      "digital twin",
+    ],
     reply:
-      "Opening Sensor Intel. This section shows live vibration data, road stress, anomaly alerts, and predicted road failures.",
+      "Opening Sensor Intel. This page shows simulated sensor signals, vibration trends, and predicted road stress.",
   },
   {
-    keywords: ["contractor", "contractors", "corruption", "corrupt", "vendor"],
+    label: "Contractors",
     route: "/contractors",
+    icon: Users,
+    keywords: ["contractor", "contractors", "vendor", "ras", "accountability"],
     reply:
-      "Opening Contractors. This page helps compare contractors using repeated failures, delays, repair quality, and risk indicators.",
+      "Opening Contractors. This page compares contractors using Road Accountability Score, quality, budget discipline, and repeat failures.",
   },
   {
-    keywords: ["analytics", "analysis", "reports", "insights", "charts", "statistics"],
+    label: "Analytics",
     route: "/analytics",
+    icon: BarChart3,
+    keywords: ["analytics", "analysis", "charts", "statistics", "reports", "insights"],
     reply:
-      "Opening Analytics. This section shows deeper insights, charts, trends, and performance indicators across RoadIntel data.",
+      "Opening Analytics. This shows realistic pilot-stage trends for complaints, road health, contractors, and city-wise issues.",
   },
   {
-    keywords: ["profile", "settings", "account", "language", "theme"],
+    label: "Settings",
     route: "/settings",
+    icon: Settings,
+    keywords: ["settings", "profile", "account", "theme", "dark mode", "light mode"],
     reply:
-      "Opening Settings. Here you can manage your profile, theme, language, and account preferences.",
+      "Opening Settings. You can manage profile actions, appearance, and account options.",
   },
   {
-    keywords: ["sos", "emergency", "help emergency", "accident help"],
+    label: "Emergency SOS",
     route: "/sos",
+    icon: Siren,
+    keywords: ["sos", "emergency", "accident", "urgent help", "road emergency"],
     reply:
-      "Opening Emergency SOS. Use this section only for urgent road safety or emergency support actions.",
+      "Opening Emergency SOS. Use this only for urgent road safety or emergency support workflows.",
   },
 ];
 
-const QUICK_COMMANDS = [
-  "Open dashboard",
-  "Show risk map",
-  "File complaint",
-  "Open sensors",
-  "Analytics",
+const PILOT_ROADS: RoadRecord[] = [
+  {
+    name: "JM Road Patch Zone",
+    city: "Pune",
+    health: 42,
+    risk: 86,
+    level: "critical",
+    failureWindow: "3-5 days",
+    action: "Emergency patching and contractor inspection.",
+  },
+  {
+    name: "FC Road Junction",
+    city: "Pune",
+    health: 56,
+    risk: 74,
+    level: "high",
+    failureWindow: "1-2 weeks",
+    action: "Drainage check and crack sealing.",
+  },
+  {
+    name: "Wakad-Hinjewadi Road",
+    city: "PCMC",
+    health: 61,
+    risk: 68,
+    level: "high",
+    failureWindow: "2-3 weeks",
+    action: "Resurfacing inspection and vibration monitoring.",
+  },
+  {
+    name: "Baner Link Road",
+    city: "Pune",
+    health: 72,
+    risk: 49,
+    level: "medium",
+    failureWindow: "1-2 months",
+    action: "Preventive maintenance before monsoon escalation.",
+  },
 ];
 
-const FALLBACK_REPLIES = [
-  "I can help with RoadIntel navigation. Try saying dashboard, analytics, risk map, file complaint, sensors, contractors, or public spending.",
-  "I did not find an exact page command, but I can still guide you. Ask me about road risk, budgets, complaints, sensors, contractors, or analytics.",
-  "Please say a RoadIntel page name clearly. For example: open analytics, show sensors, file complaint, or open public spending.",
-  "I understood your message, but I need a clearer command. You can ask me to open dashboard, analytics, risk map, sensors, contractors, or settings.",
+const CONTRACTORS: ContractorRecord[] = [
+  {
+    name: "Shivneri Infra Works",
+    ras: 91,
+    quality: 92,
+    issue: "Strong performer with low repeat-failure pattern.",
+  },
+  {
+    name: "UrbanBuild Pune Services",
+    ras: 58,
+    quality: 58,
+    issue: "Audit risk due to repeated patch failures and budget-quality mismatch.",
+  },
+  {
+    name: "QuickPatch Civil Works",
+    ras: 52,
+    quality: 49,
+    issue: "High repeat-failure rate; should be reviewed before new work allocation.",
+  },
 ];
 
-function getTime() {
+const QUICK_PROMPTS = [
+  "Which road is highest risk?",
+  "Explain Road Accountability Score",
+  "How are complaints routed?",
+  "Open risk map",
+  "Show public spending",
+  "What can you do?",
+];
+
+function nowTime() {
   return new Date().toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function createMessage(role: Message["role"], text: string, intent?: string): Message {
+  return {
+    id: `${role}-${Date.now()}-${text.slice(0, 8)}`,
+    role,
+    text,
+    time: nowTime(),
+    intent,
+  };
 }
 
 function normalizeText(text: string) {
@@ -137,170 +280,281 @@ function normalizeText(text: string) {
 }
 
 function findRouteCommand(text: string) {
-  const lower = normalizeText(text);
+  const normalized = normalizeText(text);
 
   return ROUTE_COMMANDS.find((command) =>
-    command.keywords.some((keyword) => lower.includes(normalizeText(keyword))),
+    command.keywords.some((keyword) => normalized.includes(normalizeText(keyword))),
   );
 }
 
-function getSmartReply(input: string) {
-  const text = normalizeText(input);
+function findRoad(text: string) {
+  const normalized = normalizeText(text);
 
+  return PILOT_ROADS.find((road) => {
+    const name = normalizeText(road.name);
+    return (
+      normalized.includes(name) ||
+      name.split(" ").some((part) => part.length > 4 && normalized.includes(part))
+    );
+  });
+}
+
+function findContractor(text: string) {
+  const normalized = normalizeText(text);
+
+  return CONTRACTORS.find((contractor) => {
+    const name = normalizeText(contractor.name);
+    return (
+      normalized.includes(name) ||
+      name.split(" ").some((part) => part.length > 5 && normalized.includes(part))
+    );
+  });
+}
+
+function getDecisionReply(input: string) {
+  const text = normalizeText(input);
   const routeCommand = findRouteCommand(text);
-  if (routeCommand) return routeCommand.reply;
+  const road = findRoad(text);
+  const contractor = findContractor(text);
+
+  if (routeCommand && (text.startsWith("open") || text.startsWith("show") || text.includes("go to"))) {
+    return {
+      text: routeCommand.reply,
+      intent: "navigation",
+      route: routeCommand.route,
+    };
+  }
+
+  if (road) {
+    return {
+      text: `${road.name} is currently ${road.level.toUpperCase()} risk. Health score: ${road.health}/100. Failure risk: ${road.risk}/100. Predicted failure window: ${road.failureWindow}. Recommended action: ${road.action}`,
+      intent: "road_detail",
+    };
+  }
+
+  if (contractor) {
+    return {
+      text: `${contractor.name} has a Road Accountability Score of ${contractor.ras}/100 and quality score of ${contractor.quality}/100. Assessment: ${contractor.issue}`,
+      intent: "contractor_detail",
+    };
+  }
 
   if (
-    text.includes("mg road") &&
-    (text.includes("spent") || text.includes("money") || text.includes("budget"))
+    text.includes("highest risk") ||
+    text.includes("top risk") ||
+    text.includes("danger") ||
+    text.includes("failure") ||
+    text.includes("critical")
   ) {
-    return "MG Road has an estimated RoadIntel demo allocation of 8.4 crore rupees. For detailed budget records, open Public Spending.";
+    const top = [...PILOT_ROADS].sort((a, b) => b.risk - a.risk).slice(0, 3);
+
+    return {
+      text: `Top predicted failure risks are: 1) ${top[0].name} — ${top[0].risk}/100, ${top[0].failureWindow}; 2) ${top[1].name} — ${top[1].risk}/100, ${top[1].failureWindow}; 3) ${top[2].name} — ${top[2].risk}/100, ${top[2].failureWindow}. The first action should be field inspection and contractor verification.`,
+      intent: "risk_summary",
+    };
   }
 
-  if (text.includes("nh 48") || text.includes("nh48")) {
-    return "NH 48 is tracked as a high-priority highway segment. You can check its risk level in Risk Map, Road DNA, or Public Spending.";
-  }
-
-  if (text.includes("who are you") || text.includes("what are you")) {
-    return "I am the RoadIntel voice assistant. I can navigate the website, explain road safety data, open pages, and help with complaints or analytics.";
-  }
-
-  if (text.includes("hello") || text.includes("hi") || text.includes("hey")) {
-    return "Hello. I am ready to help. You can say open dashboard, show analytics, file complaint, open sensors, or show risk map.";
-  }
-
-  if (text.includes("help") || text.includes("what can you do")) {
-    return "I can open pages, answer RoadIntel questions, explain budgets, show road risk, help file complaints, and guide you through sensor and contractor data.";
-  }
-
-  if (text.includes("language")) {
-    return "You can change the website language from Settings. RoadIntel supports English, Hindi, and Marathi if configured in your settings page.";
-  }
-
-  if (text.includes("dark") || text.includes("theme")) {
-    return "Theme settings are available in the Settings page. You can switch between dark and light modes there.";
-  }
-
-  return FALLBACK_REPLIES[Math.floor(Math.random() * FALLBACK_REPLIES.length)];
-}
-
-function stopAllVoice() {
-  try {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-  } catch {
-    // ignore browser speech errors
-  }
-}
-
-function getSmoothFemaleVoice() {
-  if (!("speechSynthesis" in window)) return null;
-
-  const voices = window.speechSynthesis.getVoices();
-
-  const preferredNames = [
-    "Google UK English Female",
-    "Google US English",
-    "Microsoft Neerja",
-    "Microsoft Heera",
-    "Microsoft Zira",
-    "Samantha",
-    "Karen",
-    "Moira",
-    "Tessa",
-    "Veena",
-    "Female",
-  ];
-
-  for (const name of preferredNames) {
-    const voice = voices.find((v) =>
-      v.name.toLowerCase().includes(name.toLowerCase()),
+  if (
+    text.includes("health") ||
+    text.includes("condition") ||
+    text.includes("score")
+  ) {
+    const avgHealth = Math.round(
+      PILOT_ROADS.reduce((sum, item) => sum + item.health, 0) / PILOT_ROADS.length,
     );
-    if (voice) return voice;
+
+    return {
+      text: `The pilot network average health score is ${avgHealth}/100 across Pune and PCMC sample roads. RoadIntel combines complaint density, simulated vibration, repair history, and contractor quality to explain the score.`,
+      intent: "health_summary",
+    };
   }
 
-  return (
-    voices.find((v) => v.lang.toLowerCase().includes("en-in")) ??
-    voices.find((v) => v.lang.toLowerCase().includes("en-us")) ??
-    voices.find((v) => v.lang.toLowerCase().includes("en-gb")) ??
-    voices.find((v) => v.lang.toLowerCase().startsWith("en")) ??
-    null
-  );
+  if (
+    text.includes("complaint") ||
+    text.includes("route") ||
+    text.includes("authority") ||
+    text.includes("pmc") ||
+    text.includes("pcmc") ||
+    text.includes("pwd") ||
+    text.includes("nhai")
+  ) {
+    return {
+      text:
+        "Complaint routing works by road ownership and severity. PMC handles Pune urban roads, PCMC handles Pimpri-Chinchwad roads, PWD handles state roads, and NHAI/MSRDC handles highway corridors. Critical cases get a 24-hour SLA, high severity gets around 48 hours, and medium cases are planned for 5-7 days.",
+      intent: "complaint_routing",
+    };
+  }
+
+  if (
+    text.includes("spending") ||
+    text.includes("budget") ||
+    text.includes("money") ||
+    text.includes("corruption") ||
+    text.includes("audit")
+  ) {
+    return {
+      text:
+        "The spending layer compares approved budget, actual spend, road quality, and repeat repairs. A contractor is flagged when high spending is combined with poor road health or repeated repair failures. This is useful for transparent civic audit, not just dashboard reporting.",
+      intent: "spending_audit",
+    };
+  }
+
+  if (
+    text.includes("sensor") ||
+    text.includes("vibration") ||
+    text.includes("roughness") ||
+    text.includes("digital twin")
+  ) {
+    return {
+      text:
+        "Sensor Intel is presented as a simulated digital twin. It uses vibration, roughness, shock spikes, traffic load, and rainfall stress to estimate road deterioration. This avoids fake live-data claims while still showing a realistic engineering workflow.",
+      intent: "sensor_summary",
+    };
+  }
+
+  if (
+    text.includes("contractor") ||
+    text.includes("ras") ||
+    text.includes("accountability")
+  ) {
+    return {
+      text:
+        "RAS means Road Accountability Score. It combines quality score, budget discipline, repeat-failure control, and timeliness. A low RAS means the contractor should be reviewed before receiving new road work.",
+      intent: "contractor_ras",
+    };
+  }
+
+  if (
+    text.includes("what can you do") ||
+    text.includes("help") ||
+    text.includes("guide") ||
+    text.includes("commands")
+  ) {
+    return {
+      text:
+        "I can help you navigate RoadIntel and explain the project. Try: open risk map, file complaint, show public spending, which road is highest risk, explain RAS, how are complaints routed, or what does Sensor Intel do?",
+      intent: "help",
+    };
+  }
+
+  if (routeCommand) {
+    return {
+      text: routeCommand.reply,
+      intent: "navigation",
+      route: routeCommand.route,
+    };
+  }
+
+  return {
+    text:
+      "I can help with RoadIntel’s Pune / PCMC pilot: road risk, complaint routing, public spending, contractor accountability, quick scan, sensors, and analytics. Try asking: “Which road is highest risk?” or “Explain RAS.”",
+    intent: "fallback",
+  };
 }
 
-function speakFemale(text: string) {
-  if (!("speechSynthesis" in window)) return;
+function supportsSpeechRecognition() {
+  if (typeof window === "undefined") return false;
 
-  stopAllVoice();
-
-  const utterance = new SpeechSynthesisUtterance(text);
-  const voice = getSmoothFemaleVoice();
-
-  if (voice) {
-    utterance.voice = voice;
-    utterance.lang = voice.lang;
-  } else {
-    utterance.lang = "en-IN";
-  }
-
-  // This is closer to the previous smoother voice.
-  utterance.rate = 0.92;
-  utterance.pitch = 1.12;
-  utterance.volume = 1;
-
-  window.speechSynthesis.speak(utterance);
+  const speechWindow = window as SpeechRecognitionWindow;
+  return Boolean(speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition);
 }
 
 export default function FloatingRoadIntelBot() {
   const [, navigate] = useLocation();
 
-  const [open, setOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([
+    createMessage(
+      "assistant",
+      "Hi, I’m RoadIntel Assistant. I can help you navigate the website and explain risk, complaints, sensors, spending, and contractor accountability.",
+      "welcome",
+    ),
+  ]);
 
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      text: "Hi, I am your RoadIntel assistant. You can type or speak. Try dashboard, analytics, AI scan, profile, risk map, sensors, or file complaint.",
-      time: getTime(),
-    },
-  ]);
-
-  const speechSupported = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    const speechWindow = window as SpeechRecognitionWindow;
-    return Boolean(
-      speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition,
-    );
-  }, []);
-
-  useEffect(() => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.getVoices();
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-    }
-
-    return () => {
-      stopAllVoice();
-      stopVoiceRecognition();
-    };
-  }, []);
+  const speechAvailable = useMemo(() => supportsSpeechRecognition(), []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, chatOpen]);
+  }, [messages, typing, isOpen]);
 
   useEffect(() => {
-    if (!speechSupported) return;
+    return () => {
+      stopListening();
+      stopSpeaking();
+    };
+  }, []);
+
+  function stopSpeaking() {
+    if (typeof window === "undefined") return;
+    window.speechSynthesis?.cancel();
+  }
+
+  function speak(text: string) {
+    if (!voiceEnabled || typeof window === "undefined") return;
+
+    stopSpeaking();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.95;
+    utterance.pitch = 1.05;
+    utterance.volume = 0.9;
+
+    const voices = window.speechSynthesis?.getVoices?.() ?? [];
+    const preferredVoice =
+      voices.find((voice) => /female|zira|samantha|google uk english female/i.test(voice.name)) ??
+      voices.find((voice) => voice.lang?.toLowerCase().startsWith("en")) ??
+      null;
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    window.speechSynthesis?.speak(utterance);
+  }
+
+  function stopListening() {
+    try {
+      recognitionRef.current?.stop?.();
+      recognitionRef.current?.abort?.();
+    } catch {
+      // Browser recognition cleanup can throw if already stopped.
+    }
+
+    recognitionRef.current = null;
+    setListening(false);
+  }
+
+  function closeBot() {
+    stopListening();
+    stopSpeaking();
+    setIsOpen(false);
+    setExpanded(false);
+  }
+
+  function toggleVoice() {
+    setVoiceEnabled((current) => {
+      if (current) stopSpeaking();
+      return !current;
+    });
+  }
+
+  function startListening() {
+    if (!speechAvailable || typeof window === "undefined") {
+      const reply =
+        "Voice input is not supported in this browser. You can still type your question here.";
+      setMessages((current) => [...current, createMessage("assistant", reply, "voice_unsupported")]);
+      return;
+    }
+
+    stopSpeaking();
 
     const speechWindow = window as SpeechRecognitionWindow;
     const Recognition =
@@ -308,445 +562,284 @@ export default function FloatingRoadIntelBot() {
 
     const recognition = new Recognition();
     recognition.lang = "en-IN";
-    recognition.continuous = false;
     recognition.interimResults = false;
+    recognition.continuous = false;
 
-    recognition.onstart = () => setListening(true);
-    recognition.onend = () => setListening(false);
+    recognition.onstart = () => {
+      setListening(true);
+    };
 
     recognition.onerror = () => {
       setListening(false);
-      addAssistantMessage(
-        "Voice input could not start. Please allow microphone permission and try again.",
-        false,
-      );
+      setMessages((current) => [
+        ...current,
+        createMessage(
+          "assistant",
+          "I could not hear clearly. Please try again or type your command.",
+          "voice_error",
+        ),
+      ]);
+    };
+
+    recognition.onend = () => {
+      setListening(false);
     };
 
     recognition.onresult = (event: any) => {
-      const transcript = event.results?.[0]?.[0]?.transcript || "";
-      if (transcript.trim()) handleUserMessage(transcript);
+      const transcript = String(event.results?.[0]?.[0]?.transcript ?? "").trim();
+
+      if (transcript) {
+        void handleSend(transcript);
+      }
     };
 
     recognitionRef.current = recognition;
-
-    return () => {
-      stopVoiceRecognition();
-    };
-  }, [speechSupported]);
-
-  function stopVoiceRecognition() {
-    try {
-      recognitionRef.current?.stop();
-    } catch {
-      // ignore browser stop errors
-    }
-    setListening(false);
+    recognition.start();
   }
 
-  function closeEverything() {
-    stopAllVoice();
-    stopVoiceRecognition();
-    setChatOpen(false);
-    setOpen(false);
-  }
-
-  function goBackToVoicePanel() {
-    stopAllVoice();
-    stopVoiceRecognition();
-    setChatOpen(false);
-    setOpen(true);
-  }
-
-  function addAssistantMessage(text: string, shouldSpeak = voiceEnabled) {
-    setMessages((current) => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        text,
-        time: getTime(),
-      },
-    ]);
-
-    if (shouldSpeak) speakFemale(text);
-  }
-
-  function handleUserMessage(rawText?: string) {
-    const text = (rawText ?? input).trim();
+  async function handleSend(forcedText?: string) {
+    const text = (forcedText ?? input).trim();
     if (!text) return;
 
     setInput("");
-    setChatOpen(true);
+    stopSpeaking();
 
-    setMessages((current) => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
-        role: "user",
-        text,
-        time: getTime(),
-      },
-    ]);
+    const userMessage = createMessage("user", text);
+    setMessages((current) => [...current, userMessage]);
+    setTyping(true);
 
-    const routeCommand = findRouteCommand(text);
-    const reply = getSmartReply(text);
+    await new Promise((resolve) => window.setTimeout(resolve, 450));
 
-    window.setTimeout(() => {
-      addAssistantMessage(reply);
+    const decision = getDecisionReply(text);
+    const assistantMessage = createMessage("assistant", decision.text, decision.intent);
 
-      if (routeCommand) {
-        window.setTimeout(() => {
-          navigate(routeCommand.route);
-        }, 700);
-      }
-    }, 300);
-  }
+    setMessages((current) => [...current, assistantMessage]);
+    setTyping(false);
 
-  function startVoice() {
-    setOpen(true);
-
-    if (!speechSupported || !recognitionRef.current) {
-      addAssistantMessage(
-        "Voice input is not supported in this browser. You can still type your command in chat.",
-        false,
-      );
-      setChatOpen(true);
-      return;
+    if (decision.route) {
+      navigate(decision.route);
     }
 
-    try {
-      stopAllVoice();
-      recognitionRef.current.start();
-    } catch {
-      setListening(false);
-    }
+    speak(decision.text);
   }
 
-  function stopVoice() {
-    stopAllVoice();
-    stopVoiceRecognition();
+  function handleQuickPrompt(prompt: string) {
+    void handleSend(prompt);
   }
 
   return (
     <>
-      {!open && (
+      {!isOpen && (
         <button
-          onClick={() => {
-            setOpen(true);
-            setChatOpen(true);
-          }}
-          className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full flex items-center justify-center text-white transition-all hover:scale-105"
-          style={{
-            background: "linear-gradient(135deg, #1f9d55, #1597c8)",
-            boxShadow: "0 24px 55px rgba(21, 151, 200, 0.42)",
-          }}
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-5 right-5 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-2xl shadow-cyan-500/30 transition hover:scale-105"
           aria-label="Open RoadIntel assistant"
         >
-          <MessageCircle className="w-8 h-8" />
+          <MessageCircle className="h-7 w-7" />
         </button>
       )}
 
-      {open && !chatOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/35 backdrop-blur-sm">
-          <div className="relative w-full max-w-[520px] rounded-[32px] bg-white text-slate-900 shadow-2xl p-8 sm:p-9">
-            <button
-              onClick={closeEverything}
-              className="absolute right-6 top-6 w-11 h-11 rounded-full flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-200"
-              aria-label="Close voice assistant"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex flex-col items-center text-center">
-              <div className="relative mb-6">
-                <div
-                  className={`absolute inset-[-18px] rounded-full border-4 ${
-                    listening ? "animate-ping" : ""
-                  }`}
-                  style={{ borderColor: "rgba(16, 185, 129, 0.22)" }}
-                />
-                <div
-                  className="absolute inset-[-18px] rounded-full border-4"
-                  style={{ borderColor: "rgba(20, 184, 166, 0.26)" }}
-                />
-                <button
-                  onClick={listening ? stopVoice : startVoice}
-                  className="relative w-28 h-28 rounded-full flex items-center justify-center text-white"
-                  style={{
-                    background: "linear-gradient(135deg, #1f9d55, #1296b8)",
-                    boxShadow: "0 18px 45px rgba(18, 150, 184, 0.3)",
-                  }}
-                  aria-label="Start or stop listening"
-                >
-                  {listening ? (
-                    <Mic className="w-12 h-12" />
-                  ) : (
-                    <MicOff className="w-12 h-12" />
-                  )}
-                </button>
+      {isOpen && (
+        <section
+          className={`fixed z-50 overflow-hidden border border-white/10 bg-[#07111F]/96 text-white shadow-2xl shadow-black/50 backdrop-blur-2xl transition-all ${
+            expanded
+              ? "inset-3 rounded-3xl sm:inset-auto sm:bottom-5 sm:right-5 sm:h-[720px] sm:w-[520px]"
+              : "bottom-4 right-4 h-[620px] w-[calc(100vw-2rem)] rounded-3xl sm:w-[420px]"
+          }`}
+        >
+          <header className="flex items-center justify-between border-b border-white/10 bg-white/[0.03] px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600">
+                <Bot className="h-5 w-5" />
               </div>
 
-              <h2 className="text-2xl font-bold tracking-tight">
-                {listening ? "Listening..." : "Tap mic to speak"}
-              </h2>
-
-              <p className="mt-3 text-lg text-slate-500">
-                You can speak or open text chat
-              </p>
-
-              <div className="grid grid-cols-3 gap-3 w-full mt-7">
-                <button
-                  onClick={() => handleUserMessage("Dashboard")}
-                  className="rounded-2xl border border-slate-200 py-4 px-2 flex flex-col items-center gap-2 text-slate-600 hover:bg-slate-50"
+              <div>
+                <h2
+                  className="font-bold"
+                  style={{ fontFamily: "Sora, sans-serif" }}
                 >
-                  <LayoutDashboard className="w-6 h-6" />
-                  <span className="text-sm sm:text-base font-medium">Dashboard</span>
-                </button>
+                  RoadIntel Assistant
+                </h2>
 
-                <button
-                  onClick={() => handleUserMessage("AI Scan")}
-                  className="rounded-2xl border border-slate-200 py-4 px-2 flex flex-col items-center gap-2 text-slate-600 hover:bg-slate-50"
-                >
-                  <ScanLine className="w-6 h-6" />
-                  <span className="text-sm sm:text-base font-medium">AI Scan</span>
-                </button>
-
-                <button
-                  onClick={() => handleUserMessage("Profile")}
-                  className="rounded-2xl border border-slate-200 py-4 px-2 flex flex-col items-center gap-2 text-slate-600 hover:bg-slate-50"
-                >
-                  <User className="w-6 h-6" />
-                  <span className="text-sm sm:text-base font-medium">Profile</span>
-                </button>
+                <p className="text-xs text-slate-400">
+                  Rule-based decision helper · demo-safe
+                </p>
               </div>
+            </div>
 
+            <div className="flex items-center gap-1">
               <button
-                onClick={() => {
-                  stopVoice();
-                  setChatOpen(true);
-                }}
-                className="mt-6 w-full rounded-2xl py-4 px-5 text-white font-bold flex items-center justify-center gap-2"
-                style={{
-                  background: "linear-gradient(135deg, #1f9d55, #1597c8)",
-                }}
-              >
-                <Bot className="w-5 h-5" />
-                Open Text Chat
-              </button>
-
-              <button
-                onClick={() => setVoiceEnabled((current) => !current)}
-                className="mt-4 text-sm text-slate-500 flex items-center gap-2"
+                type="button"
+                onClick={toggleVoice}
+                className="rounded-xl p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                aria-label={voiceEnabled ? "Mute voice" : "Enable voice"}
               >
                 {voiceEnabled ? (
-                  <>
-                    <Volume2 className="w-4 h-4" />
-                    Female voice enabled
-                  </>
+                  <Volume2 className="h-4 w-4" />
                 ) : (
-                  <>
-                    <VolumeX className="w-4 h-4" />
-                    Voice muted
-                  </>
+                  <VolumeX className="h-4 w-4" />
                 )}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {open && chatOpen && (
-        <div
-          className="fixed bottom-6 right-6 z-50 w-[calc(100vw-32px)] sm:w-[420px] h-[620px] max-h-[calc(100vh-48px)] rounded-3xl overflow-hidden shadow-2xl flex flex-col"
-          style={{
-            background: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-            boxShadow: "0 24px 70px rgba(0,0,0,0.45)",
-          }}
-        >
-          <div
-            className="px-5 py-4 flex items-center gap-3"
-            style={{
-              background: "linear-gradient(135deg, #12335c, #10213f)",
-            }}
-          >
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center text-white"
-              style={{
-                background: "linear-gradient(135deg, #2563eb, #14b8a6)",
-              }}
-            >
-              <Bot className="w-6 h-6" />
-            </div>
+              <button
+                type="button"
+                onClick={() => setExpanded((current) => !current)}
+                className="rounded-xl p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                aria-label="Toggle assistant size"
+              >
+                {expanded ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </button>
 
-            <div className="flex-1">
-              <div className="font-bold text-white text-lg">RoadIntel Assistant</div>
-              <div className="text-sm text-white/75">
-                Type or use voice commands
+              <button
+                type="button"
+                onClick={closeBot}
+                className="rounded-xl p-2 text-slate-300 transition hover:bg-red-500/20 hover:text-red-300"
+                aria-label="Close assistant"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </header>
+
+          <div className="flex h-[calc(100%-72px)] flex-col">
+            <div className="border-b border-white/10 px-4 py-3">
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {QUICK_PROMPTS.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => handleQuickPrompt(prompt)}
+                    className="shrink-0 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-medium text-cyan-200 transition hover:bg-cyan-400/20"
+                  >
+                    {prompt}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <button
-              onClick={() => setVoiceEnabled((current) => !current)}
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white"
-              aria-label="Toggle voice"
-            >
-              {voiceEnabled ? (
-                <Volume2 className="w-5 h-5" />
-              ) : (
-                <VolumeX className="w-5 h-5" />
-              )}
-            </button>
-
-            <button
-              onClick={goBackToVoicePanel}
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white"
-              aria-label="Open voice panel"
-            >
-              <Maximize2 className="w-5 h-5 rotate-180" />
-            </button>
-
-            <button
-              onClick={closeEverything}
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white"
-              aria-label="Close chat"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div
-            className="px-3 py-3 flex gap-2 overflow-x-auto"
-            style={{
-              background: "hsl(var(--muted))",
-              borderBottom: "1px solid hsl(var(--border))",
-            }}
-          >
-            {QUICK_COMMANDS.map((command) => (
-              <button
-                key={command}
-                onClick={() => handleUserMessage(command)}
-                className="shrink-0 px-4 py-2 rounded-full text-sm font-semibold"
-                style={{
-                  background: "rgba(20,184,166,0.12)",
-                  color: "#14b8a6",
-                  border: "1px solid rgba(20,184,166,0.24)",
-                }}
-              >
-                {command}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${
-                  message.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
+            <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+              {messages.map((message) => (
                 <div
-                  className={`max-w-[82%] rounded-2xl px-4 py-3 ${
-                    message.role === "user"
-                      ? "rounded-br-md text-white"
-                      : "rounded-bl-md"
+                  key={message.id}
+                  className={`flex gap-3 ${
+                    message.role === "user" ? "justify-end" : "justify-start"
                   }`}
-                  style={{
-                    background:
-                      message.role === "user"
-                        ? "linear-gradient(135deg, #0ea5e9, #14b8a6)"
-                        : "hsl(var(--muted))",
-                    border:
-                      message.role === "assistant"
-                        ? "1px solid hsl(var(--border))"
-                        : "none",
-                  }}
                 >
-                  <div className="text-sm leading-relaxed">{message.text}</div>
+                  {message.role === "assistant" && (
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-400/15 text-cyan-300">
+                      <Bot className="h-4 w-4" />
+                    </div>
+                  )}
+
                   <div
-                    className={`text-[10px] mt-1 ${
+                    className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 ${
                       message.role === "user"
-                        ? "text-white/75"
-                        : "text-muted-foreground"
+                        ? "bg-blue-500 text-white"
+                        : "bg-white/[0.07] text-slate-100"
                     }`}
                   >
-                    {message.time}
+                    <p>{message.text}</p>
+
+                    <div
+                      className={`mt-2 text-[10px] ${
+                        message.role === "user"
+                          ? "text-blue-100/80"
+                          : "text-slate-500"
+                      }`}
+                    >
+                      {message.time}
+                    </div>
+                  </div>
+
+                  {message.role === "user" && (
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white">
+                      <User className="h-4 w-4" />
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {typing && (
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400/15 text-cyan-300">
+                    <Bot className="h-4 w-4" />
+                  </div>
+
+                  <div className="rounded-2xl bg-white/[0.07] px-4 py-3 text-sm text-slate-300">
+                    Thinking...
                   </div>
                 </div>
-              </div>
-            ))}
+              )}
 
-            {listening && (
-              <div className="flex justify-start">
-                <div className="rounded-2xl rounded-bl-md px-4 py-3 text-sm bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  Listening...
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div className="border-t border-white/10 p-3">
+              <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
+                <span>
+                  Ask about risk, complaints, spending, sensors, contractors, or navigation.
+                </span>
+
+                <span>{speechAvailable ? "Voice ready" : "Text only"}</span>
+              </div>
+
+              <div className="flex items-end gap-2">
+                <button
+                  type="button"
+                  onClick={listening ? stopListening : startListening}
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition ${
+                    listening
+                      ? "bg-red-500/20 text-red-300"
+                      : "bg-white/[0.07] text-slate-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                  aria-label={listening ? "Stop listening" : "Start voice input"}
+                >
+                  {listening ? (
+                    <MicOff className="h-5 w-5" />
+                  ) : (
+                    <Mic className="h-5 w-5" />
+                  )}
+                </button>
+
+                <textarea
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void handleSend();
+                    }
+                  }}
+                  placeholder="Ask RoadIntel..."
+                  rows={1}
+                  className="max-h-28 min-h-11 flex-1 resize-none rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => void handleSend()}
+                  disabled={!input.trim()}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 text-white transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Send message"
+                >
+                  <Send className="h-5 w-5" />
+                </button>
+              </div>
+
+              {listening && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-cyan-300">
+                  <Navigation className="h-3.5 w-3.5 animate-pulse" />
+                  Listening... say “open risk map” or ask a question.
                 </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div
-            className="p-4"
-            style={{
-              borderTop: "1px solid hsl(var(--border))",
-              background: "hsl(var(--card))",
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <button
-                onClick={listening ? stopVoice : startVoice}
-                className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                style={{
-                  background: listening
-                    ? "rgba(220,38,38,0.15)"
-                    : "rgba(16,185,129,0.13)",
-                  color: listening ? "#dc2626" : "#10b981",
-                }}
-                aria-label="Voice input"
-              >
-                {listening ? (
-                  <MicOff className="w-5 h-5" />
-                ) : (
-                  <Mic className="w-5 h-5" />
-                )}
-              </button>
-
-              <input
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") handleUserMessage();
-                }}
-                placeholder="Type or say: open sensors, show analytics..."
-                className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
-                style={{
-                  background: "hsl(var(--muted))",
-                  border: "1px solid hsl(var(--border))",
-                  color: "hsl(var(--foreground))",
-                }}
-              />
-
-              <button
-                onClick={() => handleUserMessage()}
-                className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0"
-                style={{
-                  background: "linear-gradient(135deg, #2563eb, #14b8a6)",
-                }}
-                aria-label="Send message"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground mt-2">
-              <Navigation className="w-3 h-3" />
-              Try: “open dashboard”, “analytics”, “file complaint”, “show sensors”
+              )}
             </div>
           </div>
-        </div>
+        </section>
       )}
     </>
   );
