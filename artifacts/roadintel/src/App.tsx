@@ -36,7 +36,7 @@ function PublicPage({ children }: { children: React.ReactNode }) {
 function PrivatePage({ children }: { children: React.ReactNode }) {
   const isAuthenticated =
     typeof window !== "undefined" &&
-    localStorage.getItem("roadintel-auth") === "true";
+    sessionStorage.getItem("roadintel-auth") === "true";
 
   if (!isAuthenticated) {
     return <Redirect to="/login" />;
