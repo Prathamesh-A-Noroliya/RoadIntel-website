@@ -1,19 +1,23 @@
 import { Link, useParams } from "wouter";
 import {
+  Activity,
+  AlertTriangle,
   ArrowLeft,
-  MapPin,
+  Building2,
   Calendar,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  IndianRupee,
+  MapPin,
+  Route,
+  ShieldCheck,
+  TrendingDown,
   User,
   Wallet,
-  AlertTriangle,
   Wrench,
-  Building2,
-  ShieldAlert,
-  CheckCircle2,
-  Clock,
-  TrendingDown,
-  FileText,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -28,9 +32,42 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { getHealthColor } from "@/lib/utils";
 
-type RoadStatus = "Excellent" | "Good" | "Active" | "Deteriorating";
-type RoadRisk = "Low" | "Medium" | "Critical";
+type RiskLevel = "critical" | "high" | "medium" | "low";
+type RoadStatus = "Critical" | "Repair Due" | "Watch" | "Stable";
+type RepairQuality = "Good" | "Average" | "Poor";
+
+type RepairRecord = {
+  date: string;
+  work: string;
+  contractor: string;
+  costCr: number;
+  quality: RepairQuality;
+};
+
+type ComplaintRecord = {
+  type: string;
+  count: number;
+};
+
+type HealthPoint = {
+  month: string;
+  score: number;
+  risk: number;
+};
+
+type SpendingPoint = {
+  month: string;
+  approved: number;
+  spent: number;
+};
+
+type RiskFactor = {
+  label: string;
+  value: string;
+  severity: RiskLevel;
+};
 
 type RoadDetail = {
   id: string;
@@ -39,763 +76,809 @@ type RoadDetail = {
   authority: string;
   contractor: string;
   builtYear: string;
-  length: string;
+  lengthKm: number;
   roadType: string;
-  riskLevel: RoadRisk;
+  surface: string;
+  trafficLoad: string;
   status: RoadStatus;
+  riskLevel: RiskLevel;
   riskScore: number;
   healthScore: number;
-  allocatedBudget: number;
-  spentBudget: number;
+  monsoonRisk: number;
+  allocatedBudgetCr: number;
+  spentBudgetCr: number;
   totalComplaints: number;
   repeatFailures: number;
   lastRepaired: string;
   nextInspection: string;
   summary: string;
-  repairHistory: {
-    date: string;
-    work: string;
-    contractor: string;
-    cost: number;
-    quality: "Good" | "Average" | "Poor";
-  }[];
-  complaintHistory: {
-    type: string;
-    count: number;
-  }[];
-  healthTrend: {
-    month: string;
-    score: number;
-  }[];
-  spendingTrend: {
-    month: string;
-    allocated: number;
-    spent: number;
-  }[];
-  riskFactors: {
-    label: string;
-    value: string;
-    severity: "low" | "medium" | "high" | "critical";
-  }[];
+  recommendedAction: string;
+  repairHistory: RepairRecord[];
+  complaintHistory: ComplaintRecord[];
+  healthTrend: HealthPoint[];
+  spendingTrend: SpendingPoint[];
+  riskFactors: RiskFactor[];
 };
 
 const ROAD_DATABASE: Record<string, RoadDetail> = {
   "1": {
     id: "1",
-    name: "MG Road",
-    location: "Bangalore, KA",
-    authority: "Bengaluru Urban Road Division",
-    contractor: "BuildRight Infrastructure",
-    builtYear: "2018",
-    length: "3.6 km",
-    roadType: "National Highway",
-    riskLevel: "Medium",
-    status: "Active",
-    riskScore: 54,
-    healthScore: 78,
-    allocatedBudget: 126000000,
-    spentBudget: 98400000,
-    totalComplaints: 12,
-    repeatFailures: 2,
-    lastRepaired: "February 2025",
-    nextInspection: "June 2025",
+    name: "JM Road Patch Zone",
+    location: "Shivajinagar, Pune",
+    authority: "PMC",
+    contractor: "UrbanBuild Pune Services",
+    builtYear: "2019",
+    lengthKm: 1.8,
+    roadType: "Urban arterial road",
+    surface: "Bituminous",
+    trafficLoad: "High",
+    status: "Critical",
+    riskLevel: "critical",
+    riskScore: 86,
+    healthScore: 42,
+    monsoonRisk: 82,
+    allocatedBudgetCr: 3.9,
+    spentBudgetCr: 4.8,
+    totalComplaints: 17,
+    repeatFailures: 4,
+    lastRepaired: "Feb 2026",
+    nextInspection: "Within 24 hours",
     summary:
-      "MG Road is currently stable with moderate risk. Health score remains acceptable, but recurring surface wear and traffic stress require scheduled resurfacing and improved drainage checks before monsoon.",
+      "JM Road Patch Zone is currently the most critical pilot road. Repeated patch failure, high complaint density and monsoon exposure indicate that this segment needs emergency verification and contractor audit.",
+    recommendedAction:
+      "Emergency patching, field inspection and contractor quality review before any further payment release.",
     repairHistory: [
       {
-        date: "Feb 2025",
-        work: "Surface patching and lane marking",
-        contractor: "BuildRight Infrastructure",
-        cost: 12800000,
-        quality: "Good",
+        date: "Feb 2026",
+        work: "Emergency pothole patching",
+        contractor: "UrbanBuild Pune Services",
+        costCr: 0.82,
+        quality: "Poor",
       },
       {
-        date: "Oct 2024",
-        work: "Drainage shoulder correction",
-        contractor: "BuildRight Infrastructure",
-        cost: 7200000,
+        date: "Nov 2025",
+        work: "Surface patch repair",
+        contractor: "UrbanBuild Pune Services",
+        costCr: 0.64,
         quality: "Average",
       },
       {
-        date: "May 2024",
-        work: "Minor crack sealing",
-        contractor: "Metro Road Services",
-        cost: 4100000,
-        quality: "Good",
+        date: "Aug 2025",
+        work: "Drainage-side resurfacing",
+        contractor: "UrbanBuild Pune Services",
+        costCr: 0.48,
+        quality: "Poor",
       },
     ],
     complaintHistory: [
-      { type: "Potholes", count: 4 },
+      { type: "Potholes", count: 8 },
+      { type: "Repeat Failure", count: 4 },
       { type: "Waterlogging", count: 3 },
-      { type: "Cracks", count: 2 },
-      { type: "Uneven Surface", count: 2 },
-      { type: "Signage", count: 1 },
+      { type: "Surface Damage", count: 2 },
     ],
     healthTrend: [
-      { month: "Oct", score: 84 },
-      { month: "Nov", score: 83 },
-      { month: "Dec", score: 81 },
-      { month: "Jan", score: 80 },
-      { month: "Feb", score: 79 },
-      { month: "Mar", score: 78 },
-      { month: "Apr", score: 78 },
+      { month: "Oct", score: 64, risk: 48 },
+      { month: "Nov", score: 58, risk: 55 },
+      { month: "Dec", score: 54, risk: 62 },
+      { month: "Jan", score: 49, risk: 71 },
+      { month: "Feb", score: 45, risk: 80 },
+      { month: "Mar", score: 43, risk: 84 },
+      { month: "Apr", score: 42, risk: 86 },
     ],
     spendingTrend: [
-      { month: "Nov", allocated: 18, spent: 12 },
-      { month: "Dec", allocated: 22, spent: 17 },
-      { month: "Jan", allocated: 25, spent: 20 },
-      { month: "Feb", allocated: 30, spent: 25 },
-      { month: "Mar", allocated: 34, spent: 28 },
-      { month: "Apr", allocated: 38, spent: 31 },
+      { month: "Nov", approved: 1.2, spent: 1.1 },
+      { month: "Dec", approved: 1.8, spent: 1.9 },
+      { month: "Jan", approved: 2.4, spent: 2.8 },
+      { month: "Feb", approved: 3.0, spent: 3.6 },
+      { month: "Mar", approved: 3.5, spent: 4.2 },
+      { month: "Apr", approved: 3.9, spent: 4.8 },
     ],
     riskFactors: [
       {
-        label: "Moderate traffic stress",
-        value: "High daily vehicle load",
-        severity: "medium",
+        label: "Repeat repair pattern",
+        value: "4 repeat failures",
+        severity: "critical",
       },
       {
         label: "Complaint density",
-        value: "12 complaints",
-        severity: "medium",
+        value: "17 citizen signals",
+        severity: "high",
       },
       {
-        label: "Repair quality",
-        value: "Mostly good",
-        severity: "low",
+        label: "Budget-quality mismatch",
+        value: "Spent above approved budget",
+        severity: "high",
       },
     ],
   },
 
   "2": {
     id: "2",
-    name: "NH-48 Stretch",
-    location: "Delhi-Gurugram",
-    authority: "National Highways Authority of India",
-    contractor: "RoadCraft Solutions",
-    builtYear: "2015",
-    length: "9.2 km",
-    roadType: "National Highway",
-    riskLevel: "Critical",
-    status: "Deteriorating",
-    riskScore: 88,
-    healthScore: 34,
-    allocatedBudget: 284000000,
-    spentBudget: 221000000,
-    totalComplaints: 47,
-    repeatFailures: 11,
-    lastRepaired: "January 2025",
-    nextInspection: "May 2025",
+    name: "FC Road Junction",
+    location: "Pune Central",
+    authority: "PMC",
+    contractor: "UrbanBuild Pune Services",
+    builtYear: "2018",
+    lengthKm: 1.2,
+    roadType: "Urban commercial road",
+    surface: "Bituminous",
+    trafficLoad: "High",
+    status: "Repair Due",
+    riskLevel: "high",
+    riskScore: 74,
+    healthScore: 56,
+    monsoonRisk: 71,
+    allocatedBudgetCr: 2.7,
+    spentBudgetCr: 3.1,
+    totalComplaints: 12,
+    repeatFailures: 2,
+    lastRepaired: "Jan 2026",
+    nextInspection: "48 hours",
     summary:
-      "NH-48 Stretch is a critical road segment with rapid deterioration. Repeated failures, heavy freight movement, and high-speed traffic make this road a priority for resurfacing and contractor audit.",
+      "FC Road Junction is showing high-risk surface cracking and drainage stress. Heavy pedestrian and two-wheeler movement increases the urgency of preventive repair.",
+    recommendedAction:
+      "Drainage inspection, crack sealing and post-repair photo verification.",
     repairHistory: [
       {
-        date: "Jan 2025",
-        work: "Emergency pothole patching",
-        contractor: "RoadCraft Solutions",
-        cost: 26800000,
-        quality: "Poor",
-      },
-      {
-        date: "Sep 2024",
-        work: "Partial resurfacing",
-        contractor: "RoadCraft Solutions",
-        cost: 48500000,
+        date: "Jan 2026",
+        work: "Crack sealing near junction approach",
+        contractor: "UrbanBuild Pune Services",
+        costCr: 0.54,
         quality: "Average",
       },
       {
-        date: "Apr 2024",
-        work: "Drainage repair near service lane",
-        contractor: "Highway Maintenance Unit",
-        cost: 18600000,
+        date: "Sep 2025",
+        work: "Partial lane patching",
+        contractor: "UrbanBuild Pune Services",
+        costCr: 0.43,
         quality: "Average",
+      },
+      {
+        date: "May 2025",
+        work: "Minor resurfacing",
+        contractor: "PMC Ward Repair Team",
+        costCr: 0.31,
+        quality: "Good",
       },
     ],
     complaintHistory: [
-      { type: "Potholes", count: 19 },
-      { type: "Cracks", count: 12 },
-      { type: "Surface Damage", count: 8 },
-      { type: "Waterlogging", count: 5 },
-      { type: "Shoulder Damage", count: 3 },
+      { type: "Cracking", count: 5 },
+      { type: "Potholes", count: 3 },
+      { type: "Waterlogging", count: 3 },
+      { type: "Uneven Surface", count: 1 },
     ],
     healthTrend: [
-      { month: "Oct", score: 52 },
-      { month: "Nov", score: 48 },
-      { month: "Dec", score: 44 },
-      { month: "Jan", score: 40 },
-      { month: "Feb", score: 38 },
-      { month: "Mar", score: 36 },
-      { month: "Apr", score: 34 },
+      { month: "Oct", score: 70, risk: 40 },
+      { month: "Nov", score: 67, risk: 45 },
+      { month: "Dec", score: 64, risk: 51 },
+      { month: "Jan", score: 61, risk: 58 },
+      { month: "Feb", score: 59, risk: 64 },
+      { month: "Mar", score: 57, risk: 70 },
+      { month: "Apr", score: 56, risk: 74 },
     ],
     spendingTrend: [
-      { month: "Nov", allocated: 42, spent: 31 },
-      { month: "Dec", allocated: 56, spent: 44 },
-      { month: "Jan", allocated: 70, spent: 58 },
-      { month: "Feb", allocated: 78, spent: 66 },
-      { month: "Mar", allocated: 86, spent: 74 },
-      { month: "Apr", allocated: 92, spent: 81 },
+      { month: "Nov", approved: 0.8, spent: 0.7 },
+      { month: "Dec", approved: 1.2, spent: 1.2 },
+      { month: "Jan", approved: 1.8, spent: 1.9 },
+      { month: "Feb", approved: 2.2, spent: 2.5 },
+      { month: "Mar", approved: 2.5, spent: 2.8 },
+      { month: "Apr", approved: 2.7, spent: 3.1 },
     ],
     riskFactors: [
       {
-        label: "Repeated failures",
-        value: "11 repeat failures",
-        severity: "critical",
-      },
-      {
-        label: "Low health score",
-        value: "34/100",
-        severity: "critical",
-      },
-      {
-        label: "Heavy vehicle stress",
-        value: "High freight corridor",
+        label: "Drainage stress",
+        value: "Water stagnation after rainfall",
         severity: "high",
       },
       {
-        label: "Complaint volume",
-        value: "47 complaints",
+        label: "Surface cracking",
+        value: "Visible longitudinal cracks",
         severity: "high",
+      },
+      {
+        label: "Traffic pressure",
+        value: "Commercial high-load junction",
+        severity: "medium",
       },
     ],
   },
 
   "3": {
     id: "3",
-    name: "Outer Ring Road South",
-    location: "Bangalore, KA",
-    authority: "Karnataka State Highways Division",
-    contractor: "National Road Works",
+    name: "Wakad-Hinjewadi Road",
+    location: "PCMC",
+    authority: "PCMC",
+    contractor: "Maharashtra RoadBuild Ltd.",
     builtYear: "2020",
-    length: "7.5 km",
-    roadType: "State Highway",
-    riskLevel: "Low",
-    status: "Good",
-    riskScore: 31,
-    healthScore: 85,
-    allocatedBudget: 164000000,
-    spentBudget: 109000000,
-    totalComplaints: 5,
-    repeatFailures: 1,
-    lastRepaired: "April 2025",
-    nextInspection: "August 2025",
+    lengthKm: 4.6,
+    roadType: "IT corridor road",
+    surface: "Bituminous",
+    trafficLoad: "Very High",
+    status: "Repair Due",
+    riskLevel: "high",
+    riskScore: 68,
+    healthScore: 61,
+    monsoonRisk: 64,
+    allocatedBudgetCr: 6.2,
+    spentBudgetCr: 6.7,
+    totalComplaints: 9,
+    repeatFailures: 2,
+    lastRepaired: "Mar 2026",
+    nextInspection: "2-3 weeks",
     summary:
-      "Outer Ring Road South is performing well with low risk. Preventive maintenance has kept the surface stable, and complaint volume remains low.",
+      "Wakad-Hinjewadi Road is under high commuter pressure. Edge deterioration and vibration stress suggest the need for planned resurfacing inspection before damage spreads.",
+    recommendedAction:
+      "Schedule resurfacing inspection and monitor commuter-hour vibration spikes.",
     repairHistory: [
       {
-        date: "Apr 2025",
-        work: "Preventive resurfacing and lane repainting",
-        contractor: "National Road Works",
-        cost: 17600000,
+        date: "Mar 2026",
+        work: "Edge repair and lane shoulder correction",
+        contractor: "Maharashtra RoadBuild Ltd.",
+        costCr: 1.12,
+        quality: "Average",
+      },
+      {
+        date: "Dec 2025",
+        work: "Pothole patching near IT park entry",
+        contractor: "Maharashtra RoadBuild Ltd.",
+        costCr: 0.76,
         quality: "Good",
       },
       {
-        date: "Dec 2024",
-        work: "Minor shoulder stabilization",
-        contractor: "National Road Works",
-        cost: 6200000,
-        quality: "Good",
+        date: "Jul 2025",
+        work: "Monsoon drainage correction",
+        contractor: "PCMC Roads Department",
+        costCr: 0.58,
+        quality: "Average",
       },
     ],
     complaintHistory: [
-      { type: "Signage", count: 2 },
-      { type: "Minor Cracks", count: 1 },
-      { type: "Drainage", count: 1 },
-      { type: "Surface Wear", count: 1 },
+      { type: "Edge Damage", count: 4 },
+      { type: "Potholes", count: 2 },
+      { type: "Traffic Stress", count: 2 },
+      { type: "Waterlogging", count: 1 },
     ],
     healthTrend: [
-      { month: "Oct", score: 88 },
-      { month: "Nov", score: 88 },
-      { month: "Dec", score: 87 },
-      { month: "Jan", score: 86 },
-      { month: "Feb", score: 86 },
-      { month: "Mar", score: 85 },
-      { month: "Apr", score: 85 },
+      { month: "Oct", score: 72, risk: 38 },
+      { month: "Nov", score: 70, risk: 43 },
+      { month: "Dec", score: 68, risk: 48 },
+      { month: "Jan", score: 66, risk: 55 },
+      { month: "Feb", score: 64, risk: 60 },
+      { month: "Mar", score: 62, risk: 65 },
+      { month: "Apr", score: 61, risk: 68 },
     ],
     spendingTrend: [
-      { month: "Nov", allocated: 20, spent: 12 },
-      { month: "Dec", allocated: 25, spent: 17 },
-      { month: "Jan", allocated: 28, spent: 20 },
-      { month: "Feb", allocated: 32, spent: 23 },
-      { month: "Mar", allocated: 37, spent: 27 },
-      { month: "Apr", allocated: 42, spent: 31 },
+      { month: "Nov", approved: 2.0, spent: 1.8 },
+      { month: "Dec", approved: 3.0, spent: 3.1 },
+      { month: "Jan", approved: 4.0, spent: 4.2 },
+      { month: "Feb", approved: 5.0, spent: 5.4 },
+      { month: "Mar", approved: 5.8, spent: 6.2 },
+      { month: "Apr", approved: 6.2, spent: 6.7 },
     ],
     riskFactors: [
       {
-        label: "Low complaint density",
-        value: "5 complaints",
-        severity: "low",
+        label: "Commuter load",
+        value: "Very high peak-hour traffic",
+        severity: "high",
       },
       {
-        label: "Stable health trend",
-        value: "85/100",
-        severity: "low",
+        label: "Edge deterioration",
+        value: "Visible shoulder stress",
+        severity: "medium",
       },
       {
-        label: "Preventive maintenance",
-        value: "Completed April 2025",
-        severity: "low",
+        label: "Repair recurrence",
+        value: "2 repeat repairs",
+        severity: "medium",
       },
     ],
   },
 
   "4": {
     id: "4",
-    name: "Andheri-Kurla Road",
-    location: "Mumbai, MH",
-    authority: "Mumbai Municipal Roads Department",
-    contractor: "RoadCraft Solutions",
-    builtYear: "2016",
-    length: "5.1 km",
-    roadType: "Municipal Road",
-    riskLevel: "Critical",
-    status: "Deteriorating",
-    riskScore: 91,
-    healthScore: 28,
-    allocatedBudget: 196000000,
-    spentBudget: 172000000,
-    totalComplaints: 63,
-    repeatFailures: 14,
-    lastRepaired: "March 2025",
-    nextInspection: "May 2025",
+    name: "Baner Link Road",
+    location: "Baner, Pune",
+    authority: "PMC",
+    contractor: "Shivneri Infra Works",
+    builtYear: "2021",
+    lengthKm: 2.4,
+    roadType: "Urban link road",
+    surface: "Bituminous",
+    trafficLoad: "Medium",
+    status: "Watch",
+    riskLevel: "medium",
+    riskScore: 49,
+    healthScore: 72,
+    monsoonRisk: 52,
+    allocatedBudgetCr: 4.8,
+    spentBudgetCr: 4.6,
+    totalComplaints: 6,
+    repeatFailures: 1,
+    lastRepaired: "Dec 2025",
+    nextInspection: "1 month",
     summary:
-      "Andheri-Kurla Road is a critical urban corridor with severe deterioration. Heavy traffic, repeated pothole formation, drainage stress, and poor patch durability make this a high-priority repair and audit candidate.",
+      "Baner Link Road is in watch condition. It is currently stable but should receive preventive crack sealing before monsoon pressure increases.",
+    recommendedAction:
+      "Preventive crack sealing and routine ward inspection.",
     repairHistory: [
       {
-        date: "Mar 2025",
-        work: "Emergency pothole filling",
-        contractor: "RoadCraft Solutions",
-        cost: 22800000,
-        quality: "Poor",
+        date: "Dec 2025",
+        work: "Preventive surface sealing",
+        contractor: "Shivneri Infra Works",
+        costCr: 0.62,
+        quality: "Good",
       },
       {
-        date: "Nov 2024",
-        work: "Surface patch repair",
-        contractor: "RoadCraft Solutions",
-        cost: 31500000,
-        quality: "Poor",
+        date: "Aug 2025",
+        work: "Shoulder patching",
+        contractor: "Shivneri Infra Works",
+        costCr: 0.38,
+        quality: "Good",
       },
       {
-        date: "Jul 2024",
-        work: "Monsoon drainage repair",
-        contractor: "Mumbai Ward Repair Unit",
-        cost: 14400000,
-        quality: "Average",
+        date: "Apr 2025",
+        work: "Line marking and minor resurfacing",
+        contractor: "PMC Ward Team",
+        costCr: 0.26,
+        quality: "Good",
       },
     ],
     complaintHistory: [
-      { type: "Potholes", count: 26 },
-      { type: "Waterlogging", count: 15 },
-      { type: "Uneven Surface", count: 9 },
-      { type: "Cracks", count: 8 },
-      { type: "Drainage", count: 5 },
+      { type: "Cracking", count: 2 },
+      { type: "Potholes", count: 1 },
+      { type: "Waterlogging", count: 1 },
+      { type: "Surface Wear", count: 2 },
     ],
     healthTrend: [
-      { month: "Oct", score: 46 },
-      { month: "Nov", score: 42 },
-      { month: "Dec", score: 39 },
-      { month: "Jan", score: 35 },
-      { month: "Feb", score: 32 },
-      { month: "Mar", score: 30 },
-      { month: "Apr", score: 28 },
+      { month: "Oct", score: 79, risk: 26 },
+      { month: "Nov", score: 78, risk: 30 },
+      { month: "Dec", score: 76, risk: 35 },
+      { month: "Jan", score: 75, risk: 38 },
+      { month: "Feb", score: 74, risk: 42 },
+      { month: "Mar", score: 73, risk: 46 },
+      { month: "Apr", score: 72, risk: 49 },
     ],
     spendingTrend: [
-      { month: "Nov", allocated: 34, spent: 29 },
-      { month: "Dec", allocated: 42, spent: 37 },
-      { month: "Jan", allocated: 50, spent: 45 },
-      { month: "Feb", allocated: 58, spent: 52 },
-      { month: "Mar", allocated: 64, spent: 59 },
-      { month: "Apr", allocated: 70, spent: 63 },
+      { month: "Nov", approved: 1.4, spent: 1.2 },
+      { month: "Dec", approved: 2.2, spent: 2.0 },
+      { month: "Jan", approved: 2.9, spent: 2.6 },
+      { month: "Feb", approved: 3.6, spent: 3.3 },
+      { month: "Mar", approved: 4.2, spent: 4.0 },
+      { month: "Apr", approved: 4.8, spent: 4.6 },
     ],
     riskFactors: [
       {
-        label: "Severe repeat failures",
-        value: "14 repeat failures",
-        severity: "critical",
+        label: "Preventive window",
+        value: "Repair before monsoon",
+        severity: "medium",
       },
       {
-        label: "High complaint density",
-        value: "63 complaints",
-        severity: "critical",
+        label: "Contractor quality",
+        value: "Strong performer",
+        severity: "low",
       },
       {
-        label: "Poor repair durability",
-        value: "Multiple poor-quality repairs",
-        severity: "critical",
-      },
-      {
-        label: "Waterlogging stress",
-        value: "15 waterlogging complaints",
-        severity: "high",
+        label: "Complaint density",
+        value: "6 linked complaints",
+        severity: "medium",
       },
     ],
   },
 
   "5": {
     id: "5",
-    name: "Electronic City Flyover",
-    location: "Bangalore, KA",
-    authority: "Bengaluru Elevated Corridor Authority",
-    contractor: "Infra Prime Builders",
-    builtYear: "2021",
-    length: "4.4 km",
-    roadType: "Elevated Highway",
-    riskLevel: "Low",
-    status: "Excellent",
-    riskScore: 22,
-    healthScore: 91,
-    allocatedBudget: 238000000,
-    spentBudget: 151000000,
-    totalComplaints: 2,
-    repeatFailures: 0,
-    lastRepaired: "April 2025",
-    nextInspection: "September 2025",
+    name: "Katraj Bypass",
+    location: "Pune South",
+    authority: "PWD Maharashtra",
+    contractor: "QuickPatch Civil Works",
+    builtYear: "2017",
+    lengthKm: 3.1,
+    roadType: "State road connector",
+    surface: "Composite",
+    trafficLoad: "Medium",
+    status: "Watch",
+    riskLevel: "medium",
+    riskScore: 41,
+    healthScore: 66,
+    monsoonRisk: 69,
+    allocatedBudgetCr: 2.7,
+    spentBudgetCr: 3.4,
+    totalComplaints: 5,
+    repeatFailures: 1,
+    lastRepaired: "Nov 2025",
+    nextInspection: "After rainfall",
     summary:
-      "Electronic City Flyover is in excellent condition. Structural and surface indicators remain strong, complaint count is minimal, and no repeat failures have been recorded.",
+      "Katraj Bypass has moderate risk mainly due to waterlogging and contractor quality concerns. It should be monitored closely after rainfall.",
+    recommendedAction:
+      "Post-rainfall inspection and drainage review before additional payment release.",
     repairHistory: [
       {
-        date: "Apr 2025",
-        work: "Expansion joint inspection and lane repainting",
-        contractor: "Infra Prime Builders",
-        cost: 11200000,
-        quality: "Good",
+        date: "Nov 2025",
+        work: "Surface patching near bypass entry",
+        contractor: "QuickPatch Civil Works",
+        costCr: 0.71,
+        quality: "Average",
       },
       {
-        date: "Oct 2024",
-        work: "Routine structural inspection",
-        contractor: "Infra Prime Builders",
-        cost: 6800000,
+        date: "Jul 2025",
+        work: "Waterlogging correction",
+        contractor: "QuickPatch Civil Works",
+        costCr: 0.52,
+        quality: "Average",
+      },
+      {
+        date: "Mar 2025",
+        work: "Minor pothole filling",
+        contractor: "PWD Road Unit",
+        costCr: 0.28,
         quality: "Good",
       },
     ],
     complaintHistory: [
-      { type: "Signage", count: 1 },
-      { type: "Lighting", count: 1 },
+      { type: "Waterlogging", count: 2 },
+      { type: "Potholes", count: 2 },
+      { type: "Surface Damage", count: 1 },
     ],
     healthTrend: [
-      { month: "Oct", score: 93 },
-      { month: "Nov", score: 93 },
-      { month: "Dec", score: 92 },
-      { month: "Jan", score: 92 },
-      { month: "Feb", score: 91 },
-      { month: "Mar", score: 91 },
-      { month: "Apr", score: 91 },
+      { month: "Oct", score: 72, risk: 30 },
+      { month: "Nov", score: 70, risk: 33 },
+      { month: "Dec", score: 69, risk: 35 },
+      { month: "Jan", score: 68, risk: 37 },
+      { month: "Feb", score: 67, risk: 39 },
+      { month: "Mar", score: 66, risk: 40 },
+      { month: "Apr", score: 66, risk: 41 },
     ],
     spendingTrend: [
-      { month: "Nov", allocated: 28, spent: 16 },
-      { month: "Dec", allocated: 34, spent: 22 },
-      { month: "Jan", allocated: 39, spent: 27 },
-      { month: "Feb", allocated: 44, spent: 31 },
-      { month: "Mar", allocated: 50, spent: 36 },
-      { month: "Apr", allocated: 55, spent: 40 },
+      { month: "Nov", approved: 0.9, spent: 1.0 },
+      { month: "Dec", approved: 1.2, spent: 1.5 },
+      { month: "Jan", approved: 1.6, spent: 2.0 },
+      { month: "Feb", approved: 2.0, spent: 2.5 },
+      { month: "Mar", approved: 2.4, spent: 3.0 },
+      { month: "Apr", approved: 2.7, spent: 3.4 },
     ],
     riskFactors: [
       {
-        label: "Very low complaint count",
-        value: "2 complaints",
-        severity: "low",
+        label: "Monsoon exposure",
+        value: "69% waterlogging risk",
+        severity: "high",
       },
       {
-        label: "No repeat failures",
-        value: "0 repeat failures",
-        severity: "low",
+        label: "Budget overrun",
+        value: "Spending above approval",
+        severity: "medium",
       },
       {
-        label: "Excellent health score",
-        value: "91/100",
-        severity: "low",
+        label: "Contractor watchlist",
+        value: "Quality score needs review",
+        severity: "medium",
       },
     ],
   },
 
   "6": {
     id: "6",
-    name: "GST Road",
-    location: "Chennai, TN",
-    authority: "Tamil Nadu Highways Department",
-    contractor: "National Road Works",
-    builtYear: "2017",
-    length: "6.8 km",
-    roadType: "National Highway",
-    riskLevel: "Medium",
-    status: "Active",
-    riskScore: 61,
-    healthScore: 62,
-    allocatedBudget: 178000000,
-    spentBudget: 132000000,
-    totalComplaints: 18,
-    repeatFailures: 4,
-    lastRepaired: "February 2025",
-    nextInspection: "July 2025",
+    name: "Sinhagad Road Patch",
+    location: "Pune South",
+    authority: "PMC",
+    contractor: "QuickPatch Civil Works",
+    builtYear: "2016",
+    lengthKm: 2.9,
+    roadType: "Urban residential road",
+    surface: "Bituminous",
+    trafficLoad: "Medium",
+    status: "Stable",
+    riskLevel: "low",
+    riskScore: 29,
+    healthScore: 76,
+    monsoonRisk: 38,
+    allocatedBudgetCr: 2.1,
+    spentBudgetCr: 1.9,
+    totalComplaints: 3,
+    repeatFailures: 1,
+    lastRepaired: "Oct 2025",
+    nextInspection: "Routine cycle",
     summary:
-      "GST Road is active with medium risk. Surface quality is acceptable but trending downward due to heat stress, freight traffic, and moderate complaint recurrence.",
+      "Sinhagad Road Patch is currently stable. Contractor history still needs monitoring, but present road condition does not require urgent action.",
+    recommendedAction:
+      "Routine monitoring and before/after repair verification.",
     repairHistory: [
       {
-        date: "Feb 2025",
-        work: "Surface strengthening and pothole repair",
-        contractor: "National Road Works",
-        cost: 18600000,
+        date: "Oct 2025",
+        work: "Minor pothole patching",
+        contractor: "QuickPatch Civil Works",
+        costCr: 0.32,
         quality: "Average",
       },
       {
-        date: "Sep 2024",
-        work: "Crack sealing",
-        contractor: "National Road Works",
-        cost: 8400000,
+        date: "Jun 2025",
+        work: "Surface levelling",
+        contractor: "PMC Ward Team",
+        costCr: 0.24,
+        quality: "Good",
+      },
+      {
+        date: "Jan 2025",
+        work: "Lane marking",
+        contractor: "PMC Ward Team",
+        costCr: 0.11,
         quality: "Good",
       },
     ],
     complaintHistory: [
-      { type: "Potholes", count: 6 },
-      { type: "Cracks", count: 5 },
-      { type: "Surface Wear", count: 4 },
-      { type: "Drainage", count: 2 },
-      { type: "Signage", count: 1 },
+      { type: "Potholes", count: 1 },
+      { type: "Surface Wear", count: 1 },
+      { type: "Edge Damage", count: 1 },
     ],
     healthTrend: [
-      { month: "Oct", score: 71 },
-      { month: "Nov", score: 69 },
-      { month: "Dec", score: 67 },
-      { month: "Jan", score: 66 },
-      { month: "Feb", score: 64 },
-      { month: "Mar", score: 63 },
-      { month: "Apr", score: 62 },
+      { month: "Oct", score: 80, risk: 20 },
+      { month: "Nov", score: 80, risk: 21 },
+      { month: "Dec", score: 79, risk: 22 },
+      { month: "Jan", score: 78, risk: 24 },
+      { month: "Feb", score: 78, risk: 25 },
+      { month: "Mar", score: 77, risk: 27 },
+      { month: "Apr", score: 76, risk: 29 },
     ],
     spendingTrend: [
-      { month: "Nov", allocated: 24, spent: 18 },
-      { month: "Dec", allocated: 29, spent: 23 },
-      { month: "Jan", allocated: 35, spent: 28 },
-      { month: "Feb", allocated: 41, spent: 33 },
-      { month: "Mar", allocated: 46, spent: 37 },
-      { month: "Apr", allocated: 51, spent: 42 },
+      { month: "Nov", approved: 0.6, spent: 0.5 },
+      { month: "Dec", approved: 0.9, spent: 0.8 },
+      { month: "Jan", approved: 1.2, spent: 1.1 },
+      { month: "Feb", approved: 1.5, spent: 1.4 },
+      { month: "Mar", approved: 1.8, spent: 1.6 },
+      { month: "Apr", approved: 2.1, spent: 1.9 },
     ],
     riskFactors: [
       {
-        label: "Freight traffic load",
-        value: "Moderate-heavy",
+        label: "Surface condition",
+        value: "Stable",
+        severity: "low",
+      },
+      {
+        label: "Repair recurrence",
+        value: "1 repeat patch",
         severity: "medium",
       },
       {
-        label: "Repeat failures",
-        value: "4 repeat failures",
-        severity: "medium",
-      },
-      {
-        label: "Health trend",
-        value: "Declining from 71 to 62",
-        severity: "medium",
+        label: "Traffic load",
+        value: "Medium residential traffic",
+        severity: "low",
       },
     ],
   },
 
   "7": {
     id: "7",
-    name: "AIIMS Delhi Stretch",
-    location: "Delhi",
-    authority: "Delhi PWD Road Division",
-    contractor: "QuickFix Road Services",
-    builtYear: "2014",
-    length: "2.1 km",
-    roadType: "State Highway",
-    riskLevel: "Critical",
-    status: "Deteriorating",
-    riskScore: 95,
-    healthScore: 22,
-    allocatedBudget: 148000000,
-    spentBudget: 139000000,
-    totalComplaints: 89,
-    repeatFailures: 19,
-    lastRepaired: "April 2025",
-    nextInspection: "Immediate",
+    name: "Ravet BRT Service Road",
+    location: "PCMC",
+    authority: "PCMC",
+    contractor: "PCMC Infra Maintenance",
+    builtYear: "2022",
+    lengthKm: 2.2,
+    roadType: "Service road",
+    surface: "Bituminous",
+    trafficLoad: "Medium",
+    status: "Stable",
+    riskLevel: "low",
+    riskScore: 22,
+    healthScore: 81,
+    monsoonRisk: 31,
+    allocatedBudgetCr: 5.1,
+    spentBudgetCr: 4.9,
+    totalComplaints: 2,
+    repeatFailures: 0,
+    lastRepaired: "Sep 2025",
+    nextInspection: "6 months",
     summary:
-      "AIIMS Delhi Stretch is the highest-risk road in the current dataset. Very low health score, extreme complaint volume, hospital-zone sensitivity, and repeated repair failures require immediate intervention.",
+      "Ravet BRT Service Road is one of the healthiest pilot segments. Low complaint recurrence and verified repairs indicate stable maintenance quality.",
+    recommendedAction:
+      "Continue routine inspection cycle.",
     repairHistory: [
       {
-        date: "Apr 2025",
-        work: "Emergency hospital-zone patching",
-        contractor: "QuickFix Road Services",
-        cost: 21800000,
-        quality: "Poor",
+        date: "Sep 2025",
+        work: "Preventive surface maintenance",
+        contractor: "PCMC Infra Maintenance",
+        costCr: 0.54,
+        quality: "Good",
       },
       {
-        date: "Jan 2025",
-        work: "Pothole cluster repair",
-        contractor: "QuickFix Road Services",
-        cost: 18400000,
-        quality: "Poor",
+        date: "May 2025",
+        work: "BRT lane edge correction",
+        contractor: "PCMC Infra Maintenance",
+        costCr: 0.41,
+        quality: "Good",
       },
       {
-        date: "Aug 2024",
-        work: "Drainage and shoulder correction",
-        contractor: "Delhi Ward Roads Unit",
-        cost: 9600000,
-        quality: "Average",
+        date: "Feb 2025",
+        work: "Drainage grate maintenance",
+        contractor: "PCMC Infra Maintenance",
+        costCr: 0.18,
+        quality: "Good",
       },
     ],
     complaintHistory: [
-      { type: "Potholes", count: 31 },
-      { type: "Uneven Surface", count: 18 },
-      { type: "Waterlogging", count: 16 },
-      { type: "Cracks", count: 14 },
-      { type: "Traffic Hazard", count: 10 },
+      { type: "Surface Wear", count: 1 },
+      { type: "Drainage", count: 1 },
     ],
     healthTrend: [
-      { month: "Oct", score: 43 },
-      { month: "Nov", score: 39 },
-      { month: "Dec", score: 35 },
-      { month: "Jan", score: 31 },
-      { month: "Feb", score: 28 },
-      { month: "Mar", score: 25 },
-      { month: "Apr", score: 22 },
+      { month: "Oct", score: 84, risk: 18 },
+      { month: "Nov", score: 84, risk: 18 },
+      { month: "Dec", score: 83, risk: 19 },
+      { month: "Jan", score: 83, risk: 20 },
+      { month: "Feb", score: 82, risk: 21 },
+      { month: "Mar", score: 82, risk: 22 },
+      { month: "Apr", score: 81, risk: 22 },
     ],
     spendingTrend: [
-      { month: "Nov", allocated: 22, spent: 20 },
-      { month: "Dec", allocated: 30, spent: 28 },
-      { month: "Jan", allocated: 38, spent: 36 },
-      { month: "Feb", allocated: 45, spent: 43 },
-      { month: "Mar", allocated: 51, spent: 49 },
-      { month: "Apr", allocated: 56, spent: 53 },
+      { month: "Nov", approved: 1.6, spent: 1.5 },
+      { month: "Dec", approved: 2.2, spent: 2.1 },
+      { month: "Jan", approved: 3.0, spent: 2.9 },
+      { month: "Feb", approved: 3.8, spent: 3.6 },
+      { month: "Mar", approved: 4.5, spent: 4.3 },
+      { month: "Apr", approved: 5.1, spent: 4.9 },
     ],
     riskFactors: [
       {
-        label: "Extreme complaint volume",
-        value: "89 complaints",
-        severity: "critical",
+        label: "Complaint density",
+        value: "Only 2 linked complaints",
+        severity: "low",
       },
       {
-        label: "Very low health score",
-        value: "22/100",
-        severity: "critical",
+        label: "Repair quality",
+        value: "Verified good repairs",
+        severity: "low",
       },
       {
-        label: "Repeat failures",
-        value: "19 repeat failures",
-        severity: "critical",
-      },
-      {
-        label: "Sensitive zone",
-        value: "Hospital corridor",
-        severity: "critical",
+        label: "Budget discipline",
+        value: "Within approved budget",
+        severity: "low",
       },
     ],
   },
 
   "8": {
     id: "8",
-    name: "Mumbai-Pune Expressway Sec-3",
-    location: "Pune, MH",
-    authority: "MSRDC",
-    contractor: "BuildRight Infrastructure",
-    builtYear: "2002",
-    length: "11.4 km",
-    roadType: "Expressway",
-    riskLevel: "Low",
-    status: "Excellent",
-    riskScore: 29,
-    healthScore: 88,
-    allocatedBudget: 425000000,
-    spentBudget: 287000000,
-    totalComplaints: 3,
+    name: "Aundh Internal Road",
+    location: "Aundh, Pune",
+    authority: "PMC",
+    contractor: "Shivneri Infra Works",
+    builtYear: "2021",
+    lengthKm: 1.7,
+    roadType: "Urban internal road",
+    surface: "Bituminous",
+    trafficLoad: "Low",
+    status: "Stable",
+    riskLevel: "low",
+    riskScore: 18,
+    healthScore: 84,
+    monsoonRisk: 27,
+    allocatedBudgetCr: 3.2,
+    spentBudgetCr: 3.1,
+    totalComplaints: 2,
     repeatFailures: 0,
-    lastRepaired: "March 2025",
-    nextInspection: "August 2025",
+    lastRepaired: "Aug 2025",
+    nextInspection: "6 months",
     summary:
-      "Mumbai-Pune Expressway Sec-3 is in excellent condition. Preventive maintenance and strong surface quality keep risk low despite high-speed traffic conditions.",
+      "Aundh Internal Road is a stable road segment with strong contractor performance and low anomaly frequency.",
+    recommendedAction:
+      "Routine inspection only.",
     repairHistory: [
       {
-        date: "Mar 2025",
-        work: "Preventive resurfacing and guardrail inspection",
-        contractor: "BuildRight Infrastructure",
-        cost: 38500000,
+        date: "Aug 2025",
+        work: "Preventive road surface treatment",
+        contractor: "Shivneri Infra Works",
+        costCr: 0.48,
         quality: "Good",
       },
       {
-        date: "Sep 2024",
-        work: "Drainage cleaning and lane marking",
-        contractor: "Expressway Maintenance Unit",
-        cost: 16400000,
+        date: "Apr 2025",
+        work: "Line marking and shoulder clean-up",
+        contractor: "Shivneri Infra Works",
+        costCr: 0.22,
+        quality: "Good",
+      },
+      {
+        date: "Jan 2025",
+        work: "Routine inspection repair",
+        contractor: "PMC Ward Team",
+        costCr: 0.12,
         quality: "Good",
       },
     ],
     complaintHistory: [
+      { type: "Surface Wear", count: 1 },
       { type: "Signage", count: 1 },
-      { type: "Minor Surface Wear", count: 1 },
-      { type: "Drainage", count: 1 },
     ],
     healthTrend: [
-      { month: "Oct", score: 90 },
-      { month: "Nov", score: 90 },
-      { month: "Dec", score: 89 },
-      { month: "Jan", score: 89 },
-      { month: "Feb", score: 88 },
-      { month: "Mar", score: 88 },
-      { month: "Apr", score: 88 },
+      { month: "Oct", score: 86, risk: 15 },
+      { month: "Nov", score: 86, risk: 15 },
+      { month: "Dec", score: 85, risk: 16 },
+      { month: "Jan", score: 85, risk: 17 },
+      { month: "Feb", score: 85, risk: 17 },
+      { month: "Mar", score: 84, risk: 18 },
+      { month: "Apr", score: 84, risk: 18 },
     ],
     spendingTrend: [
-      { month: "Nov", allocated: 60, spent: 39 },
-      { month: "Dec", allocated: 72, spent: 48 },
-      { month: "Jan", allocated: 84, spent: 57 },
-      { month: "Feb", allocated: 96, spent: 66 },
-      { month: "Mar", allocated: 108, spent: 76 },
-      { month: "Apr", allocated: 120, spent: 84 },
+      { month: "Nov", approved: 0.8, spent: 0.7 },
+      { month: "Dec", approved: 1.3, spent: 1.2 },
+      { month: "Jan", approved: 1.8, spent: 1.7 },
+      { month: "Feb", approved: 2.3, spent: 2.2 },
+      { month: "Mar", approved: 2.8, spent: 2.7 },
+      { month: "Apr", approved: 3.2, spent: 3.1 },
     ],
     riskFactors: [
       {
-        label: "Excellent health score",
-        value: "88/100",
+        label: "Road health",
+        value: "Healthy condition",
         severity: "low",
       },
       {
-        label: "Very low complaint count",
-        value: "3 complaints",
+        label: "Contractor quality",
+        value: "Strong performance",
         severity: "low",
       },
       {
-        label: "No repeat failures",
-        value: "0 repeat failures",
+        label: "Monsoon risk",
+        value: "Low exposure",
         severity: "low",
       },
     ],
   },
 };
 
-const DEFAULT_ROAD = ROAD_DATABASE["1"];
-
-const SEVERITY_COLORS = {
-  low: "#16A34A",
-  medium: "#F59E0B",
-  high: "#F97316",
-  critical: "#DC2626",
-};
-
-function formatMoney(value: number) {
-  if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)} Cr`;
-  if (value >= 100000) return `₹${(value / 100000).toFixed(1)} L`;
-  return `₹${value.toLocaleString("en-IN")}`;
-}
-
-function getRiskColor(score: number) {
-  if (score >= 80) return "#DC2626";
-  if (score >= 65) return "#F97316";
-  if (score >= 45) return "#F59E0B";
+function getRiskColor(risk: RiskLevel) {
+  if (risk === "critical") return "#DC2626";
+  if (risk === "high") return "#F97316";
+  if (risk === "medium") return "#F59E0B";
   return "#16A34A";
 }
 
 function getStatusColor(status: RoadStatus) {
-  if (status === "Excellent") return "#16A34A";
-  if (status === "Good") return "#0EA5A4";
-  if (status === "Active") return "#1E88E5";
+  if (status === "Critical") return "#DC2626";
+  if (status === "Repair Due") return "#F97316";
+  if (status === "Watch") return "#F59E0B";
+  return "#16A34A";
+}
+
+function getQualityColor(quality: RepairQuality) {
+  if (quality === "Good") return "#16A34A";
+  if (quality === "Average") return "#F59E0B";
   return "#DC2626";
 }
 
-function StatCard({
-  icon: Icon,
+function formatCr(value: number) {
+  return `₹${value.toFixed(1)} Cr`;
+}
+
+function Pill({
   label,
-  value,
   color,
 }: {
-  icon: React.ElementType;
+  label: string;
+  color: string;
+}) {
+  return (
+    <span
+      className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase"
+      style={{
+        background: `${color}18`,
+        color,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  note,
+  icon: Icon,
+  color,
+}: {
   label: string;
   value: string | number;
+  note: string;
+  icon: LucideIcon;
   color: string;
 }) {
   return (
@@ -806,199 +889,241 @@ function StatCard({
         border: "1px solid hsl(var(--border))",
       }}
     >
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Icon className="h-4 w-4" style={{ color }} />
-        {label}
+      <div className="mb-4 flex items-center justify-between">
+        <div
+          className="flex h-10 w-10 items-center justify-center rounded-xl"
+          style={{ background: `${color}18` }}
+        >
+          <Icon className="h-5 w-5" style={{ color }} />
+        </div>
+
+        <span
+          className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
+          style={{ background: `${color}14`, color }}
+        >
+          DNA
+        </span>
       </div>
 
       <div
-        className="mt-3 text-2xl font-bold"
-        style={{ color, fontFamily: "Sora, sans-serif" }}
+        className="text-2xl font-bold"
+        style={{ fontFamily: "Sora, sans-serif" }}
       >
         {value}
       </div>
+
+      <div className="mt-1 text-sm font-medium">{label}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{note}</div>
     </div>
   );
 }
 
-export default function RoadDetail() {
-  const params = useParams<{ id: string }>();
-  const road = ROAD_DATABASE[params.id ?? "1"] ?? DEFAULT_ROAD;
-
-  const riskColor = getRiskColor(road.riskScore);
-  const statusColor = getStatusColor(road.status);
-  const spentPercent = Math.round((road.spentBudget / road.allocatedBudget) * 100);
+function RiskFactorCard({ factor }: { factor: RiskFactor }) {
+  const color = getRiskColor(factor.severity);
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link href="/roads">
-            <button className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Road DNA
-            </button>
-          </Link>
-
-          <h1
-            className="text-2xl font-bold sm:text-3xl"
-            style={{ fontFamily: "Sora, sans-serif" }}
-          >
-            {road.name}
-          </h1>
-
-          <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" />
-              {road.location}
-            </span>
-
-            <span className="flex items-center gap-1.5">
-              <User className="h-4 w-4" />
-              {road.authority}
-            </span>
-
-            <span className="flex items-center gap-1.5">
-              <Calendar className="h-4 w-4" />
-              Built {road.builtYear}
-            </span>
-          </div>
-        </div>
-
-        <div
-          className="rounded-2xl px-5 py-3 text-sm font-bold"
-          style={{
-            background: `${statusColor}18`,
-            color: statusColor,
-            border: `1px solid ${statusColor}35`,
-          }}
-        >
-          {road.status}
-        </div>
+    <div
+      className="rounded-2xl p-4"
+      style={{
+        background: "hsl(var(--muted))",
+        border: `1px solid ${color}30`,
+      }}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold">{factor.label}</h3>
+        <Pill label={factor.severity} color={color} />
       </div>
 
-      <section
-        className="grid gap-6 rounded-3xl p-6 lg:grid-cols-[1fr_220px]"
-        style={{
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-        }}
-      >
-        <div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl bg-background/40 p-4">
-              <div className="text-xs text-muted-foreground">Road Type</div>
-              <div className="mt-1 font-semibold">{road.roadType}</div>
-            </div>
+      <p className="text-xs leading-5 text-muted-foreground">{factor.value}</p>
+    </div>
+  );
+}
 
-            <div className="rounded-2xl bg-background/40 p-4">
-              <div className="text-xs text-muted-foreground">Length</div>
-              <div className="mt-1 font-semibold">{road.length}</div>
-            </div>
+export default function RoadDetailPage() {
+  const params = useParams<{ id: string }>();
+  const road = ROAD_DATABASE[params.id ?? "1"] ?? ROAD_DATABASE["1"];
 
-            <div className="rounded-2xl bg-background/40 p-4">
-              <div className="text-xs text-muted-foreground">Contractor</div>
-              <div className="mt-1 font-semibold">{road.contractor}</div>
-            </div>
+  const riskColor = getRiskColor(road.riskLevel);
+  const statusColor = getStatusColor(road.status);
+  const budgetVariance = road.spentBudgetCr - road.allocatedBudgetCr;
+  const budgetVariancePercent =
+    road.allocatedBudgetCr > 0
+      ? (budgetVariance / road.allocatedBudgetCr) * 100
+      : 0;
 
-            <div className="rounded-2xl bg-background/40 p-4">
-              <div className="text-xs text-muted-foreground">Last Repaired</div>
-              <div className="mt-1 font-semibold">{road.lastRepaired}</div>
-            </div>
-          </div>
-
-          <div className="mt-5 rounded-2xl bg-background/40 p-5">
-            <div className="mb-2 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-teal-400" />
-              <h2 className="font-bold">Road Intelligence Summary</h2>
-            </div>
-
-            <p className="text-sm leading-6 text-muted-foreground">
-              {road.summary}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center justify-center">
-          <div
-            className="relative flex h-36 w-36 items-center justify-center rounded-full"
-            style={{
-              background: `conic-gradient(${riskColor} ${road.riskScore * 3.6}deg, rgba(148,163,184,0.18) 0deg)`,
-            }}
+  return (
+    <div className="space-y-6 p-6">
+      <div>
+        <Link href="/roads">
+          <button
+            type="button"
+            className="mb-4 flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition hover:bg-white/10"
           >
-            <div
-              className="flex h-28 w-28 flex-col items-center justify-center rounded-full"
-              style={{ background: "hsl(var(--card))" }}
-            >
-              <span
-                className="text-3xl font-bold"
-                style={{ color: riskColor, fontFamily: "Sora, sans-serif" }}
+            <ArrowLeft className="h-4 w-4" />
+            Back to Road DNA
+          </button>
+        </Link>
+
+        <section
+          className="overflow-hidden rounded-3xl p-6"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(14,165,164,0.20), rgba(59,130,246,0.10), hsl(var(--card)))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <div
+                className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                style={{
+                  background: "rgba(14,165,164,0.14)",
+                  color: "#0EA5A4",
+                }}
               >
-                {road.riskScore}
-              </span>
-              <span className="text-xs text-muted-foreground">/100</span>
+                <Route className="h-3.5 w-3.5" />
+                ROAD DNA PROFILE
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill label={road.riskLevel} color={riskColor} />
+                <Pill label={road.status} color={statusColor} />
+              </div>
+
+              <h1
+                className="mt-3 text-2xl font-bold md:text-3xl"
+                style={{ fontFamily: "Sora, sans-serif" }}
+              >
+                {road.name}
+              </h1>
+
+              <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4" />
+                {road.location} · {road.authority} · {road.roadType}
+              </p>
+
+              <p className="mt-4 max-w-4xl text-sm leading-6 text-muted-foreground">
+                {road.summary}
+              </p>
+            </div>
+
+            <div
+              className="rounded-2xl p-5 xl:min-w-[260px]"
+              style={{
+                background: "hsl(var(--background))",
+                border: "1px solid hsl(var(--border))",
+              }}
+            >
+              <p className="text-xs text-muted-foreground">Road Health Score</p>
+
+              <div className="mt-1 flex items-end gap-2">
+                <span
+                  className="text-5xl font-bold"
+                  style={{
+                    color: getHealthColor(road.healthScore),
+                    fontFamily: "Sora, sans-serif",
+                  }}
+                >
+                  {road.healthScore}
+                </span>
+                <span className="pb-2 text-sm text-muted-foreground">/100</span>
+              </div>
+
+              <div
+                className="mt-4 h-2 overflow-hidden rounded-full"
+                style={{ background: "hsl(var(--border))" }}
+              >
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${road.healthScore}%`,
+                    background: getHealthColor(road.healthScore),
+                  }}
+                />
+              </div>
             </div>
           </div>
-
-          <div className="mt-3 text-sm font-semibold text-muted-foreground">
-            Risk Score
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          icon={Wallet}
-          label="Allocated Budget"
-          value={formatMoney(road.allocatedBudget)}
-          color="#0EA5A4"
+        <MetricCard
+          label="Risk Score"
+          value={`${road.riskScore}/100`}
+          note={`Failure level: ${road.riskLevel}`}
+          icon={TrendingDown}
+          color={riskColor}
         />
-        <StatCard
-          icon={Wallet}
-          label="Spent Budget"
-          value={formatMoney(road.spentBudget)}
-          color="#16A34A"
-        />
-        <StatCard
-          icon={AlertTriangle}
-          label="Total Complaints"
+
+        <MetricCard
+          label="Complaints"
           value={road.totalComplaints}
+          note="Citizen signals linked"
+          icon={FileText}
           color="#F59E0B"
         />
-        <StatCard
-          icon={ShieldAlert}
+
+        <MetricCard
           label="Repeat Failures"
           value={road.repeatFailures}
-          color="#DC2626"
+          note="Repair recurrence"
+          icon={AlertTriangle}
+          color={road.repeatFailures >= 3 ? "#DC2626" : "#F97316"}
+        />
+
+        <MetricCard
+          label="Budget Used"
+          value={formatCr(road.spentBudgetCr)}
+          note={
+            budgetVariance > 0
+              ? `${budgetVariancePercent.toFixed(1)}% over approved`
+              : "Within approved budget"
+          }
+          icon={Wallet}
+          color={budgetVariance > 0 ? "#DC2626" : "#16A34A"}
         />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-2">
+      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div
-          className="rounded-3xl p-6"
+          className="rounded-3xl p-5"
           style={{
             background: "hsl(var(--card))",
             border: "1px solid hsl(var(--border))",
           }}
         >
           <h2
-            className="mb-5 text-lg font-bold"
+            className="font-semibold"
             style={{ fontFamily: "Sora, sans-serif" }}
           >
-            Health Score Trend
+            Health vs Risk Trend
           </h2>
 
-          <div className="h-[260px]">
+          <p className="mt-1 text-xs text-muted-foreground">
+            Road health should improve while risk reduces. Divergence indicates
+            maintenance failure.
+          </p>
+
+          <div className="mt-4 h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={road.healthTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
                 <Tooltip />
                 <Line
                   type="monotone"
                   dataKey="score"
+                  name="Health Score"
                   stroke="#0EA5A4"
+                  strokeWidth={3}
+                  dot={{ r: 4 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="risk"
+                  name="Risk Score"
+                  stroke={riskColor}
                   strokeWidth={3}
                   dot={{ r: 4 }}
                 />
@@ -1008,114 +1133,71 @@ export default function RoadDetail() {
         </div>
 
         <div
-          className="rounded-3xl p-6"
-          style={{
-            background: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-          }}
-        >
-          <div className="mb-5 flex items-center gap-2">
-            <span className="rounded-full bg-teal-500/15 px-3 py-1 text-xs font-semibold text-teal-400">
-              AI Analysis
-            </span>
-
-            <h2
-              className="text-lg font-bold"
-              style={{ fontFamily: "Sora, sans-serif" }}
-            >
-              Road Intelligence Summary
-            </h2>
-          </div>
-
-          <div className="space-y-4">
-            {road.riskFactors.map((factor) => (
-              <div
-                key={factor.label}
-                className="rounded-2xl p-4"
-                style={{
-                  background: "hsl(var(--background))",
-                  border: "1px solid hsl(var(--border))",
-                }}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="font-semibold">{factor.label}</div>
-                    <div className="mt-1 text-sm text-muted-foreground">
-                      {factor.value}
-                    </div>
-                  </div>
-
-                  <span
-                    className="rounded-full px-2 py-1 text-xs font-bold capitalize"
-                    style={{
-                      color: SEVERITY_COLORS[factor.severity],
-                      background: `${SEVERITY_COLORS[factor.severity]}18`,
-                    }}
-                  >
-                    {factor.severity}
-                  </span>
-                </div>
-              </div>
-            ))}
-
-            <div className="rounded-2xl bg-teal-500/10 p-4 text-sm text-teal-300">
-              Recommendation: prioritize maintenance based on current risk,
-              complaint density, repeat failures, and budget utilization.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-2">
-        <div
-          className="rounded-3xl p-6"
+          className="rounded-3xl p-5"
           style={{
             background: "hsl(var(--card))",
             border: "1px solid hsl(var(--border))",
           }}
         >
           <h2
-            className="mb-5 text-lg font-bold"
+            className="font-semibold"
             style={{ fontFamily: "Sora, sans-serif" }}
           >
-            Budget Utilization
+            Road Metadata
           </h2>
 
-          <div className="mb-4">
-            <div className="mb-2 flex justify-between text-sm">
-              <span className="text-muted-foreground">Spent</span>
-              <span className="font-semibold">{spentPercent}%</span>
-            </div>
-
-            <div className="h-3 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${spentPercent}%`,
-                  background: "linear-gradient(90deg, #16A34A, #0EA5A4)",
-                }}
-              />
-            </div>
+          <div className="mt-4 space-y-3">
+            <InfoRow icon={Building2} label="Authority" value={road.authority} />
+            <InfoRow icon={User} label="Contractor" value={road.contractor} />
+            <InfoRow icon={Calendar} label="Built Year" value={road.builtYear} />
+            <InfoRow icon={Activity} label="Length" value={`${road.lengthKm} km`} />
+            <InfoRow icon={Wrench} label="Surface" value={road.surface} />
+            <InfoRow icon={Clock3} label="Next Inspection" value={road.nextInspection} />
           </div>
+        </div>
+      </section>
 
-          <div className="h-[220px]">
+      <section className="grid gap-6 xl:grid-cols-2">
+        <div
+          className="rounded-3xl p-5"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <h2
+            className="font-semibold"
+            style={{ fontFamily: "Sora, sans-serif" }}
+          >
+            Budget Flow
+          </h2>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            Approved vs actual spend in ₹ crore.
+          </p>
+
+          <div className="mt-4 h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={road.spendingTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
                 <Area
                   type="monotone"
-                  dataKey="allocated"
-                  stroke="#1E88E5"
-                  fill="rgba(30,136,229,0.18)"
+                  dataKey="approved"
+                  name="Approved"
+                  stroke="#0EA5A4"
+                  fill="rgba(14,165,164,0.14)"
+                  strokeWidth={2}
                 />
                 <Area
                   type="monotone"
                   dataKey="spent"
-                  stroke="#16A34A"
-                  fill="rgba(22,163,74,0.18)"
+                  name="Spent"
+                  stroke="#F59E0B"
+                  fill="rgba(245,158,11,0.14)"
+                  strokeWidth={2}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -1123,38 +1205,44 @@ export default function RoadDetail() {
         </div>
 
         <div
-          className="rounded-3xl p-6"
+          className="rounded-3xl p-5"
           style={{
             background: "hsl(var(--card))",
             border: "1px solid hsl(var(--border))",
           }}
         >
           <h2
-            className="mb-5 text-lg font-bold"
+            className="font-semibold"
             style={{ fontFamily: "Sora, sans-serif" }}
           >
-            Complaint Breakdown
+            Complaint Mix
           </h2>
 
-          <div className="h-[280px]">
+          <p className="mt-1 text-xs text-muted-foreground">
+            Citizen issue categories linked to this road.
+          </p>
+
+          <div className="mt-4 h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={road.complaintHistory} layout="vertical">
-                <XAxis type="number" tick={{ fontSize: 12 }} />
+                <XAxis type="number" tick={{ fontSize: 10 }} />
                 <YAxis
                   dataKey="type"
                   type="category"
-                  tick={{ fontSize: 12 }}
-                  width={120}
+                  width={100}
+                  tick={{ fontSize: 10 }}
                 />
                 <Tooltip />
                 <Bar dataKey="count" radius={[0, 6, 6, 0]}>
-                  {road.complaintHistory.map((_, index) => (
+                  {road.complaintHistory.map((item, index) => (
                     <Cell
-                      key={index}
+                      key={item.type}
                       fill={
-                        ["#0EA5A4", "#F59E0B", "#F97316", "#DC2626", "#1E88E5"][
-                          index % 5
-                        ]
+                        index === 0
+                          ? riskColor
+                          : index === 1
+                            ? "#F59E0B"
+                            : "#0EA5A4"
                       }
                     />
                   ))}
@@ -1165,119 +1253,167 @@ export default function RoadDetail() {
         </div>
       </section>
 
-      <section
-        className="rounded-3xl p-6"
-        style={{
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-        }}
-      >
-        <div className="mb-5 flex items-center gap-2">
-          <Wrench className="h-5 w-5 text-teal-400" />
+      <section className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+        <div
+          className="rounded-3xl p-5"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
           <h2
-            className="text-lg font-bold"
+            className="font-semibold"
+            style={{ fontFamily: "Sora, sans-serif" }}
+          >
+            Risk Factors
+          </h2>
+
+          <div className="mt-4 space-y-3">
+            {road.riskFactors.map((factor) => (
+              <RiskFactorCard key={factor.label} factor={factor} />
+            ))}
+          </div>
+        </div>
+
+        <div
+          className="rounded-3xl p-5"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <h2
+            className="font-semibold"
             style={{ fontFamily: "Sora, sans-serif" }}
           >
             Repair History
           </h2>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[850px]">
-            <thead>
-              <tr
-                className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground"
-                style={{ borderColor: "hsl(var(--border))" }}
-              >
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Work Completed</th>
-                <th className="px-4 py-3">Contractor</th>
-                <th className="px-4 py-3">Cost</th>
-                <th className="px-4 py-3">Quality</th>
-              </tr>
-            </thead>
+          <div className="mt-4 space-y-3">
+            {road.repairHistory.map((repair) => {
+              const qualityColor = getQualityColor(repair.quality);
 
-            <tbody>
-              {road.repairHistory.map((item) => (
-                <tr
-                  key={`${item.date}-${item.work}`}
-                  className="border-b"
-                  style={{ borderColor: "hsl(var(--border))" }}
+              return (
+                <div
+                  key={`${repair.date}-${repair.work}`}
+                  className="rounded-2xl p-4"
+                  style={{
+                    background: "hsl(var(--muted))",
+                    border: "1px solid hsl(var(--border))",
+                  }}
                 >
-                  <td className="px-4 py-4 text-sm text-muted-foreground">
-                    <Clock className="mr-2 inline h-4 w-4" />
-                    {item.date}
-                  </td>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold">{repair.work}</span>
+                        <Pill label={repair.quality} color={qualityColor} />
+                      </div>
 
-                  <td className="px-4 py-4 text-sm font-medium">
-                    <FileText className="mr-2 inline h-4 w-4 text-teal-400" />
-                    {item.work}
-                  </td>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {repair.date} · {repair.contractor}
+                      </p>
+                    </div>
 
-                  <td className="px-4 py-4 text-sm text-muted-foreground">
-                    <Building2 className="mr-2 inline h-4 w-4" />
-                    {item.contractor}
-                  </td>
-
-                  <td className="px-4 py-4 text-sm font-semibold">
-                    {formatMoney(item.cost)}
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <span
-                      className="rounded-full px-2 py-1 text-xs font-semibold"
+                    <div
+                      className="rounded-xl px-3 py-2 text-sm font-bold"
                       style={{
-                        color:
-                          item.quality === "Good"
-                            ? "#16A34A"
-                            : item.quality === "Average"
-                              ? "#F59E0B"
-                              : "#DC2626",
-                        background:
-                          item.quality === "Good"
-                            ? "rgba(22,163,74,0.15)"
-                            : item.quality === "Average"
-                              ? "rgba(245,158,11,0.15)"
-                              : "rgba(220,38,38,0.15)",
+                        background: `${qualityColor}14`,
+                        color: qualityColor,
                       }}
                     >
-                      {item.quality}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl bg-blue-500/10 p-4 text-blue-300">
-          <TrendingDown className="mb-2 h-5 w-5" />
-          <div className="font-bold">Health Score</div>
-          <div className="text-2xl font-bold">{road.healthScore}/100</div>
-        </div>
-
-        <div className="rounded-2xl bg-emerald-500/10 p-4 text-emerald-300">
-          <CheckCircle2 className="mb-2 h-5 w-5" />
-          <div className="font-bold">Next Inspection</div>
-          <div className="text-2xl font-bold">{road.nextInspection}</div>
-        </div>
-
-        <div className="rounded-2xl bg-orange-500/10 p-4 text-orange-300">
-          <AlertTriangle className="mb-2 h-5 w-5" />
-          <div className="font-bold">Action Priority</div>
-          <div className="text-2xl font-bold">
-            {road.riskScore >= 80
-              ? "Urgent"
-              : road.riskScore >= 65
-                ? "High"
-                : road.riskScore >= 45
-                  ? "Medium"
-                  : "Low"}
+                      {formatCr(repair.costCr)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
+
+      <section
+        className="rounded-3xl p-5"
+        style={{
+          background:
+            road.riskLevel === "critical"
+              ? "rgba(220,38,38,0.10)"
+              : road.riskLevel === "high"
+                ? "rgba(249,115,22,0.10)"
+                : "rgba(14,165,164,0.08)",
+          border: `1px solid ${riskColor}30`,
+        }}
+      >
+        <div className="flex items-start gap-3">
+          {road.riskLevel === "low" ? (
+            <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-emerald-500" />
+          ) : (
+            <AlertTriangle
+              className="mt-1 h-5 w-5 shrink-0"
+              style={{ color: riskColor }}
+            />
+          )}
+
+          <div>
+            <h2
+              className="font-semibold"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              Recommended Action
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {road.recommendedAction}
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/complaints">
+                <button className="rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-4 py-2 text-sm font-bold text-white">
+                  File Related Complaint
+                </button>
+              </Link>
+
+              <Link href="/spending">
+                <button className="rounded-2xl bg-white/10 px-4 py-2 text-sm font-semibold">
+                  Review Spending
+                </button>
+              </Link>
+
+              <Link href="/contractors">
+                <button className="rounded-2xl bg-white/10 px-4 py-2 text-sm font-semibold">
+                  Check Contractor
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div
+      className="flex items-center justify-between gap-4 rounded-2xl p-3"
+      style={{
+        background: "hsl(var(--muted))",
+        border: "1px solid hsl(var(--border))",
+      }}
+    >
+      <span className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Icon className="h-4 w-4" />
+        {label}
+      </span>
+
+      <span className="text-right text-sm font-semibold">{value}</span>
     </div>
   );
 }
