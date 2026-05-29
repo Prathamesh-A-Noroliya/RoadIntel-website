@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Switch, Route, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -24,16 +25,15 @@ import Contractors from "@/pages/contractors";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
 import SOS from "@/pages/sos";
-import Subscribe from "@/pages/subscribe";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
-function PublicPage({ children }: { children: React.ReactNode }) {
+function PublicPage({ children }: { children: ReactNode }) {
   return <RootLayout>{children}</RootLayout>;
 }
 
-function PrivatePage({ children }: { children: React.ReactNode }) {
+function PrivatePage({ children }: { children: ReactNode }) {
   const isAuthenticated =
     typeof window !== "undefined" &&
     sessionStorage.getItem("roadintel-auth") === "true";
@@ -63,12 +63,6 @@ function Router() {
       <Route path="/register">
         <PublicPage>
           <Register />
-        </PublicPage>
-      </Route>
-
-      <Route path="/subscribe">
-        <PublicPage>
-          <Subscribe />
         </PublicPage>
       </Route>
 

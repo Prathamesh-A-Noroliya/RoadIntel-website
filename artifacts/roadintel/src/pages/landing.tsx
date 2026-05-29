@@ -1,583 +1,657 @@
 import { Link } from "wouter";
 import {
-  Shield,
-  Radio,
-  BarChart3,
-  Map,
   AlertTriangle,
-  Activity,
-  TrendingUp,
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  ClipboardList,
   Eye,
-  Lock,
-  Globe,
   FileText,
+  IndianRupee,
+  Landmark,
+  Map,
+  MapPin,
+  Radio,
+  Route,
+  ScanLine,
+  Shield,
+  ShieldCheck,
+  TrendingDown,
+  Users,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const STATS = [
-  { value: "12,847", label: "Roads Monitored", icon: Map },
-  { value: "94,320", label: "Complaints Filed", icon: FileText },
-  { value: "₹2,840Cr", label: "Budget Tracked", icon: BarChart3 },
-  { value: "847", label: "Active Sensors", icon: Radio },
-];
+type Stat = {
+  value: string;
+  label: string;
+  note: string;
+  icon: LucideIcon;
+  color: string;
+};
 
-const FEATURES = [
+type Feature = {
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+  color: string;
+};
+
+type Workflow = {
+  step: string;
+  title: string;
+  desc: string;
+};
+
+type Requirement = {
+  title: string;
+  roadwatchNeed: string;
+  roadintelFeature: string;
+  icon: LucideIcon;
+  color: string;
+};
+
+const PILOT_STATS: Stat[] = [
   {
-    icon: Radio,
-    title: "RoadSense Sensor Intelligence",
-    desc: "Low-cost IoT and vehicle-mounted sensors continuously detect potholes, vibration anomalies, and road degradation in real-time.",
+    value: "8",
+    label: "Pilot Roads",
+    note: "Pune / PCMC sample network",
+    icon: Map,
     color: "#0EA5A4",
   },
   {
-    icon: Shield,
-    title: "AI Corruption Detector",
-    desc: "Machine learning algorithms flag suspicious repair patterns, budget overruns, and contractor performance anomalies automatically.",
+    value: "220",
+    label: "Complaint Signals",
+    note: "Filed, routed and reviewed",
+    icon: FileText,
+    color: "#3B82F6",
+  },
+  {
+    value: "₹24.3Cr",
+    label: "Budget Visibility",
+    note: "Approved vs used comparison",
+    icon: IndianRupee,
     color: "#F59E0B",
   },
   {
+    value: "5",
+    label: "Contractors Scored",
+    note: "RAS accountability model",
+    icon: Users,
+    color: "#16A34A",
+  },
+];
+
+const ROADWATCH_REQUIREMENTS: Requirement[] = [
+  {
+    title: "Monitor Road Quality",
+    roadwatchNeed: "Citizens need a simple way to understand road condition.",
+    roadintelFeature: "Road DNA, health score, risk score and repair history.",
     icon: Map,
-    title: "Road DNA Profiles",
-    desc: "Every road gets a digital identity — complete history, contractor records, repair logs, health scores, and AI-generated insights.",
+    color: "#0EA5A4",
+  },
+  {
+    title: "Track Public Spending",
+    roadwatchNeed: "Public money spent on roads should be visible.",
+    roadintelFeature: "Approved budget, actual spend and road-health comparison.",
+    icon: IndianRupee,
+    color: "#F59E0B",
+  },
+  {
+    title: "Report Issues",
+    roadwatchNeed: "Citizens should be able to report potholes and unsafe roads.",
+    roadintelFeature: "Complaint filing, issue severity and progress timeline.",
+    icon: ClipboardList,
+    color: "#3B82F6",
+  },
+  {
+    title: "Route to Authority",
+    roadwatchNeed: "Complaints must reach the responsible department.",
+    roadintelFeature: "PMC / PCMC / PWD / NHAI-MSRDC routing logic.",
+    icon: Landmark,
+    color: "#8B5CF6",
+  },
+];
+
+const FEATURES: Feature[] = [
+  {
+    icon: Route,
+    title: "Road DNA Registry",
+    desc: "Each road has a condition profile with health score, risk score, complaint history, repair history, contractor details and recommended action.",
+    color: "#0EA5A4",
+  },
+  {
+    icon: FileText,
+    title: "Citizen Complaint Routing",
+    desc: "Road issues are filed with location, severity and issue type, then routed to the correct civic authority with visible status tracking.",
+    color: "#3B82F6",
+  },
+  {
+    icon: IndianRupee,
+    title: "Public Spending Transparency",
+    desc: "Approved budgets are compared with actual spending and road health to identify budget-quality mismatch and audit risk.",
+    color: "#F59E0B",
+  },
+  {
+    icon: Users,
+    title: "Contractor Accountability",
+    desc: "Contractors are scored using quality, timeliness, budget discipline, repeat failures and complaint recurrence.",
     color: "#16A34A",
   },
   {
-    icon: TrendingUp,
-    title: "Predictive Risk Maps",
-    desc: "AI forecasts which roads will fail in the next 7 to 30 days, enabling proactive maintenance before critical damage occurs.",
+    icon: TrendingDown,
+    title: "Future Risk Map",
+    desc: "RoadIntel highlights road segments likely to fail soon using complaint density, repair history, monsoon risk and road condition.",
     color: "#DC2626",
   },
   {
-    icon: Eye,
-    title: "Proof of Work Verification",
-    desc: "Before and after imagery with geo-tags, timestamps, citizen confirmation, and AI validation ensure repairs actually happened.",
+    icon: ScanLine,
+    title: "Quick Scan Classifier",
+    desc: "Demo road-image classifier identifies potholes, cracks, waterlogging and good road condition with suggested authority routing.",
     color: "#0EA5A4",
-  },
-  {
-    icon: Lock,
-    title: "Public Accountability",
-    desc: "Every rupee spent is tracked. Contractor performance is scored. Citizens and authorities see the same transparent data.",
-    color: "#F59E0B",
   },
 ];
 
-const HOW_IT_WORKS = [
+const WORKFLOW: Workflow[] = [
   {
     step: "01",
-    title: "Report or Detect",
-    desc: "Citizens file complaints with location and photos. Sensors auto-detect issues in real-time.",
+    title: "Citizen reports or scans issue",
+    desc: "A citizen files a pothole, crack, waterlogging or surface-damage complaint with location and description.",
   },
   {
     step: "02",
-    title: "AI Analysis",
-    desc: "Our AI classifies damage severity, suggests repair priority, and routes complaints to the right authority.",
+    title: "RoadIntel routes the issue",
+    desc: "The platform maps the issue to PMC, PCMC, PWD or highway authority based on road ownership and severity.",
   },
   {
     step: "03",
-    title: "Track & Verify",
-    desc: "Follow every complaint from filed to resolved. AI validates repair quality using before/after analysis.",
+    title: "Road DNA gets updated",
+    desc: "Complaint history, health score, risk score, repair history and spending context become visible in one road profile.",
   },
   {
     step: "04",
-    title: "Accountability",
-    desc: "Contractor performance, budget utilization, and corruption patterns are transparently surfaced for public review.",
+    title: "Accountability is shown",
+    desc: "Public spending, contractor quality and repeat-repair signals are reviewed to recommend the next civic action.",
   },
 ];
 
-const PROBLEMS = [
-  {
-    icon: AlertTriangle,
-    title: "Repeated Failures",
-    desc: "Same roads fail 3-5 times in 2 years. No accountability system to detect the pattern.",
-    color: "#DC2626",
-  },
-  {
-    icon: Eye,
-    title: "No Verification",
-    desc: "Contractors claim repairs complete. Citizens see no proof. Public money disappears.",
-    color: "#F59E0B",
-  },
-  {
-    icon: Globe,
-    title: "Fragmented Data",
-    desc: "Road data sits in silos across departments. No unified view for citizens or authorities.",
-    color: "#0EA5A4",
-  },
-];
-
-const SENSOR_METRICS = [
-  { label: "Active Sensors", value: "847", sub: "Real-time monitoring" },
-  { label: "Anomalies Today", value: "34", sub: "Auto-detected" },
-  { label: "Avg Stress Index", value: "4.2/10", sub: "Network average" },
-  { label: "Uptime", value: "99.7%", sub: "Platform availability" },
+const AUDIT_POINTS = [
+  "Transparency-first RoadWatch workflow",
+  "Civic transparency platform",
+  "No fake live government-data claims",
+  "Pilot data clearly focused on Pune / PCMC",
+  "Public spending linked with road quality",
+  "Responsible authority routing included",
+  "Contractor accountability included",
+  "Mobile and desktop friendly structure",
 ];
 
 export default function Landing() {
   return (
-    <div className="min-h-screen" style={{ background: "#0F172A" }}>
-      {/* Nav */}
+    <div
+      className="min-h-screen overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(circle at top left, rgba(14,165,164,0.16), transparent 34%), radial-gradient(circle at top right, rgba(59,130,246,0.12), transparent 32%), #07111F",
+      }}
+    >
       <nav
-        className="sticky top-0 z-50 flex items-center justify-between px-8 py-5 border-b backdrop-blur-md"
+        className="sticky top-0 z-50 border-b px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8"
         style={{
-          borderColor: "rgba(255,255,255,0.07)",
-          background: "rgba(15,23,42,0.88)",
+          borderColor: "rgba(255,255,255,0.08)",
+          background: "rgba(7,17,31,0.88)",
         }}
       >
-        <div className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: "#0EA5A4" }}
-          >
-            <Shield className="w-5 h-5 text-white" />
-          </div>
-          <span
-            className="text-xl font-bold text-white"
-            style={{ fontFamily: "Sora, sans-serif" }}
-          >
-            RoadIntel
-          </span>
-        </div>
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
 
-        <div
-          className="hidden md:flex items-center gap-8 text-sm"
-          style={{ color: "rgba(255,255,255,0.6)" }}
-        >
-          <a href="#about" className="hover:text-white transition-colors">
-            About
-          </a>
-          <a href="#features" className="hover:text-white transition-colors">
-            Features
-          </a>
-          <a href="#how-it-works" className="hover:text-white transition-colors">
-            How It Works
-          </a>
-          <a href="#sensors" className="hover:text-white transition-colors">
-            Sensor Intel
-          </a>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link href="/login">
-            <button
-              className="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
-              style={{
-                color: "rgba(255,255,255,0.7)",
-                border: "1px solid rgba(255,255,255,0.15)",
-              }}
-            >
-              Sign In
-            </button>
-          </Link>
-
-          <Link href="/dashboard">
-            <button
-              className="px-4 py-2 text-sm font-semibold rounded-lg text-white transition-all hover:opacity-90"
-              style={{ background: "#0EA5A4" }}
-            >
-              Demo Access
-            </button>
-          </Link>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="relative px-8 py-24 text-center overflow-hidden">
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse at 50% 0%, rgba(14,165,164,0.15) 0%, transparent 70%)",
-          }}
-        />
-        <div className="relative max-w-4xl mx-auto">
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-6"
-            style={{
-              background: "rgba(14,165,164,0.15)",
-              color: "#0EA5A4",
-              border: "1px solid rgba(14,165,164,0.3)",
-            }}
-          >
-            <Activity className="w-3 h-3" />
-            AI-Powered Road Intelligence Platform
-          </div>
-
-          <h1
-            className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
-            style={{ fontFamily: "Sora, sans-serif" }}
-          >
-            Smarter Roads.
-            <br />
-            <span style={{ color: "#0EA5A4" }}>Clearer Accountability.</span>
-          </h1>
-
-          <p
-            className="text-xl mb-10 max-w-2xl mx-auto"
-            style={{ color: "rgba(255,255,255,0.6)" }}
-          >
-            RoadIntel uses sensor intelligence, AI analysis, and public transparency
-            tools to monitor infrastructure health, detect corruption, and hold
-            contractors accountable.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/dashboard">
-              <button
-                className="px-8 py-4 rounded-xl text-base font-semibold text-white transition-all hover:opacity-90 hover:scale-105"
-                style={{ background: "#0EA5A4" }}
+            <div>
+              <div
+                className="text-lg font-bold text-white"
+                style={{ fontFamily: "Sora, sans-serif" }}
               >
-                Launch Dashboard
+                RoadIntel
+              </div>
+              <div className="text-xs text-slate-400">
+                RoadWatch Transparency Platform
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden items-center gap-7 text-sm text-slate-400 md:flex">
+            <a href="#roadwatch" className="transition hover:text-white">
+              RoadWatch Fit
+            </a>
+            <a href="#features" className="transition hover:text-white">
+              Features
+            </a>
+            <a href="#workflow" className="transition hover:text-white">
+              Workflow
+            </a>
+            <a href="#transparency" className="transition hover:text-white">
+              Transparency
+            </a>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link href="/login">
+              <button className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10">
+                Login
               </button>
             </Link>
 
-            <a href="#about">
-              <button
-                className="px-8 py-4 rounded-xl text-base font-semibold transition-all hover:opacity-80"
-                style={{
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  color: "rgba(255,255,255,0.85)",
-                }}
-              >
-                View About Section
+            <Link href="/login">
+              <button className="rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-cyan-500/20 transition hover:scale-[1.02]">
+                Open Demo
               </button>
-            </a>
+            </Link>
           </div>
         </div>
-      </section>
+      </nav>
 
-      {/* About Section */}
-      <section
-        id="about"
-        className="px-8 py-20 border-t"
-        style={{
-          borderColor: "rgba(255,255,255,0.06)",
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(14,165,164,0.03) 100%)",
-        }}
-      >
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
+      <main>
+        <section className="relative px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+              <div>
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-300">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Built for RoadWatch: quality, spending, reporting and transparency
+                </div>
+
+                <h1
+                  className="max-w-4xl text-4xl font-black leading-tight text-white sm:text-5xl lg:text-7xl"
+                  style={{ fontFamily: "Sora, sans-serif" }}
+                >
+                  Make road maintenance{" "}
+                  <span className="bg-gradient-to-r from-cyan-300 to-blue-400 bg-clip-text text-transparent">
+                    visible, measurable and accountable.
+                  </span>
+                </h1>
+
+                <p className="mt-6 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">
+                  RoadIntel helps citizens monitor road quality, report issues
+                  to the right authority, track public spending, and understand
+                  contractor accountability through one transparent civic
+                  dashboard.
+                </p>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <Link href="/login">
+                    <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-6 py-4 text-sm font-bold text-white shadow-xl shadow-cyan-500/20 transition hover:scale-[1.02]">
+                      Launch RoadIntel Demo
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </Link>
+
+                  <a href="#roadwatch">
+                    <button className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/[0.08]">
+                      View RoadWatch Alignment
+                    </button>
+                  </a>
+                </div>
+
+                <div className="mt-6 flex flex-wrap gap-3 text-xs text-slate-400">
+                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                    Demo login: demo@roadintel.in
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                    Password: demo123
+                  </span>
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-emerald-300">
+Transparency-first demo
+                  </span>
+                </div>
+              </div>
+
+              <div
+                className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/30"
+              >
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">
+                      RoadIntel Pilot View
+                    </p>
+                    <h2
+                      className="mt-1 text-xl font-bold text-white"
+                      style={{ fontFamily: "Sora, sans-serif" }}
+                    >
+                      Transparency Dashboard
+                    </h2>
+                  </div>
+
+                  <div className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-300">
+                    Audit-safe demo
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {PILOT_STATS.map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="rounded-3xl border border-white/10 bg-slate-950/40 p-4"
+                    >
+                      <div className="mb-4 flex items-center justify-between">
+                        <div
+                          className="flex h-10 w-10 items-center justify-center rounded-2xl"
+                          style={{ background: `${stat.color}18` }}
+                        >
+                          <stat.icon
+                            className="h-5 w-5"
+                            style={{ color: stat.color }}
+                          />
+                        </div>
+
+                        <span className="text-[10px] font-semibold uppercase text-slate-500">
+                          Pilot
+                        </span>
+                      </div>
+
+                      <div
+                        className="text-2xl font-bold text-white"
+                        style={{ fontFamily: "Sora, sans-serif" }}
+                      >
+                        {stat.value}
+                      </div>
+
+                      <div className="mt-1 text-sm font-semibold text-slate-200">
+                        {stat.label}
+                      </div>
+
+                      <div className="mt-1 text-xs leading-5 text-slate-500">
+                        {stat.note}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-4">
+                  <div className="flex items-start gap-3">
+                    <Eye className="mt-0.5 h-5 w-5 shrink-0 text-cyan-300" />
+                    <div>
+                      <h3 className="text-sm font-bold text-white">
+                        Transparency-first design
+                      </h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-300">
+                        Every important road question connects to visible data:
+                        condition, complaint, authority, budget, contractor and
+                        recommended action.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="roadwatch" className="px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-10 max-w-3xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-300">
+                <MapPin className="h-3.5 w-3.5" />
+                RoadWatch Requirement Mapping
+              </div>
+
+              <h2
+                className="text-3xl font-bold text-white sm:text-4xl"
+                style={{ fontFamily: "Sora, sans-serif" }}
+              >
+                Built around road transparency and public accountability.
+              </h2>
+
+              <p className="mt-3 text-sm leading-7 text-slate-400">
+                RoadIntel focuses on the core civic requirement: monitor road
+                quality, track public spending, report issues to responsible
+                authorities, and increase infrastructure transparency.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {ROADWATCH_REQUIREMENTS.map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-3xl border border-white/10 bg-white/[0.04] p-5"
+                >
+                  <div
+                    className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl"
+                    style={{ background: `${item.color}18` }}
+                  >
+                    <item.icon
+                      className="h-5 w-5"
+                      style={{ color: item.color }}
+                    />
+                  </div>
+
+                  <h3
+                    className="text-lg font-bold text-white"
+                    style={{ fontFamily: "Sora, sans-serif" }}
+                  >
+                    {item.title}
+                  </h3>
+
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Need
+                  </p>
+
+                  <p className="mt-1 text-sm leading-6 text-slate-400">
+                    {item.roadwatchNeed}
+                  </p>
+
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-cyan-300">
+                    RoadIntel
+                  </p>
+
+                  <p className="mt-1 text-sm leading-6 text-slate-300">
+                    {item.roadintelFeature}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-10 text-center">
+              <h2
+                className="text-3xl font-bold text-white sm:text-4xl"
+                style={{ fontFamily: "Sora, sans-serif" }}
+              >
+                Core RoadIntel Modules
+              </h2>
+
+              <p className="mx-auto mt-3 max-w-3xl text-sm leading-7 text-slate-400">
+                Each module supports a practical transparency workflow for road
+                quality, public spending and responsible authority action.
+              </p>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {FEATURES.map((feature) => (
+                <div
+                  key={feature.title}
+                  className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition hover:-translate-y-1 hover:bg-white/[0.06]"
+                >
+                  <div
+                    className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl"
+                    style={{ background: `${feature.color}18` }}
+                  >
+                    <feature.icon
+                      className="h-6 w-6"
+                      style={{ color: feature.color }}
+                    />
+                  </div>
+
+                  <h3
+                    className="text-lg font-bold text-white"
+                    style={{ fontFamily: "Sora, sans-serif" }}
+                  >
+                    {feature.title}
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-7 text-slate-400">
+                    {feature.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="workflow" className="px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
             <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-5"
+              className="rounded-[2rem] border border-white/10 p-6 sm:p-8 lg:p-10"
               style={{
-                background: "rgba(14,165,164,0.15)",
-                color: "#0EA5A4",
-                border: "1px solid rgba(14,165,164,0.3)",
+                background:
+                  "linear-gradient(135deg, rgba(14,165,164,0.10), rgba(59,130,246,0.07), rgba(255,255,255,0.03))",
               }}
             >
-              <Shield className="w-3 h-3" />
-              About RoadIntel
+              <div className="mb-10 max-w-3xl">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-300">
+                  <Route className="h-3.5 w-3.5" />
+                  Transparent Action Chain
+                </div>
+
+                <h2
+                  className="text-3xl font-bold text-white sm:text-4xl"
+                  style={{ fontFamily: "Sora, sans-serif" }}
+                >
+                  From citizen complaint to civic accountability.
+                </h2>
+
+                <p className="mt-3 text-sm leading-7 text-slate-400">
+                  The workflow is intentionally simple to explain during demo:
+                  issue reporting, authority routing, road profile update,
+                  spending visibility and contractor accountability.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {WORKFLOW.map((item) => (
+                  <div
+                    key={item.step}
+                    className="rounded-3xl border border-white/10 bg-slate-950/40 p-5"
+                  >
+                    <div
+                      className="mb-4 text-4xl font-black text-cyan-300"
+                      style={{ fontFamily: "Sora, sans-serif" }}
+                    >
+                      {item.step}
+                    </div>
+
+                    <h3
+                      className="text-base font-bold text-white"
+                      style={{ fontFamily: "Sora, sans-serif" }}
+                    >
+                      {item.title}
+                    </h3>
+
+                    <p className="mt-3 text-sm leading-6 text-slate-400">
+                      {item.desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="transparency" className="px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+              <div>
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Evaluation-ready principles
+                </div>
+
+                <h2
+                  className="text-3xl font-bold text-white sm:text-4xl"
+                  style={{ fontFamily: "Sora, sans-serif" }}
+                >
+                  Honest demo data. Clear civic impact. No paywall.
+                </h2>
+
+                <p className="mt-4 text-sm leading-7 text-slate-400">
+                  RoadIntel is presented as a working pilot prototype. It avoids
+                  fake live-data claims and focuses on how the solution can be
+                  integrated with real municipal APIs, GIS road ownership data
+                  and field verification workflows later.
+                </p>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <Link href="/login">
+                    <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-6 py-4 text-sm font-bold text-white transition hover:scale-[1.02]">
+                      Enter Demo
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </Link>
+
+                  <a href="#features">
+                    <button className="rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/[0.08]">
+                      Review Features
+                    </button>
+                  </a>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {AUDIT_POINTS.map((point) => (
+                  <div
+                    key={point}
+                    className="flex items-start gap-3 rounded-3xl border border-white/10 bg-white/[0.04] p-4"
+                  >
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
+                    <p className="text-sm leading-6 text-slate-300">{point}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-4xl rounded-[2rem] border border-cyan-400/20 bg-cyan-400/10 p-8 text-center">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-cyan-400/15">
+              <Shield className="h-7 w-7 text-cyan-300" />
             </div>
 
             <h2
-              className="text-4xl md:text-5xl font-bold text-white mb-4"
+              className="text-3xl font-bold text-white"
               style={{ fontFamily: "Sora, sans-serif" }}
             >
-              A Unified Platform For Road Transparency
+              Road infrastructure should be visible, measurable and accountable.
             </h2>
 
-            <p
-              className="text-lg max-w-3xl mx-auto"
-              style={{ color: "rgba(255,255,255,0.62)" }}
-            >
-              RoadIntel combines citizen reporting, AI analysis, sensor
-              intelligence, complaint tracking, contractor accountability, and
-              budget transparency into one modern public infrastructure platform.
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-300">
+              RoadIntel shows how citizens, authorities and auditors can share
+              one transparent view of road quality, public money, complaints and
+              contractor performance.
             </p>
+
+            <Link href="/login">
+              <button className="mt-8 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-7 py-4 text-sm font-bold text-white shadow-lg shadow-cyan-500/20 transition hover:scale-[1.02]">
+                Start RoadIntel Demo
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </Link>
           </div>
+        </section>
+      </main>
 
-          {/* Stats moved into About */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-            {STATS.map(({ value, label, icon: Icon }) => (
-              <div
-                key={label}
-                className="text-center p-6 rounded-2xl"
-                style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                }}
-              >
-                <div
-                  className="w-12 h-12 rounded-xl mx-auto mb-4 flex items-center justify-center"
-                  style={{ background: "rgba(14,165,164,0.15)" }}
-                >
-                  <Icon className="w-5 h-5" style={{ color: "#0EA5A4" }} />
-                </div>
-                <div
-                  className="text-3xl font-bold text-white mb-1"
-                  style={{ fontFamily: "Sora, sans-serif" }}
-                >
-                  {value}
-                </div>
-                <div
-                  className="text-sm"
-                  style={{ color: "rgba(255,255,255,0.5)" }}
-                >
-                  {label}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Problem moved into About */}
-          <div className="mb-16">
-            <div className="text-center mb-12">
-              <h3
-                className="text-3xl font-bold text-white mb-4"
-                style={{ fontFamily: "Sora, sans-serif" }}
-              >
-                The Problem With Roads Today
-              </h3>
-              <p
-                className="text-lg"
-                style={{ color: "rgba(255,255,255,0.5)" }}
-              >
-                India spends over ₹1.5 lakh crore annually on roads, yet
-                accountability remains fragmented.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              {PROBLEMS.map(({ icon: Icon, title, desc, color }) => (
-                <div
-                  key={title}
-                  className="p-6 rounded-2xl"
-                  style={{
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                  }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-xl mb-4 flex items-center justify-center"
-                    style={{ background: `${color}20` }}
-                  >
-                    <Icon className="w-5 h-5" style={{ color }} />
-                  </div>
-                  <h4
-                    className="text-lg font-semibold text-white mb-2"
-                    style={{ fontFamily: "Sora, sans-serif" }}
-                  >
-                    {title}
-                  </h4>
-                  <p
-                    className="text-sm"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
-                  >
-                    {desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Features moved into About */}
-          <div id="features" className="mb-16">
-            <div className="text-center mb-12">
-              <h3
-                className="text-3xl font-bold text-white mb-4"
-                style={{ fontFamily: "Sora, sans-serif" }}
-              >
-                Platform Capabilities
-              </h3>
-              <p style={{ color: "rgba(255,255,255,0.5)" }}>
-                Every feature is built for transparency, intelligence, and public
-                accountability.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              {FEATURES.map(({ icon: Icon, title, desc, color }) => (
-                <div
-                  key={title}
-                  className="p-6 rounded-2xl hover:scale-[1.02] transition-transform"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                  }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-xl mb-4 flex items-center justify-center"
-                    style={{ background: `${color}20` }}
-                  >
-                    <Icon className="w-5 h-5" style={{ color }} />
-                  </div>
-                  <h4
-                    className="font-semibold text-white mb-2"
-                    style={{ fontFamily: "Sora, sans-serif" }}
-                  >
-                    {title}
-                  </h4>
-                  <p
-                    className="text-sm"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
-                  >
-                    {desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* How it works moved into About */}
-          <div id="how-it-works" className="mb-16">
-            <div className="text-center mb-12">
-              <h3
-                className="text-3xl font-bold text-white mb-4"
-                style={{ fontFamily: "Sora, sans-serif" }}
-              >
-                How RoadIntel Works
-              </h3>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {HOW_IT_WORKS.map(({ step, title, desc }) => (
-                <div
-                  key={step}
-                  className="flex gap-4 p-6 rounded-2xl"
-                  style={{
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                  }}
-                >
-                  <div
-                    className="text-3xl font-bold shrink-0"
-                    style={{ color: "#0EA5A4", fontFamily: "Sora, sans-serif" }}
-                  >
-                    {step}
-                  </div>
-                  <div>
-                    <h4
-                      className="font-semibold text-white mb-1"
-                      style={{ fontFamily: "Sora, sans-serif" }}
-                    >
-                      {title}
-                    </h4>
-                    <p
-                      className="text-sm"
-                      style={{ color: "rgba(255,255,255,0.5)" }}
-                    >
-                      {desc}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Sensor section moved into About */}
-          <div
-            id="sensors"
-            className="rounded-3xl p-8 md:p-10"
-            style={{
-              background: "rgba(14,165,164,0.05)",
-              border: "1px solid rgba(14,165,164,0.18)",
-            }}
-          >
-            <div className="text-center">
-              <div
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs mb-6"
-                style={{
-                  background: "rgba(14,165,164,0.15)",
-                  color: "#0EA5A4",
-                  border: "1px solid rgba(14,165,164,0.3)",
-                }}
-              >
-                <Radio className="w-3 h-3" />
-                Core Innovation
-              </div>
-
-              <h3
-                className="text-3xl font-bold text-white mb-4"
-                style={{ fontFamily: "Sora, sans-serif" }}
-              >
-                RoadSense Sensor Intelligence
-              </h3>
-
-              <p
-                className="text-lg mb-8 max-w-3xl mx-auto"
-                style={{ color: "rgba(255,255,255,0.6)" }}
-              >
-                Simulated IoT network using smartphone accelerometers,
-                vehicle-mounted vibration sensors, and GPS-tagged road monitors
-                continuously streams road health data to our AI engine.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-4 gap-4 text-left">
-              {SENSOR_METRICS.map(({ label, value, sub }) => (
-                <div
-                  key={label}
-                  className="p-4 rounded-xl"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(14,165,164,0.2)",
-                  }}
-                >
-                  <div
-                    className="text-2xl font-bold mb-1"
-                    style={{ color: "#0EA5A4", fontFamily: "Sora, sans-serif" }}
-                  >
-                    {value}
-                  </div>
-                  <div className="text-sm font-medium text-white">{label}</div>
-                  <div
-                    className="text-xs mt-1"
-                    style={{ color: "rgba(255,255,255,0.4)" }}
-                  >
-                    {sub}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="text-center">
-              <Link href="/sensors">
-                <button
-                  className="mt-8 px-8 py-4 rounded-xl text-base font-semibold text-white"
-                  style={{ background: "#0EA5A4" }}
-                >
-                  Explore Sensor Dashboard
-                </button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="px-8 py-20 text-center">
-        <div className="max-w-2xl mx-auto">
-          <h2
-            className="text-3xl font-bold text-white mb-4"
-            style={{ fontFamily: "Sora, sans-serif" }}
-          >
-            Ready to See It in Action?
-          </h2>
-          <p className="mb-8" style={{ color: "rgba(255,255,255,0.5)" }}>
-            Access the full demo instantly. No signup required.
-          </p>
-
-          <Link href="/dashboard">
-            <button
-              className="px-10 py-4 rounded-xl text-lg font-semibold text-white hover:opacity-90"
-              style={{ background: "#0EA5A4" }}
-            >
-              Launch Demo Dashboard
-            </button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
       <footer
-        className="px-8 py-8 border-t text-center"
-        style={{ borderColor: "rgba(255,255,255,0.07)" }}
+        className="border-t px-4 py-8 text-center sm:px-6 lg:px-8"
+        style={{ borderColor: "rgba(255,255,255,0.08)" }}
       >
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: "#0EA5A4" }}
-          >
-            <Shield className="w-4 h-4 text-white" />
+        <div className="flex items-center justify-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600">
+            <Shield className="h-4 w-4 text-white" />
           </div>
+
           <span
             className="font-bold text-white"
             style={{ fontFamily: "Sora, sans-serif" }}
@@ -586,8 +660,12 @@ export default function Landing() {
           </span>
         </div>
 
-        <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>
-          AI-Powered Road Intelligence Platform | Built for Transparency & Accountability
+        <p className="mt-3 text-sm text-slate-500">
+          Transparency-first RoadWatch platform by HackTech Novas.
+        </p>
+
+        <p className="mt-2 text-xs text-slate-600">
+          Demo data is pilot-style and used for product demonstration only.
         </p>
       </footer>
     </div>
