@@ -1,172 +1,400 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   Bell,
-  Globe,
-  Shield,
-  Eye,
+  CheckCircle2,
   Database,
   Download,
-  Save,
-  CheckCircle2,
-  Sun,
-  Moon,
-  Monitor,
-  User,
+  FileText,
+  Languages,
+  Lock,
+  Mail,
   MapPin,
+  Phone,
+  Save,
+  Shield,
   Trash2,
+  User,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-type ThemeMode = "light" | "dark" | "system";
+type NotificationSettings = {
+  complaints: boolean;
+  sensors: boolean;
+  spending: boolean;
+  contractors: boolean;
+};
 
-function getSystemTheme(): "light" | "dark" {
-  if (typeof window === "undefined") return "dark";
+type SavedUser = {
+  name?: string;
+  email?: string;
+  mobile?: string;
+  location?: string;
+  role?: string;
+  language?: string;
+};
 
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
+const DEFAULT_USER = {
+  name: "Demo User",
+  email: "demo@roadintel.in",
+  mobile: "+91 98765 43210",
+  location: "Pune, Maharashtra",
+  role: "Road Safety Analyst",
+};
 
-function applyTheme(theme: ThemeMode) {
+const DEFAULT_NOTIFICATIONS: NotificationSettings = {
+  complaints: true,
+  sensors: true,
+  spending: true,
+  contractors: true,
+};
+
+function forceRoadIntelDarkTheme() {
   if (typeof window === "undefined") return;
 
   const root = window.document.documentElement;
-  const resolvedTheme = theme === "system" ? getSystemTheme() : theme;
 
-  root.classList.remove("light", "dark");
-  root.classList.add(resolvedTheme);
-  root.style.colorScheme = resolvedTheme;
+  root.classList.remove("light");
+  root.classList.add("dark");
+  root.style.colorScheme = "dark";
 
-  localStorage.setItem("roadintel-theme", theme);
+  localStorage.setItem("roadintel-theme", "dark");
+  localStorage.setItem("roadintel-language", "en");
+}
+
+function readSavedUser(): SavedUser {
+  if (typeof window === "undefined") return DEFAULT_USER;
+
+  const sessionUser = sessionStorage.getItem("roadintel-user");
+  const localUser = localStorage.getItem("roadintel-user");
+  const rawUser = sessionUser || localUser;
+
+  if (!rawUser) return DEFAULT_USER;
+
+  try {
+    const parsed = JSON.parse(rawUser) as SavedUser;
+
+    return {
+      name: parsed.name || DEFAULT_USER.name,
+      email: parsed.email || DEFAULT_USER.email,
+      mobile: parsed.mobile || DEFAULT_USER.mobile,
+      location: parsed.location || DEFAULT_USER.location,
+      role: parsed.role || DEFAULT_USER.role,
+      language: "English",
+    };
+  } catch {
+    return DEFAULT_USER;
+  }
+}
+
+function readNotificationSettings(): NotificationSettings {
+  if (typeof window === "undefined") return DEFAULT_NOTIFICATIONS;
+
+  try {
+    const raw = localStorage.getItem("roadintel-notifications");
+    if (!raw) return DEFAULT_NOTIFICATIONS;
+
+    const parsed = JSON.parse(raw) as Partial<NotificationSettings>;
+
+    return {
+      complaints: parsed.complaints ?? true,
+      sensors: parsed.sensors ?? true,
+      spending: parsed.spending ?? true,
+      contractors: parsed.contractors ?? true,
+    };
+  } catch {
+    return DEFAULT_NOTIFICATIONS;
+  }
+}
+
+function saveUserToStorage(user: SavedUser) {
+  const cleanUser = {
+    name: user.name || DEFAULT_USER.name,
+    email: user.email || DEFAULT_USER.email,
+    mobile: user.mobile || DEFAULT_USER.mobile,
+    location: user.location || DEFAULT_USER.location,
+    role: user.role || DEFAULT_USER.role,
+    language: "English",
+  };
+
+  localStorage.setItem("roadintel-user", JSON.stringify(cleanUser));
+  sessionStorage.setItem("roadintel-user", JSON.stringify(cleanUser));
+  localStorage.setItem("roadintel-language", "en");
+}
+
+function saveNotificationsToStorage(settings: NotificationSettings) {
+  localStorage.setItem("roadintel-notifications", JSON.stringify(settings));
+}
+
+function SettingCard({
+  title,
+  description,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className="rounded-3xl p-5"
+      style={{
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
+      }}
+    >
+      <div className="mb-5 flex items-start gap-3">
+        <div
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+          style={{ background: "rgba(14,165,164,0.14)" }}
+        >
+          <Icon className="h-5 w-5" style={{ color: "#0EA5A4" }} />
+        </div>
+
+        <div>
+          <h2
+            className="font-semibold"
+            style={{ fontFamily: "Sora, sans-serif" }}
+          >
+            {title}
+          </h2>
+
+          <p className="mt-1 text-sm leading-5 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
+function InputField({
+  label,
+  icon: Icon,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+}: {
+  label: string;
+  icon: LucideIcon;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  type?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-medium">{label}</span>
+
+      <div
+        className="flex items-center gap-3 rounded-2xl px-4 py-3"
+        style={{
+          background: "hsl(var(--background))",
+          border: "1px solid hsl(var(--border))",
+        }}
+      >
+        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+
+        <input
+          type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        />
+      </div>
+    </label>
+  );
+}
+
+function Toggle({
+  enabled,
+  onChange,
+  label,
+  description,
+}: {
+  enabled: boolean;
+  onChange: (value: boolean) => void;
+  label: string;
+  description: string;
+}) {
+  return (
+    <div
+      className="flex items-center justify-between gap-4 rounded-2xl p-4"
+      style={{
+        background: "hsl(var(--background))",
+        border: "1px solid hsl(var(--border))",
+      }}
+    >
+      <div>
+        <p className="text-sm font-semibold">{label}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onChange(!enabled)}
+        className="relative h-7 w-13 shrink-0 rounded-full transition"
+        style={{
+          width: "52px",
+          background: enabled ? "#0EA5A4" : "hsl(var(--muted))",
+        }}
+        aria-label={`Toggle ${label}`}
+      >
+        <span
+          className="absolute top-1 h-5 w-5 rounded-full bg-white transition-all"
+          style={{ left: enabled ? "26px" : "4px" }}
+        />
+      </button>
+    </div>
+  );
+}
+
+function ActionCard({
+  title,
+  description,
+  icon: Icon,
+  action,
+  danger = false,
+}: {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  action: React.ReactNode;
+  danger?: boolean;
+}) {
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{
+        background: danger ? "rgba(220,38,38,0.08)" : "hsl(var(--background))",
+        border: danger
+          ? "1px solid rgba(220,38,38,0.24)"
+          : "1px solid hsl(var(--border))",
+      }}
+    >
+      <div className="mb-4 flex items-start gap-3">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+          style={{
+            background: danger
+              ? "rgba(220,38,38,0.14)"
+              : "rgba(14,165,164,0.14)",
+          }}
+        >
+          <Icon
+            className="h-5 w-5"
+            style={{ color: danger ? "#DC2626" : "#0EA5A4" }}
+          />
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold">{title}</h3>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+      </div>
+
+      {action}
+    </div>
+  );
 }
 
 export default function Settings() {
   const [, navigate] = useLocation();
 
-  const [notifComplaints, setNotifComplaints] = useState(true);
-  const [notifSensor, setNotifSensor] = useState(true);
-  const [notifBudget, setNotifBudget] = useState(true);
+  const storedUser = useMemo(() => readSavedUser(), []);
 
-  const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [fullName, setFullName] = useState(storedUser.name ?? DEFAULT_USER.name);
+  const [email, setEmail] = useState(storedUser.email ?? DEFAULT_USER.email);
+  const [mobile, setMobile] = useState(
+    storedUser.mobile ?? DEFAULT_USER.mobile,
+  );
+  const [location, setLocation] = useState(
+    storedUser.location ?? DEFAULT_USER.location,
+  );
+  const [role, setRole] = useState(storedUser.role ?? DEFAULT_USER.role);
 
-  const [fullName, setFullName] = useState("Demo User");
-  const [mobile, setMobile] = useState("+91 9876543210");
-  const [location, setLocation] = useState("Pune, Maharashtra");
+  const [notifications, setNotifications] = useState<NotificationSettings>(
+    readNotificationSettings,
+  );
 
   const [saved, setSaved] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
 
   useEffect(() => {
-    try {
-      const storedTheme = localStorage.getItem("roadintel-theme") as ThemeMode | null;
-      const storedUser = localStorage.getItem("roadintel-user");
-      const storedNotifications = localStorage.getItem("roadintel-notifications");
-
-      if (
-        storedTheme === "light" ||
-        storedTheme === "dark" ||
-        storedTheme === "system"
-      ) {
-        setTheme(storedTheme);
-        applyTheme(storedTheme);
-      } else {
-        setTheme("dark");
-        applyTheme("dark");
-      }
-
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        setFullName(user?.name ?? "Demo User");
-        setMobile(user?.mobile ?? "+91 9876543210");
-        setLocation(user?.location ?? "Pune, Maharashtra");
-      }
-
-      if (storedNotifications) {
-        const notifications = JSON.parse(storedNotifications);
-        setNotifComplaints(notifications?.complaints ?? true);
-        setNotifSensor(notifications?.sensors ?? true);
-        setNotifBudget(notifications?.budget ?? true);
-      }
-
-      localStorage.setItem("roadintel-language", "en");
-    } catch {
-      setTheme("dark");
-      applyTheme("dark");
-      localStorage.setItem("roadintel-language", "en");
-    }
+    forceRoadIntelDarkTheme();
   }, []);
 
-  useEffect(() => {
-    if (theme !== "system") return;
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const handleSystemThemeChange = () => {
-      applyTheme("system");
-    };
-
-    mediaQuery.addEventListener("change", handleSystemThemeChange);
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleSystemThemeChange);
-    };
-  }, [theme]);
-
-  function updateTheme(nextTheme: ThemeMode) {
-    setTheme(nextTheme);
-    applyTheme(nextTheme);
+  function updateNotification<K extends keyof NotificationSettings>(
+    key: K,
+    value: NotificationSettings[K],
+  ) {
+    setNotifications((current) => ({
+      ...current,
+      [key]: value,
+    }));
   }
 
-  function saveProfile() {
-    localStorage.setItem("roadintel-language", "en");
+  function handleSaveProfile() {
+    const cleanName = fullName.trim();
+    const cleanEmail = email.trim();
+    const cleanMobile = mobile.trim();
+    const cleanLocation = location.trim();
+    const cleanRole = role.trim();
 
-    localStorage.setItem(
-      "roadintel-user",
-      JSON.stringify({
-        name: fullName,
-        mobile,
-        location,
-        role: "Road Safety Analyst",
-        language: "English",
-      }),
-    );
+    if (!cleanName || !cleanEmail || !cleanMobile || !cleanLocation) {
+      alert("Please fill name, email, mobile number and location.");
+      return;
+    }
 
-    localStorage.setItem(
-      "roadintel-notifications",
-      JSON.stringify({
-        complaints: notifComplaints,
-        sensors: notifSensor,
-        budget: notifBudget,
-      }),
-    );
+    const user = {
+      name: cleanName,
+      email: cleanEmail,
+      mobile: cleanMobile,
+      location: cleanLocation,
+      role: cleanRole || DEFAULT_USER.role,
+      language: "English",
+    };
+
+    saveUserToStorage(user);
+    saveNotificationsToStorage(notifications);
+    forceRoadIntelDarkTheme();
 
     setSaved(true);
     alert("Profile saved successfully.");
 
-    window.setTimeout(() => {
-      setSaved(false);
-    }, 2200);
+    window.setTimeout(() => setSaved(false), 2500);
   }
 
-  function downloadData() {
-    const data = {
+  function handleDownloadData() {
+    const exportData = {
       profile: {
         name: fullName,
+        email,
         mobile,
         location,
-        role: "Road Safety Analyst",
+        role,
         language: "English",
       },
-      theme,
-      notifications: {
-        complaints: notifComplaints,
-        sensors: notifSensor,
-        budget: notifBudget,
+      preferences: {
+        theme: "RoadIntel fixed dark blue",
+        language: "English",
+        notifications,
+      },
+      demoData: {
+        note: "This is RoadIntel demo profile data stored in this browser.",
       },
       exportedAt: new Date().toISOString(),
     };
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
       type: "application/json",
     });
 
@@ -182,16 +410,39 @@ export default function Settings() {
     URL.revokeObjectURL(url);
 
     setDownloaded(true);
-    alert("Your RoadIntel data has been downloaded.");
+    alert("Your RoadIntel profile data has been downloaded.");
 
-    window.setTimeout(() => {
-      setDownloaded(false);
-    }, 2200);
+    window.setTimeout(() => setDownloaded(false), 2500);
   }
 
-  function deleteAccount() {
+  function handleResetDemoData() {
     const confirmed = window.confirm(
-      "Are you sure you want to delete your demo account data?",
+      "Reset local demo preferences and restore default profile details?",
+    );
+
+    if (!confirmed) return;
+
+    setFullName(DEFAULT_USER.name);
+    setEmail(DEFAULT_USER.email);
+    setMobile(DEFAULT_USER.mobile);
+    setLocation(DEFAULT_USER.location);
+    setRole(DEFAULT_USER.role);
+    setNotifications(DEFAULT_NOTIFICATIONS);
+
+    saveUserToStorage({
+      ...DEFAULT_USER,
+      language: "English",
+    });
+
+    saveNotificationsToStorage(DEFAULT_NOTIFICATIONS);
+    forceRoadIntelDarkTheme();
+
+    alert("Demo profile has been reset.");
+  }
+
+  function handleDeleteAccount() {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this demo account from this browser?",
     );
 
     if (!confirmed) return;
@@ -200,47 +451,64 @@ export default function Settings() {
     localStorage.removeItem("roadintel-user");
     localStorage.removeItem("roadintel-notifications");
     localStorage.removeItem("roadintel-language");
+    localStorage.removeItem("roadintel-local-complaints-v2");
+
+    sessionStorage.removeItem("roadintel-auth");
+    sessionStorage.removeItem("roadintel-user");
+
+    forceRoadIntelDarkTheme();
 
     alert("Account deleted successfully. Redirecting to login page.");
     navigate("/login");
   }
 
-  function Toggle({
-    value,
-    onChange,
-  }: {
-    value: boolean;
-    onChange: (value: boolean) => void;
-  }) {
-    return (
-      <button
-        type="button"
-        onClick={() => onChange(!value)}
-        className="relative h-6 w-12 rounded-full transition-colors"
-        style={{ background: value ? "#0EA5A4" : "hsl(var(--muted))" }}
-        aria-label="Toggle setting"
-      >
-        <div
-          className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all"
-          style={{ left: value ? "26px" : "2px" }}
-        />
-      </button>
-    );
-  }
-
   return (
-    <div className="max-w-5xl space-y-6 p-4 sm:p-6">
-      <div>
-        <h1
-          className="text-2xl font-bold"
-          style={{ fontFamily: "Sora, sans-serif" }}
-        >
-          Settings
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Manage your profile, theme, notifications, and privacy.
-        </p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
+      <section
+        className="overflow-hidden rounded-3xl p-6"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(14,165,164,0.20), rgba(59,130,246,0.10), hsl(var(--card)))",
+          border: "1px solid hsl(var(--border))",
+        }}
+      >
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div
+              className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+              style={{
+                background: "rgba(14,165,164,0.14)",
+                color: "#0EA5A4",
+              }}
+            >
+              <Shield className="h-3.5 w-3.5" />
+              Account Control Center
+            </div>
+
+            <h1
+              className="text-2xl font-bold md:text-3xl"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              Settings
+            </h1>
+
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+              Manage your RoadIntel demo profile, notification preferences, data
+              export and account actions. The interface uses a fixed RoadIntel
+              dark-blue theme for a consistent audit-ready experience.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSaveProfile}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-cyan-500/20 transition hover:scale-[1.02]"
+          >
+            <Save className="h-4 w-4" />
+            Save Profile
+          </button>
+        </div>
+      </section>
 
       {saved && (
         <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
@@ -256,313 +524,208 @@ export default function Settings() {
         </div>
       )}
 
-      <section
-        className="rounded-2xl p-5"
-        style={{
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-        }}
-      >
-        <div className="mb-4 flex items-center gap-3">
-          <Shield className="h-4 w-4" style={{ color: "#0EA5A4" }} />
-          <h3
-            className="font-semibold"
-            style={{ fontFamily: "Sora, sans-serif" }}
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="space-y-6">
+          <SettingCard
+            title="Profile Information"
+            description="Keep the demo operator profile realistic and consistent across the dashboard."
+            icon={User}
           >
-            Profile
-          </h3>
-        </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <InputField
+                label="Full Name"
+                icon={User}
+                value={fullName}
+                onChange={setFullName}
+                placeholder="Demo User"
+              />
 
-        <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                  className="w-full rounded-xl px-10 py-2.5 text-sm outline-none"
-                  style={{
-                    background: "hsl(var(--muted))",
-                    border: "1px solid hsl(var(--border))",
-                    color: "hsl(var(--foreground))",
-                  }}
+              <InputField
+                label="Email"
+                icon={Mail}
+                value={email}
+                onChange={setEmail}
+                placeholder="demo@roadintel.in"
+                type="email"
+              />
+
+              <InputField
+                label="Mobile Number"
+                icon={Phone}
+                value={mobile}
+                onChange={setMobile}
+                placeholder="+91 98765 43210"
+              />
+
+              <InputField
+                label="Location"
+                icon={MapPin}
+                value={location}
+                onChange={setLocation}
+                placeholder="Pune, Maharashtra"
+              />
+
+              <div className="md:col-span-2">
+                <InputField
+                  label="Role"
+                  icon={Lock}
+                  value={role}
+                  onChange={setRole}
+                  placeholder="Road Safety Analyst"
                 />
               </div>
             </div>
+          </SettingCard>
 
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">
-                Mobile
-              </label>
-              <input
-                value={mobile}
-                onChange={(event) => setMobile(event.target.value)}
-                className="w-full rounded-xl px-3 py-2.5 text-sm outline-none"
-                style={{
-                  background: "hsl(var(--muted))",
-                  border: "1px solid hsl(var(--border))",
-                  color: "hsl(var(--foreground))",
-                }}
+          <SettingCard
+            title="Notification Preferences"
+            description="Choose which operational alerts should appear in the RoadIntel interface."
+            icon={Bell}
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              <Toggle
+                enabled={notifications.complaints}
+                onChange={(value) => updateNotification("complaints", value)}
+                label="Complaint Alerts"
+                description="New, assigned and escalated citizen complaints."
+              />
+
+              <Toggle
+                enabled={notifications.sensors}
+                onChange={(value) => updateNotification("sensors", value)}
+                label="Sensor Alerts"
+                description="Simulated vibration, roughness and anomaly warnings."
+              />
+
+              <Toggle
+                enabled={notifications.spending}
+                onChange={(value) => updateNotification("spending", value)}
+                label="Spending Alerts"
+                description="Budget-quality mismatch and repeat-repair flags."
+              />
+
+              <Toggle
+                enabled={notifications.contractors}
+                onChange={(value) => updateNotification("contractors", value)}
+                label="Contractor Alerts"
+                description="Low accountability score or audit-risk contractors."
               />
             </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">
-              Location
-            </label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={location}
-                onChange={(event) => setLocation(event.target.value)}
-                className="w-full rounded-xl px-10 py-2.5 text-sm outline-none"
-                style={{
-                  background: "hsl(var(--muted))",
-                  border: "1px solid hsl(var(--border))",
-                  color: "hsl(var(--foreground))",
-                }}
-              />
-            </div>
-          </div>
+          </SettingCard>
         </div>
-      </section>
 
-      <section
-        className="rounded-2xl p-5"
-        style={{
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-        }}
-      >
-        <div className="mb-4 flex items-center gap-3">
-          <Eye className="h-4 w-4" style={{ color: "#0EA5A4" }} />
-          <h3
-            className="font-semibold"
-            style={{ fontFamily: "Sora, sans-serif" }}
+        <div className="space-y-6">
+          <SettingCard
+            title="Language"
+            description="RoadIntel is currently locked to English to keep the demo simple and consistent."
+            icon={Languages}
           >
-            Appearance
-          </h3>
-        </div>
+            <div
+              className="rounded-2xl p-4"
+              style={{
+                background: "hsl(var(--background))",
+                border: "1px solid hsl(var(--border))",
+              }}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-semibold">English</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Default and only enabled interface language.
+                  </p>
+                </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <button
-            type="button"
-            onClick={() => updateTheme("light")}
-            className="rounded-2xl p-4 text-left transition hover:scale-[1.02]"
-            style={{
-              background:
-                theme === "light"
-                  ? "rgba(14,165,164,0.14)"
-                  : "hsl(var(--muted))",
-              border:
-                theme === "light"
-                  ? "1px solid #0EA5A4"
-                  : "1px solid hsl(var(--border))",
-            }}
-          >
-            <Sun className="mb-3 h-5 w-5 text-amber-400" />
-            <div className="font-semibold">Light</div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              Bright interface
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => updateTheme("dark")}
-            className="rounded-2xl p-4 text-left transition hover:scale-[1.02]"
-            style={{
-              background:
-                theme === "dark"
-                  ? "rgba(14,165,164,0.14)"
-                  : "hsl(var(--muted))",
-              border:
-                theme === "dark"
-                  ? "1px solid #0EA5A4"
-                  : "1px solid hsl(var(--border))",
-            }}
-          >
-            <Moon className="mb-3 h-5 w-5 text-blue-400" />
-            <div className="font-semibold">Dark</div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              Default RoadIntel mode
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => updateTheme("system")}
-            className="rounded-2xl p-4 text-left transition hover:scale-[1.02]"
-            style={{
-              background:
-                theme === "system"
-                  ? "rgba(14,165,164,0.14)"
-                  : "hsl(var(--muted))",
-              border:
-                theme === "system"
-                  ? "1px solid #0EA5A4"
-                  : "1px solid hsl(var(--border))",
-            }}
-          >
-            <Monitor className="mb-3 h-5 w-5 text-slate-400" />
-            <div className="font-semibold">System</div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              Match device theme
-            </div>
-          </button>
-        </div>
-
-        <div className="mt-4 rounded-xl bg-teal-500/10 px-4 py-3 text-sm text-teal-300">
-          Current theme: <strong className="capitalize">{theme}</strong>
-        </div>
-      </section>
-
-      <section
-        className="rounded-2xl p-5"
-        style={{
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-        }}
-      >
-        <div className="mb-4 flex items-center gap-3">
-          <Globe className="h-4 w-4" style={{ color: "#0EA5A4" }} />
-          <h3
-            className="font-semibold"
-            style={{ fontFamily: "Sora, sans-serif" }}
-          >
-            Language
-          </h3>
-        </div>
-
-        <div
-          className="rounded-2xl p-4"
-          style={{
-            background: "rgba(14,165,164,0.14)",
-            border: "1px solid #0EA5A4",
-          }}
-        >
-          <div className="font-semibold">English</div>
-          <div className="mt-1 text-sm text-muted-foreground">
-            English is the only available language.
-          </div>
-          <div className="mt-3 text-xs font-bold text-teal-400">Selected</div>
-        </div>
-      </section>
-
-      <section
-        className="rounded-2xl p-5"
-        style={{
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-        }}
-      >
-        <div className="mb-4 flex items-center gap-3">
-          <Bell className="h-4 w-4" style={{ color: "#0EA5A4" }} />
-          <h3
-            className="font-semibold"
-            style={{ fontFamily: "Sora, sans-serif" }}
-          >
-            Notifications
-          </h3>
-        </div>
-
-        <div className="space-y-4">
-          {[
-            {
-              label: "Complaint Updates",
-              sub: "Notify when your complaints are updated",
-              value: notifComplaints,
-              onChange: setNotifComplaints,
-            },
-            {
-              label: "Sensor Alerts",
-              sub: "Critical sensor anomalies near your location",
-              value: notifSensor,
-              onChange: setNotifSensor,
-            },
-            {
-              label: "Budget Alerts",
-              sub: "Suspicious spending patterns flagged by AI",
-              value: notifBudget,
-              onChange: setNotifBudget,
-            },
-          ].map(({ label, sub, value, onChange }) => (
-            <div key={label} className="flex items-center justify-between gap-4">
-              <div>
-                <div className="text-sm font-medium">{label}</div>
-                <div className="text-xs text-muted-foreground">{sub}</div>
+                <span
+                  className="rounded-full px-2.5 py-1 text-xs font-bold"
+                  style={{
+                    background: "rgba(22,163,74,0.14)",
+                    color: "#16A34A",
+                  }}
+                >
+                  Active
+                </span>
               </div>
-
-              <Toggle value={value} onChange={onChange} />
             </div>
-          ))}
-        </div>
-      </section>
+          </SettingCard>
 
-      <section
-        className="rounded-2xl p-5"
-        style={{
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-        }}
-      >
-        <div className="mb-4 flex items-center gap-3">
-          <Database className="h-4 w-4" style={{ color: "#0EA5A4" }} />
-          <h3
-            className="font-semibold"
-            style={{ fontFamily: "Sora, sans-serif" }}
+          <SettingCard
+            title="Appearance"
+            description="Theme controls have been removed. The app now keeps one professional dark-blue RoadIntel theme."
+            icon={Shield}
           >
-            Data & Privacy
-          </h3>
-        </div>
+            <div
+              className="rounded-2xl p-4"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(14,165,164,0.12), rgba(59,130,246,0.08), hsl(var(--background)))",
+                border: "1px solid hsl(var(--border))",
+              }}
+            >
+              <p className="font-semibold">Fixed RoadIntel Dark Blue</p>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                No dark/light toggle is shown. This avoids inconsistent page
+                styling and keeps the platform presentation clean for demos.
+              </p>
+            </div>
+          </SettingCard>
 
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={downloadData}
-            className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm"
-            style={{
-              background: "hsl(var(--muted))",
-              border: "1px solid hsl(var(--border))",
-            }}
+          <SettingCard
+            title="Data & Account"
+            description="Functional account actions. No inactive or fake buttons."
+            icon={Database}
           >
-            <span>Download my RoadIntel data</span>
-            <Download className="h-4 w-4 text-muted-foreground" />
-          </button>
+            <div className="space-y-4">
+              <ActionCard
+                title="Download Profile Data"
+                description="Export your local RoadIntel demo profile and preferences as a JSON file."
+                icon={Download}
+                action={
+                  <button
+                    type="button"
+                    onClick={handleDownloadData}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold transition hover:bg-white/15"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download Data
+                  </button>
+                }
+              />
 
-          <button
-            type="button"
-            onClick={deleteAccount}
-            className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm"
-            style={{
-              background: "rgba(239,68,68,0.10)",
-              border: "1px solid rgba(239,68,68,0.25)",
-              color: "#EF4444",
-            }}
-          >
-            <span>Delete demo account data</span>
-            <Trash2 className="h-4 w-4" />
-          </button>
+              <ActionCard
+                title="Reset Demo Data"
+                description="Restore default demo profile details and notification preferences."
+                icon={FileText}
+                action={
+                  <button
+                    type="button"
+                    onClick={handleResetDemoData}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold transition hover:bg-white/15"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Reset Demo Profile
+                  </button>
+                }
+              />
+
+              <ActionCard
+                title="Delete Demo Account"
+                description="Clear demo account data from this browser and return to the login page."
+                icon={Trash2}
+                danger
+                action={
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500/15 px-4 py-3 text-sm font-bold text-red-300 transition hover:bg-red-500/25"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Account
+                  </button>
+                }
+              />
+            </div>
+          </SettingCard>
         </div>
-      </section>
-
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={saveProfile}
-          className="flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white"
-          style={{
-            background: "linear-gradient(135deg, #2563EB, #0EA5A4)",
-          }}
-        >
-          <Save className="h-4 w-4" />
-          Save Profile
-        </button>
       </div>
     </div>
   );
