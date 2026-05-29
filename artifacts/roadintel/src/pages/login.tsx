@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Shield,
@@ -10,15 +10,18 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+const DEMO_EMAIL = "demo@roadintel.in";
+const DEMO_PASSWORD = "RoadIntel@2026";
+
 export default function Login() {
   const [, navigate] = useLocation();
 
-  const [email, setEmail] = useState("demo@roadintel.in");
-  const [password, setPassword] = useState("demo123");
+  const [email, setEmail] = useState(DEMO_EMAIL);
+  const [password, setPassword] = useState(DEMO_PASSWORD);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
-  function handleLogin(event: React.FormEvent<HTMLFormElement>) {
+  function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
@@ -29,9 +32,12 @@ export default function Login() {
       return;
     }
 
-    if (cleanEmail === "demo@roadintel.in" && password === "demo123") {
-      localStorage.setItem("roadintel-auth", "true");
-      localStorage.setItem(
+    if (cleanEmail === DEMO_EMAIL && password === DEMO_PASSWORD) {
+      localStorage.removeItem("roadintel-auth");
+      localStorage.removeItem("roadintel-user");
+
+      sessionStorage.setItem("roadintel-auth", "true");
+      sessionStorage.setItem(
         "roadintel-user",
         JSON.stringify({
           name: "Demo User",
@@ -44,7 +50,7 @@ export default function Login() {
       return;
     }
 
-    setError("Invalid login. Use demo@roadintel.in and demo123.");
+    setError(`Invalid login. Use ${DEMO_EMAIL} and ${DEMO_PASSWORD}.`);
   }
 
   return (
@@ -155,7 +161,8 @@ export default function Login() {
                       type="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
-                      placeholder="demo@roadintel.in"
+                      placeholder={DEMO_EMAIL}
+                      autoComplete="off"
                       className="w-full rounded-2xl border border-white/10 bg-[#07111f] px-11 py-3.5 text-sm text-white outline-none transition focus:border-cyan-400"
                     />
                   </div>
@@ -173,7 +180,8 @@ export default function Login() {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
-                      placeholder="demo123"
+                      placeholder={DEMO_PASSWORD}
+                      autoComplete="new-password"
                       className="w-full rounded-2xl border border-white/10 bg-[#07111f] px-11 py-3.5 pr-12 text-sm text-white outline-none transition focus:border-cyan-400"
                     />
 
@@ -193,14 +201,10 @@ export default function Login() {
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <label className="flex cursor-pointer items-center gap-2 text-slate-400">
-                    <input
-                      type="checkbox"
-                      defaultChecked
-                      className="h-4 w-4 rounded border-white/10 accent-cyan-500"
-                    />
-                    Remember me
-                  </label>
+                  <span className="text-slate-400">
+                    Session-only login. You will be asked to login again after
+                    closing this tab.
+                  </span>
 
                   <button
                     type="button"
@@ -225,9 +229,11 @@ export default function Login() {
               <div className="mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4 text-sm text-cyan-100">
                 <div className="font-semibold">Demo login</div>
                 <div className="mt-1 text-cyan-200/80">
-                  Email: demo@roadintel.in
+                  Email: {DEMO_EMAIL}
                 </div>
-                <div className="text-cyan-200/80">Password: demo123</div>
+                <div className="text-cyan-200/80">
+                  Password: {DEMO_PASSWORD}
+                </div>
               </div>
 
               <p className="mt-6 text-center text-sm text-slate-400">
