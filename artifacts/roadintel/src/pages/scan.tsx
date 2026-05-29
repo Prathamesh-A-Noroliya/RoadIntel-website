@@ -1,165 +1,559 @@
 import { useState } from "react";
-import { useAnalyzeRoadImage } from "@workspace/api-client-react";
-import { Upload, Scan, AlertTriangle, CheckCircle, Zap } from "lucide-react";
+import {
+  Upload,
+  Scan,
+  AlertTriangle,
+  CheckCircle,
+  Zap,
+  ImagePlus,
+} from "lucide-react";
 import { getHealthColor, getRiskColor } from "@/lib/utils";
 
-const SAMPLE_IMAGES = [
-  { label: "Pothole - High Severity", url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400" },
-  { label: "Road Crack - Medium", url: "https://images.unsplash.com/photo-1514477917009-389d28a851d9?w=400" },
-  { label: "Smooth Road - Good", url: "https://images.unsplash.com/photo-1504609813442-a8924e83f76e?w=400" },
+type ScanSeverity = "low" | "medium" | "high";
+type ScanRiskLevel = "low" | "medium" | "high";
+
+type ScanResult = {
+  issueType: string;
+  severity: ScanSeverity;
+  confidence: number;
+  healthScore: number;
+  riskLevel: ScanRiskLevel;
+  detectedIssues: string[];
+  recommendation: string;
+  shouldFileComplaint: boolean;
+};
+
+type SampleImage = {
+  id: "pothole" | "crack" | "smooth";
+  label: string;
+  url: string;
+};
+
+const SAMPLE_IMAGES: SampleImage[] = [
+  {
+    id: "pothole",
+    label: "Pothole - High Severity",
+    url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
+  },
+  {
+    id: "crack",
+    label: "Road Crack - Medium",
+    url: "https://images.unsplash.com/photo-1514477917009-389d28a851d9?w=400",
+  },
+  {
+    id: "smooth",
+    label: "Smooth Road - Good",
+    url: "https://images.unsplash.com/photo-1504609813442-a8924e83f76e?w=400",
+  },
 ];
+
+const SCAN_RESULTS: Record<SampleImage["id"] | "uploaded", ScanResult> = {
+  pothole: {
+    issueType: "Pothole Formation",
+    severity: "high",
+    confidence: 0.91,
+    healthScore: 38,
+    riskLevel: "high",
+    detectedIssues: [
+      "Surface pothole",
+      "Edge crumbling",
+      "Water seepage",
+      "Asphalt delamination",
+    ],
+    recommendation:
+      "Immediate patching required. Pothole depth appears unsafe for two-wheelers and may cause vehicle damage. Recommend full-depth hot-mix asphalt repair with independent inspection before contractor billing.",
+    shouldFileComplaint: true,
+  },
+
+  crack: {
+    issueType: "Surface Cracking",
+    severity: "medium",
+    confidence: 0.85,
+    healthScore: 58,
+    riskLevel: "medium",
+    detectedIssues: [
+      "Longitudinal cracking",
+      "Minor delamination",
+      "Early surface fatigue",
+    ],
+    recommendation:
+      "Crack sealing is recommended within 30 days. Monitor the segment after rainfall because water seepage can accelerate pothole formation.",
+    shouldFileComplaint: true,
+  },
+
+  smooth: {
+    issueType: "Good Road Condition",
+    severity: "low",
+    confidence: 0.94,
+    healthScore: 88,
+    riskLevel: "low",
+    detectedIssues: ["Minor surface wear", "No major deformation detected"],
+    recommendation:
+      "Road is currently in good condition. Continue routine inspection and schedule the next preventive maintenance check within 6 months.",
+    shouldFileComplaint: false,
+  },
+
+  uploaded: {
+    issueType: "Uploaded Road Image Analysis",
+    severity: "medium",
+    confidence: 0.82,
+    healthScore: 64,
+    riskLevel: "medium",
+    detectedIssues: [
+      "Surface wear detected",
+      "Possible uneven patching",
+      "Manual verification recommended",
+    ],
+    recommendation:
+      "The uploaded image has been processed in demo mode. A field engineer should verify the location and severity before contractor assignment.",
+    shouldFileComplaint: true,
+  },
+};
+
+function getUploadedResult(fileName: string): ScanResult {
+  const name = fileName.toLowerCase();
+
+  if (name.includes("pothole") || name.includes("hole")) {
+    return SCAN_RESULTS.pothole;
+  }
+
+  if (name.includes("crack") || name.includes("broken")) {
+    return SCAN_RESULTS.crack;
+  }
+
+  if (name.includes("smooth") || name.includes("good")) {
+    return SCAN_RESULTS.smooth;
+  }
+
+  return SCAN_RESULTS.uploaded;
+}
 
 export default function ScanPage() {
   const [selected, setSelected] = useState<string | null>(null);
+  const [selectedLabel, setSelectedLabel] = useState<string>("");
+  const [filePreview, setFilePreview] = useState<string>("");
   const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const analyze = useAnalyzeRoadImage();
+  const [result, setResult] = useState<ScanResult | null>(null);
 
-  const doScan = async (url: string) => {
-    setSelected(url);
+  async function doSampleScan(sample: SampleImage) {
+    setSelected(sample.url);
+    setSelectedLabel(sample.label);
+    setFilePreview("");
     setScanning(true);
     setResult(null);
-    await new Promise(r => setTimeout(r, 2500));
-    try {
-      const res = await analyze.mutateAsync({ imageUrl: url });
-      setResult(res);
-    } catch {
-      setResult(MOCK_RESULT);
-    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1600));
+
+    setResult(SCAN_RESULTS[sample.id]);
     setScanning(false);
-  };
+  }
+
+  async function doUploadedScan(file: File) {
+    const blobUrl = URL.createObjectURL(file);
+
+    setSelected(blobUrl);
+    setSelectedLabel("Uploaded image");
+    setFilePreview(file.name);
+    setScanning(true);
+    setResult(null);
+
+    await new Promise((resolve) => setTimeout(resolve, 1600));
+
+    setResult(getUploadedResult(file.name));
+    setScanning(false);
+  }
 
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold" style={{ fontFamily: "Sora, sans-serif" }}>Quick Scan AI Scanner</h1>
-        <p className="text-sm text-muted-foreground mt-1">Upload or select a road image for instant AI analysis</p>
+        <h1
+          className="text-2xl font-bold"
+          style={{ fontFamily: "Sora, sans-serif" }}
+        >
+          Quick Scan AI Scanner
+        </h1>
+
+        <p className="text-sm text-muted-foreground mt-1">
+          Upload or select a road image for instant road-condition analysis
+        </p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Upload area */}
         <div className="space-y-4">
-          <div className="rounded-2xl p-8 text-center" style={{ background: "hsl(var(--card))", border: "2px dashed hsl(var(--border))" }}>
+          <div
+            className="rounded-2xl p-8 text-center"
+            style={{
+              background: "hsl(var(--card))",
+              border: "2px dashed hsl(var(--border))",
+            }}
+          >
             <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+
             <p className="font-medium mb-1">Upload Road Image</p>
-            <p className="text-sm text-muted-foreground">PNG, JPG up to 10MB</p>
-            <button className="mt-4 px-4 py-2 rounded-xl text-sm font-medium" style={{ background: "rgba(14,165,164,0.15)", color: "#0EA5A4" }}>
+
+            <p className="text-sm text-muted-foreground">
+              PNG, JPG, or WEBP up to 10MB
+            </p>
+
+            <label
+              htmlFor="road-image-upload"
+              className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer transition hover:scale-[1.02]"
+              style={{
+                background: "rgba(14,165,164,0.15)",
+                color: "#0EA5A4",
+              }}
+            >
+              <ImagePlus className="w-4 h-4" />
               Choose File
-            </button>
+            </label>
+
+            <input
+              id="road-image-upload"
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+
+                if (!file) return;
+
+                if (file.size > 10 * 1024 * 1024) {
+                  alert("Please upload an image smaller than 10MB.");
+                  event.target.value = "";
+                  return;
+                }
+
+                void doUploadedScan(file);
+              }}
+            />
+
+            {filePreview && (
+              <div
+                className="mt-4 rounded-xl px-3 py-2 text-xs"
+                style={{
+                  background: "hsl(var(--muted))",
+                  color: "hsl(var(--muted-foreground))",
+                }}
+              >
+                Selected: {filePreview}
+              </div>
+            )}
+
+            <div className="mt-4 text-xs text-muted-foreground">
+              Demo mode: uploaded files are analysed using RoadIntel’s mock scan
+              engine.
+            </div>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Or select a sample</h3>
+            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">
+              Or select a sample
+            </h3>
+
             <div className="grid grid-cols-3 gap-3">
-              {SAMPLE_IMAGES.map((img) => (
-                <div
-                  key={img.url}
-                  onClick={() => doScan(img.url)}
-                  className="rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition-transform"
-                  style={{ border: selected === img.url ? "2px solid #0EA5A4" : "1px solid hsl(var(--border))" }}
+              {SAMPLE_IMAGES.map((image) => (
+                <button
+                  key={image.url}
+                  type="button"
+                  onClick={() => void doSampleScan(image)}
+                  className="rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition-transform text-left"
+                  style={{
+                    border:
+                      selected === image.url
+                        ? "2px solid #0EA5A4"
+                        : "1px solid hsl(var(--border))",
+                    background: "hsl(var(--card))",
+                  }}
                 >
-                  <img src={img.url} alt={img.label} className="w-full h-20 object-cover" />
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">{img.label}</div>
-                </div>
+                  <img
+                    src={image.url}
+                    alt={image.label}
+                    className="w-full h-20 object-cover"
+                  />
+
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    {image.label}
+                  </div>
+                </button>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Result */}
-        <div className="rounded-2xl overflow-hidden" style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}>
+        <div
+          className="rounded-2xl overflow-hidden min-h-[420px]"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
           {scanning ? (
             <div className="flex flex-col items-center justify-center h-full py-16">
               <div className="relative w-24 h-24 mb-6">
-                <div className="absolute inset-0 rounded-full animate-ping" style={{ background: "rgba(14,165,164,0.2)" }} />
-                <div className="relative w-24 h-24 rounded-full flex items-center justify-center" style={{ background: "rgba(14,165,164,0.15)" }}>
+                <div
+                  className="absolute inset-0 rounded-full animate-ping"
+                  style={{ background: "rgba(14,165,164,0.2)" }}
+                />
+
+                <div
+                  className="relative w-24 h-24 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(14,165,164,0.15)" }}
+                >
                   <Scan className="w-10 h-10" style={{ color: "#0EA5A4" }} />
                 </div>
               </div>
-              <div className="font-semibold" style={{ fontFamily: "Sora, sans-serif" }}>Analyzing Image...</div>
-              <div className="text-sm text-muted-foreground mt-1">AI is detecting road conditions</div>
+
+              <div
+                className="font-semibold"
+                style={{ fontFamily: "Sora, sans-serif" }}
+              >
+                Analyzing Image...
+              </div>
+
+              <div className="text-sm text-muted-foreground mt-1">
+                RoadIntel is detecting road conditions
+              </div>
+
               <div className="mt-4 space-y-2 text-xs text-muted-foreground text-center">
-                {["Detecting surface anomalies...", "Calculating damage severity...", "Generating repair recommendations..."].map((t, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#0EA5A4", animationDelay: `${i * 0.3}s` }} />
-                    {t}
+                {[
+                  "Detecting surface anomalies...",
+                  "Calculating damage severity...",
+                  "Generating repair recommendations...",
+                ].map((text, index) => (
+                  <div key={text} className="flex items-center gap-2">
+                    <div
+                      className="w-1.5 h-1.5 rounded-full animate-pulse"
+                      style={{
+                        background: "#0EA5A4",
+                        animationDelay: `${index * 0.3}s`,
+                      }}
+                    />
+
+                    {text}
                   </div>
                 ))}
               </div>
             </div>
           ) : result ? (
             <div className="p-6">
+              {selected && (
+                <div className="mb-5">
+                  <img
+                    src={selected}
+                    alt={selectedLabel || "Selected road"}
+                    className="h-40 w-full rounded-2xl object-cover"
+                  />
+
+                  {selectedLabel && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Source: {selectedLabel}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center gap-2 mb-5">
                 <Zap className="w-5 h-5" style={{ color: "#0EA5A4" }} />
-                <h3 className="font-bold" style={{ fontFamily: "Sora, sans-serif" }}>AI Scan Result</h3>
-                <span className="ml-auto text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(14,165,164,0.15)", color: "#0EA5A4" }}>
+
+                <h3
+                  className="font-bold"
+                  style={{ fontFamily: "Sora, sans-serif" }}
+                >
+                  AI Scan Result
+                </h3>
+
+                <span
+                  className="ml-auto text-xs px-2 py-0.5 rounded-full"
+                  style={{
+                    background: "rgba(14,165,164,0.15)",
+                    color: "#0EA5A4",
+                  }}
+                >
                   {(result.confidence * 100).toFixed(0)}% confidence
                 </span>
               </div>
 
-              {/* Health gauge */}
               <div className="flex items-center gap-4 mb-5">
                 <div className="flex-1">
-                  <div className="text-xs text-muted-foreground mb-1">Road Health Score</div>
-                  <div className="h-3 rounded-full overflow-hidden" style={{ background: "hsl(var(--muted))" }}>
-                    <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${result.healthScore}%`, background: getHealthColor(result.healthScore) }} />
+                  <div className="text-xs text-muted-foreground mb-1">
+                    Road Health Score
                   </div>
-                  <div className="text-sm font-bold mt-1" style={{ color: getHealthColor(result.healthScore) }}>
+
+                  <div
+                    className="h-3 rounded-full overflow-hidden"
+                    style={{ background: "hsl(var(--muted))" }}
+                  >
+                    <div
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{
+                        width: `${result.healthScore}%`,
+                        background: getHealthColor(result.healthScore),
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    className="text-sm font-bold mt-1"
+                    style={{ color: getHealthColor(result.healthScore) }}
+                  >
                     {result.healthScore}/100
                   </div>
                 </div>
+
                 <div className="text-right">
                   <div className="text-xs text-muted-foreground">Severity</div>
-                  <div className="font-bold text-lg" style={{ color: getRiskColor(result.severity), fontFamily: "Sora, sans-serif" }}>
-                    {result.severity?.toUpperCase()}
+
+                  <div
+                    className="font-bold text-lg"
+                    style={{
+                      color: getRiskColor(result.severity),
+                      fontFamily: "Sora, sans-serif",
+                    }}
+                  >
+                    {result.severity.toUpperCase()}
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-5">
-                <div className="p-3 rounded-xl" style={{ background: "hsl(var(--muted))" }}>
-                  <div className="text-xs text-muted-foreground">Issue Type</div>
-                  <div className="font-semibold text-sm mt-0.5">{result.issueType}</div>
+                <div
+                  className="p-3 rounded-xl"
+                  style={{ background: "hsl(var(--muted))" }}
+                >
+                  <div className="text-xs text-muted-foreground">
+                    Issue Type
+                  </div>
+
+                  <div className="font-semibold text-sm mt-0.5">
+                    {result.issueType}
+                  </div>
                 </div>
-                <div className="p-3 rounded-xl" style={{ background: "hsl(var(--muted))" }}>
-                  <div className="text-xs text-muted-foreground">Risk Level</div>
-                  <div className="font-semibold text-sm mt-0.5" style={{ color: getRiskColor(result.riskLevel) }}>{result.riskLevel?.toUpperCase()}</div>
+
+                <div
+                  className="p-3 rounded-xl"
+                  style={{ background: "hsl(var(--muted))" }}
+                >
+                  <div className="text-xs text-muted-foreground">
+                    Risk Level
+                  </div>
+
+                  <div
+                    className="font-semibold text-sm mt-0.5"
+                    style={{ color: getRiskColor(result.riskLevel) }}
+                  >
+                    {result.riskLevel.toUpperCase()}
+                  </div>
                 </div>
               </div>
 
               <div className="mb-4">
-                <div className="text-xs text-muted-foreground mb-2">Detected Issues</div>
+                <div className="text-xs text-muted-foreground mb-2">
+                  Detected Issues
+                </div>
+
                 <div className="flex flex-wrap gap-2">
-                  {(result.detectedIssues ?? []).map((issue: string) => (
-                    <span key={issue} className="text-xs px-2 py-1 rounded-full" style={{ background: "hsl(var(--muted))", color: "hsl(var(--foreground))" }}>
+                  {result.detectedIssues.map((issue) => (
+                    <span
+                      key={issue}
+                      className="text-xs px-2 py-1 rounded-full"
+                      style={{
+                        background: "hsl(var(--muted))",
+                        color: "hsl(var(--foreground))",
+                      }}
+                    >
                       {issue}
                     </span>
                   ))}
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl mb-4" style={{ background: "rgba(14,165,164,0.08)", border: "1px solid rgba(14,165,164,0.2)" }}>
-                <div className="text-xs font-medium mb-1" style={{ color: "#0EA5A4" }}>AI Recommendation</div>
-                <p className="text-xs text-muted-foreground">{result.recommendation}</p>
+              <div
+                className="p-3 rounded-xl mb-4"
+                style={{
+                  background: "rgba(14,165,164,0.08)",
+                  border: "1px solid rgba(14,165,164,0.2)",
+                }}
+              >
+                <div
+                  className="text-xs font-medium mb-1"
+                  style={{ color: "#0EA5A4" }}
+                >
+                  AI Recommendation
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  {result.recommendation}
+                </p>
               </div>
 
-              {result.shouldFileComplaint && (
-                <div className="p-3 rounded-xl flex gap-2" style={{ background: "#F59E0B12", border: "1px solid #F59E0B30" }}>
-                  <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: "#F59E0B" }} />
+              {result.shouldFileComplaint ? (
+                <div
+                  className="p-3 rounded-xl flex gap-2"
+                  style={{
+                    background: "#F59E0B12",
+                    border: "1px solid #F59E0B30",
+                  }}
+                >
+                  <AlertTriangle
+                    className="w-4 h-4 shrink-0"
+                    style={{ color: "#F59E0B" }}
+                  />
+
                   <div>
-                    <div className="text-xs font-medium" style={{ color: "#F59E0B" }}>Complaint Recommended</div>
-                    <div className="text-xs text-muted-foreground">This road condition requires official reporting.</div>
+                    <div
+                      className="text-xs font-medium"
+                      style={{ color: "#F59E0B" }}
+                    >
+                      Complaint Recommended
+                    </div>
+
+                    <div className="text-xs text-muted-foreground">
+                      This road condition requires official reporting.
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="p-3 rounded-xl flex gap-2"
+                  style={{
+                    background: "#22C55E12",
+                    border: "1px solid #22C55E30",
+                  }}
+                >
+                  <CheckCircle
+                    className="w-4 h-4 shrink-0"
+                    style={{ color: "#22C55E" }}
+                  />
+
+                  <div>
+                    <div
+                      className="text-xs font-medium"
+                      style={{ color: "#22C55E" }}
+                    >
+                      No Complaint Needed
+                    </div>
+
+                    <div className="text-xs text-muted-foreground">
+                      Road segment appears safe under demo scan conditions.
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full py-16 text-center px-6">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: "hsl(var(--muted))" }}>
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                style={{ background: "hsl(var(--muted))" }}
+              >
                 <Scan className="w-8 h-8 text-muted-foreground" />
               </div>
+
               <div className="font-medium mb-2">No Image Selected</div>
-              <p className="text-sm text-muted-foreground">Upload an image or choose a sample to run the AI scan</p>
+
+              <p className="text-sm text-muted-foreground">
+                Upload an image or choose a sample to run the road scan
+              </p>
             </div>
           )}
         </div>
@@ -167,11 +561,3 @@ export default function ScanPage() {
     </div>
   );
 }
-
-const MOCK_RESULT = {
-  issueType: "Pothole Formation", severity: "high", confidence: 0.91,
-  healthScore: 38, riskLevel: "high",
-  detectedIssues: ["Surface pothole", "Edge crumbling", "Water seepage", "Asphalt delamination"],
-  recommendation: "Immediate patching required. Pothole depth exceeds 5cm. Risk of vehicle damage high. Recommend full-depth repair with quality hot-mix asphalt. Independent inspection recommended before contractor billing.",
-  shouldFileComplaint: true,
-};
