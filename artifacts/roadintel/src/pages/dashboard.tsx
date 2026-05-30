@@ -2,240 +2,337 @@ import { Link } from "wouter";
 import {
   Activity,
   AlertTriangle,
-  ArrowUpRight,
-  Bell,
+  ArrowRight,
+  BarChart3,
   CheckCircle2,
-  Clock3,
+  ClipboardList,
+  Eye,
   FileText,
   IndianRupee,
+  Landmark,
   Map,
+  MapPin,
   Radio,
-  Scan,
+  Route,
+  ScanLine,
   ShieldCheck,
   TrendingDown,
+  Users,
   Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useGetDashboardSummary } from "@workspace/api-client-react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  Legend,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
-type Severity = "critical" | "high" | "medium" | "low" | "info";
+type Severity = "critical" | "high" | "medium" | "low";
+
+type Kpi = {
+  label: string;
+  value: string;
+  note: string;
+  icon: LucideIcon;
+  color: string;
+};
+
+type RoadPriority = {
+  id: string;
+  road: string;
+  zone: string;
+  authority: string;
+  risk: number;
+  health: number;
+  severity: Severity;
+  reason: string;
+  action: string;
+};
 
 type ActivityItem = {
-  id: number;
   title: string;
   location: string;
   time: string;
   severity: Severity;
-  summary: string;
-};
-
-type NotificationItem = {
-  id: number;
-  title: string;
-  message: string;
-  severity: Severity;
-  read: boolean;
-};
-
-type DecisionInsight = {
-  id: number;
-  title: string;
   description: string;
-  severity: Severity;
-  confidence: number;
 };
 
-const PILOT_ACTIVITY: ActivityItem[] = [
+type SpendingCheck = {
+  road: string;
+  approved: number;
+  spent: number;
+  health: number;
+  status: "Clear" | "Watchlist" | "Audit Required";
+};
+
+type ContractorSignal = {
+  contractor: string;
+  ras: number;
+  quality: number;
+  repeatFailure: number;
+  status: "Strong" | "Watchlist" | "Audit Required";
+};
+
+const KPI_DATA: Kpi[] = [
   {
-    id: 1,
-    title: "High-risk road segment detected",
-    location: "JM Road, Pune",
-    time: "12 min ago",
-    severity: "high",
-    summary: "Complaint density increased after rainfall. Inspection suggested within 48 hours.",
+    label: "Roads Monitored",
+    value: "8",
+    note: "Pune / PCMC pilot roads",
+    icon: Route,
+    color: "#0EA5A4",
   },
   {
-    id: 2,
-    title: "New complaint routed to PMC",
+    label: "Complaint Signals",
+    value: "220",
+    note: "Filed, routed and reviewed",
+    icon: FileText,
+    color: "#3B82F6",
+  },
+  {
+    label: "Spending Tracked",
+    value: "₹27.5Cr",
+    note: "Approved vs actual spend",
+    icon: IndianRupee,
+    color: "#F59E0B",
+  },
+  {
+    label: "Audit Flags",
+    value: "3",
+    note: "Roads needing review",
+    icon: AlertTriangle,
+    color: "#DC2626",
+  },
+];
+
+const COMPLAINT_TREND = [
+  { month: "Nov", filed: 21, resolved: 12, escalated: 2 },
+  { month: "Dec", filed: 28, resolved: 17, escalated: 3 },
+  { month: "Jan", filed: 36, resolved: 24, escalated: 4 },
+  { month: "Feb", filed: 44, resolved: 31, escalated: 6 },
+  { month: "Mar", filed: 49, resolved: 35, escalated: 5 },
+  { month: "Apr", filed: 42, resolved: 30, escalated: 4 },
+];
+
+const HEALTH_RISK_TREND = [
+  { month: "Nov", health: 78, risk: 34 },
+  { month: "Dec", health: 76, risk: 39 },
+  { month: "Jan", health: 72, risk: 47 },
+  { month: "Feb", health: 68, risk: 55 },
+  { month: "Mar", health: 71, risk: 49 },
+  { month: "Apr", health: 74, risk: 43 },
+];
+
+const ROAD_PRIORITIES: RoadPriority[] = [
+  {
+    id: "RISK-001",
+    road: "JM Road Patch Zone",
+    zone: "Pune Central",
+    authority: "PMC",
+    risk: 86,
+    health: 42,
+    severity: "critical",
+    reason: "High complaint density, low road health and repeated patch failure.",
+    action: "Inspect within 24 hours and review contractor repair quality.",
+  },
+  {
+    id: "RISK-002",
+    road: "FC Road Junction",
+    zone: "Pune Central",
+    authority: "PMC",
+    risk: 74,
+    health: 56,
+    severity: "high",
+    reason: "Cracking and drainage stress near a high-traffic commercial area.",
+    action: "Schedule drainage inspection and crack sealing.",
+  },
+  {
+    id: "RISK-003",
+    road: "Wakad-Hinjewadi Road",
+    zone: "PCMC Corridor",
+    authority: "PCMC",
+    risk: 68,
+    health: 61,
+    severity: "high",
+    reason: "Heavy commuter load and edge deterioration signals.",
+    action: "Plan resurfacing inspection and monitor vibration spikes.",
+  },
+];
+
+const SPENDING_CHECKS: SpendingCheck[] = [
+  {
+    road: "JM Road",
+    approved: 3.9,
+    spent: 4.8,
+    health: 42,
+    status: "Audit Required",
+  },
+  {
+    road: "FC Road",
+    approved: 2.7,
+    spent: 3.1,
+    health: 56,
+    status: "Watchlist",
+  },
+  {
+    road: "Hinjewadi",
+    approved: 6.2,
+    spent: 6.7,
+    health: 61,
+    status: "Watchlist",
+  },
+  {
+    road: "Baner",
+    approved: 4.8,
+    spent: 4.6,
+    health: 72,
+    status: "Clear",
+  },
+  {
+    road: "Ravet",
+    approved: 5.1,
+    spent: 4.9,
+    health: 81,
+    status: "Clear",
+  },
+];
+
+const CONTRACTOR_SIGNALS: ContractorSignal[] = [
+  {
+    contractor: "Shivneri Infra",
+    ras: 91,
+    quality: 92,
+    repeatFailure: 5,
+    status: "Strong",
+  },
+  {
+    contractor: "PCMC Infra",
+    ras: 86,
+    quality: 86,
+    repeatFailure: 9,
+    status: "Strong",
+  },
+  {
+    contractor: "MahaRoad",
+    ras: 76,
+    quality: 76,
+    repeatFailure: 15,
+    status: "Watchlist",
+  },
+  {
+    contractor: "UrbanBuild",
+    ras: 58,
+    quality: 58,
+    repeatFailure: 31,
+    status: "Audit Required",
+  },
+  {
+    contractor: "QuickPatch",
+    ras: 52,
+    quality: 49,
+    repeatFailure: 38,
+    status: "Audit Required",
+  },
+];
+
+const RECENT_ACTIVITY: ActivityItem[] = [
+  {
+    title: "Critical road risk detected",
+    location: "JM Road Patch Zone",
+    time: "Demo signal",
+    severity: "critical",
+    description:
+      "Road health dropped to 42/100 while spending crossed approved budget.",
+  },
+  {
+    title: "Complaint routed to PMC",
     location: "FC Road Junction",
-    time: "24 min ago",
-    severity: "medium",
-    summary: "Pothole complaint assigned to Ward Engineer — Shivajinagar zone.",
+    time: "Demo signal",
+    severity: "high",
+    description:
+      "Pothole and cracking complaint assigned to PMC Roads Department.",
   },
   {
-    id: 3,
-    title: "Contractor watchlist updated",
+    title: "Contractor audit flag created",
     location: "Pune Central",
-    time: "1 hr ago",
+    time: "Demo signal",
     severity: "high",
-    summary: "UrbanBuild Pune Services flagged for repeated patch failures.",
+    description:
+      "UrbanBuild shows repeated patch failures and budget-quality mismatch.",
   },
   {
-    id: 4,
-    title: "Repair verification completed",
+    title: "Verified repair pattern identified",
     location: "Baner Link Road",
-    time: "2 hr ago",
-    severity: "info",
-    summary: "Citizen photo and inspection note marked repair as verified.",
-  },
-];
-
-const PILOT_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 1,
-    title: "Inspection Required",
-    message: "JM Road Patch Zone crossed high-risk threshold.",
-    severity: "high",
-    read: false,
-  },
-  {
-    id: 2,
-    title: "Complaint Assigned",
-    message: "FC Road complaint routed to PMC Shivajinagar ward.",
-    severity: "medium",
-    read: false,
-  },
-  {
-    id: 3,
-    title: "Demo Sensor Feed",
-    message: "Simulated vibration feed active for Pune pilot roads.",
-    severity: "info",
-    read: true,
-  },
-];
-
-const DECISION_INSIGHTS: DecisionInsight[] = [
-  {
-    id: 1,
-    title: "Failure risk rising on JM Road",
-    description:
-      "Rule engine combines complaint frequency, monsoon exposure, and road health decline.",
-    severity: "high",
-    confidence: 0.84,
-  },
-  {
-    id: 2,
-    title: "Budget-quality mismatch",
-    description:
-      "UrbanBuild Pune Services shows higher repair spend but lower post-repair quality.",
-    severity: "medium",
-    confidence: 0.79,
-  },
-  {
-    id: 3,
-    title: "Preventive maintenance window",
-    description:
-      "Baner Link Road can avoid escalation with low-cost crack sealing this month.",
+    time: "Demo signal",
     severity: "low",
-    confidence: 0.81,
+    description:
+      "Good road health and budget discipline marked as clear case.",
   },
 ];
 
 const QUICK_ACTIONS = [
   {
-    label: "File Complaint",
+    title: "File Road Complaint",
+    text: "Report potholes, cracks, waterlogging or unsafe road conditions.",
     href: "/complaints",
-    icon: FileText,
-    color: "#0EA5A4",
-    description: "Citizen issue reporting",
+    icon: ClipboardList,
+    color: "#3B82F6",
   },
   {
-    label: "Quick Scan",
+    title: "Scan Road Image",
+    text: "Use demo classifier for pothole, crack or waterlogging detection.",
     href: "/scan",
-    icon: Scan,
-    color: "#F59E0B",
-    description: "Road image analysis",
+    icon: ScanLine,
+    color: "#0EA5A4",
   },
   {
-    label: "Risk Map",
-    href: "/risk-map",
-    icon: TrendingDown,
-    color: "#DC2626",
-    description: "Failure prediction",
-  },
-  {
-    label: "Public Spending",
+    title: "Check Public Spending",
+    text: "Compare approved budget, actual spend and road quality.",
     href: "/spending",
     icon: Wallet,
-    color: "#3B82F6",
-    description: "Budget transparency",
-  },
-];
-
-const SECONDARY_ACTIONS = [
-  {
-    label: "Road DNA",
-    href: "/roads",
-    icon: Map,
+    color: "#F59E0B",
   },
   {
-    label: "Sensor Intel",
-    href: "/sensors",
-    icon: Radio,
-  },
-  {
-    label: "Contractors",
+    title: "Review Contractors",
+    text: "Check Road Accountability Score and audit-risk contractors.",
     href: "/contractors",
-    icon: ShieldCheck,
-  },
-  {
-    label: "Analytics",
-    href: "/analytics",
-    icon: Activity,
+    icon: Users,
+    color: "#16A34A",
   },
 ];
-
-function safePilotNumber(
-  value: unknown,
-  fallback: number,
-  maxReasonable: number,
-) {
-  const numberValue = Number(value);
-
-  if (
-    !Number.isFinite(numberValue) ||
-    numberValue < 0 ||
-    numberValue > maxReasonable
-  ) {
-    return fallback;
-  }
-
-  return Math.round(numberValue);
-}
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en-IN").format(value);
-}
 
 function getSeverityColor(severity: Severity) {
-  switch (severity) {
-    case "critical":
-      return "#DC2626";
-    case "high":
-      return "#F97316";
-    case "medium":
-      return "#F59E0B";
-    case "low":
-      return "#16A34A";
-    case "info":
-    default:
-      return "#0EA5A4";
-  }
+  if (severity === "critical") return "#DC2626";
+  if (severity === "high") return "#F97316";
+  if (severity === "medium") return "#F59E0B";
+  return "#16A34A";
 }
 
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  color,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  icon: LucideIcon;
-  color: string;
-  sub: string;
-}) {
+function getScoreColor(score: number) {
+  if (score >= 80) return "#16A34A";
+  if (score >= 65) return "#0EA5A4";
+  if (score >= 50) return "#F59E0B";
+  return "#DC2626";
+}
+
+function getStatusColor(status: SpendingCheck["status"] | ContractorSignal["status"]) {
+  if (status === "Audit Required") return "#DC2626";
+  if (status === "Watchlist") return "#F59E0B";
+  return "#16A34A";
+}
+
+function KpiCard({ item }: { item: Kpi }) {
+  const Icon = item.icon;
+
   return (
     <div
       className="rounded-2xl p-5"
@@ -247,16 +344,16 @@ function StatCard({
       <div className="mb-4 flex items-center justify-between">
         <div
           className="flex h-10 w-10 items-center justify-center rounded-xl"
-          style={{ background: `${color}18` }}
+          style={{ background: `${item.color}18` }}
         >
-          <Icon className="h-5 w-5" style={{ color }} />
+          <Icon className="h-5 w-5" style={{ color: item.color }} />
         </div>
 
         <span
           className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
           style={{
-            background: `${color}14`,
-            color,
+            background: `${item.color}14`,
+            color: item.color,
           }}
         >
           Pilot
@@ -267,37 +364,33 @@ function StatCard({
         className="text-2xl font-bold"
         style={{ fontFamily: "Sora, sans-serif" }}
       >
-        {value}
+        {item.value}
       </div>
 
-      <div className="mt-1 text-sm font-medium">{label}</div>
-
-      <div className="mt-1 text-xs text-muted-foreground">{sub}</div>
+      <div className="mt-1 text-sm font-medium">{item.label}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{item.note}</div>
     </div>
   );
 }
 
 function SectionCard({
   title,
+  subtitle,
   children,
-  action,
 }: {
   title: string;
+  subtitle: string;
   children: React.ReactNode;
-  action?: React.ReactNode;
 }) {
   return (
     <section
-      className="overflow-hidden rounded-2xl"
+      className="rounded-3xl p-5"
       style={{
         background: "hsl(var(--card))",
         border: "1px solid hsl(var(--border))",
       }}
     >
-      <div
-        className="flex items-center justify-between border-b px-5 py-4"
-        style={{ borderColor: "hsl(var(--border))" }}
-      >
+      <div className="mb-4">
         <h2
           className="font-semibold"
           style={{ fontFamily: "Sora, sans-serif" }}
@@ -305,7 +398,9 @@ function SectionCard({
           {title}
         </h2>
 
-        {action}
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          {subtitle}
+        </p>
       </div>
 
       {children}
@@ -313,40 +408,190 @@ function SectionCard({
   );
 }
 
+function ScoreBar({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  const color = getScoreColor(value);
+
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-bold" style={{ color }}>
+          {value}/100
+        </span>
+      </div>
+
+      <div
+        className="h-2 overflow-hidden rounded-full"
+        style={{ background: "hsl(var(--border))" }}
+      >
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${value}%`,
+            background: color,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SeverityPill({ severity }: { severity: Severity }) {
+  const color = getSeverityColor(severity);
+
+  return (
+    <span
+      className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase"
+      style={{
+        background: `${color}18`,
+        color,
+      }}
+    >
+      {severity}
+    </span>
+  );
+}
+
+function RoadPriorityCard({ road }: { road: RoadPriority }) {
+  const color = getSeverityColor(road.severity);
+
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{
+        background: "hsl(var(--muted))",
+        border: `1px solid ${color}30`,
+      }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-mono text-[11px] text-muted-foreground">
+            {road.id}
+          </p>
+
+          <h3 className="mt-1 font-semibold">{road.road}</h3>
+
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5" />
+            {road.zone} · {road.authority}
+          </p>
+        </div>
+
+        <SeverityPill severity={road.severity} />
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <ScoreBar label="Risk Score" value={road.risk} />
+        <ScoreBar label="Road Health" value={road.health} />
+      </div>
+
+      <p className="mt-4 text-xs leading-5 text-muted-foreground">
+        <span className="font-semibold text-foreground">Why: </span>
+        {road.reason}
+      </p>
+
+      <p className="mt-2 text-xs leading-5 text-muted-foreground">
+        <span className="font-semibold text-foreground">Action: </span>
+        {road.action}
+      </p>
+    </div>
+  );
+}
+
+function ActivityCard({ activity }: { activity: ActivityItem }) {
+  const color = getSeverityColor(activity.severity);
+
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{
+        background: "hsl(var(--muted))",
+        border: `1px solid ${color}28`,
+      }}
+    >
+      <div className="flex items-start gap-3">
+        {activity.severity === "low" ? (
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+        ) : (
+          <AlertTriangle
+            className="mt-0.5 h-5 w-5 shrink-0"
+            style={{ color }}
+          />
+        )}
+
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-semibold">{activity.title}</h3>
+            <SeverityPill severity={activity.severity} />
+          </div>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            {activity.location} · {activity.time}
+          </p>
+
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            {activity.description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuickActionCard({
+  title,
+  text,
+  href,
+  icon: Icon,
+  color,
+}: {
+  title: string;
+  text: string;
+  href: string;
+  icon: LucideIcon;
+  color: string;
+}) {
+  return (
+    <Link href={href}>
+      <button
+        type="button"
+        className="group w-full rounded-3xl p-5 text-left transition hover:-translate-y-0.5"
+        style={{
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
+        }}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <div
+            className="flex h-11 w-11 items-center justify-center rounded-2xl"
+            style={{ background: `${color}18` }}
+          >
+            <Icon className="h-5 w-5" style={{ color }} />
+          </div>
+
+          <ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-1" />
+        </div>
+
+        <h3
+          className="font-semibold"
+          style={{ fontFamily: "Sora, sans-serif" }}
+        >
+          {title}
+        </h3>
+
+        <p className="mt-2 text-xs leading-5 text-muted-foreground">{text}</p>
+      </button>
+    </Link>
+  );
+}
+
 export default function Dashboard() {
-  const { data: summary } = useGetDashboardSummary();
-  const summaryRecord = (summary ?? {}) as Record<string, unknown>;
-
-  const totalComplaints = safePilotNumber(
-    summaryRecord.totalComplaints,
-    220,
-    1200,
-  );
-
-  const activeIssues = safePilotNumber(
-    summaryRecord.activeComplaints,
-    31,
-    300,
-  );
-
-  const roadsMonitored = safePilotNumber(summaryRecord.roadsMonitored, 8, 50);
-
-  const sensorAnomalies = safePilotNumber(
-    summaryRecord.sensorAnomalies,
-    6,
-    25,
-  );
-
-  const avgHealthScore = safePilotNumber(
-    summaryRecord.avgHealthScore,
-    74,
-    100,
-  );
-
-  const unreadNotifications = PILOT_NOTIFICATIONS.filter(
-    (notification) => !notification.read,
-  ).length;
-
   return (
     <div className="space-y-6 p-6">
       <section
@@ -357,7 +602,7 @@ export default function Dashboard() {
           border: "1px solid hsl(var(--border))",
         }}
       >
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <div
               className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
@@ -366,343 +611,349 @@ export default function Dashboard() {
                 color: "#0EA5A4",
               }}
             >
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Pune / PCMC Pilot Dashboard
+              <Eye className="h-3.5 w-3.5" />
+              RoadWatch Transparency Command Center
             </div>
 
             <h1
               className="text-2xl font-bold md:text-3xl"
               style={{ fontFamily: "Sora, sans-serif" }}
             >
-              RoadIntel Operations Overview
+              RoadIntel Dashboard
             </h1>
 
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              A focused view of road complaints, road health, risk prediction,
-              public spending, and contractor accountability for a realistic
-              pilot deployment.
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">
+              Monitor road quality, track public spending, report issues to
+              responsible authorities and review contractor accountability from
+              one RoadWatch-focused dashboard.
             </p>
           </div>
 
           <div
-            className="rounded-2xl px-4 py-3"
+            className="rounded-2xl p-5 xl:min-w-[300px]"
             style={{
               background: "hsl(var(--background))",
               border: "1px solid hsl(var(--border))",
             }}
           >
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              System Online
+            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
+              <ShieldCheck className="h-4 w-4" />
+              Audit-safe pilot data
             </div>
 
-            <p className="mt-1 text-xs text-muted-foreground">
-              Demo mode · Simulated sensor feed · Apr 2026
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              Pune / PCMC demo dataset. No fake live government feed. Built to
+              show transparent civic workflow and future integration potential.
             </p>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard
-          label="Complaints Filed"
-          value={formatNumber(totalComplaints)}
-          icon={FileText}
-          color="#0EA5A4"
-          sub="Pilot total"
-        />
-
-        <StatCard
-          label="Active Issues"
-          value={formatNumber(activeIssues)}
-          icon={AlertTriangle}
-          color="#F97316"
-          sub="Open or assigned"
-        />
-
-        <StatCard
-          label="Roads Monitored"
-          value={roadsMonitored}
-          icon={Map}
-          color="#16A34A"
-          sub="Pune / PCMC corridors"
-        />
-
-        <StatCard
-          label="Sensor Alerts"
-          value={sensorAnomalies}
-          icon={Radio}
-          color="#F59E0B"
-          sub="Demo feed today"
-        />
-
-        <StatCard
-          label="Avg Health"
-          value={`${avgHealthScore}/100`}
-          icon={Activity}
-          color="#3B82F6"
-          sub="Network score"
-        />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {KPI_DATA.map((item) => (
+          <KpiCard key={item.label} item={item} />
+        ))}
       </section>
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Priority Actions
-            </h2>
+      <section className="grid gap-4 xl:grid-cols-4">
+        {QUICK_ACTIONS.map((action) => (
+          <QuickActionCard key={action.title} {...action} />
+        ))}
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <SectionCard
+          title="Complaint Lifecycle"
+          subtitle="Filed, resolved and escalated complaints across the pilot window."
+        >
+          <div className="h-[310px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={COMPLAINT_TREND}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="filed"
+                  name="Filed"
+                  stroke="#0EA5A4"
+                  fill="rgba(14,165,164,0.14)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="resolved"
+                  name="Resolved"
+                  stroke="#16A34A"
+                  fill="rgba(22,163,74,0.14)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="escalated"
+                  name="Escalated"
+                  stroke="#F59E0B"
+                  fill="rgba(245,158,11,0.14)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Recent Transparency Signals"
+          subtitle="Decision-relevant updates only. No fake live claims."
+        >
+          <div className="space-y-3">
+            {RECENT_ACTIVITY.map((activity) => (
+              <ActivityCard key={activity.title} activity={activity} />
+            ))}
+          </div>
+        </SectionCard>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-2">
+        <SectionCard
+          title="Road Health vs Risk"
+          subtitle="Road health should improve while risk decreases. Divergence indicates review need."
+        >
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={HEALTH_RISK_TREND}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Legend />
+                <Bar
+                  dataKey="health"
+                  name="Road Health"
+                  fill="#0EA5A4"
+                  radius={[6, 6, 0, 0]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="risk"
+                  name="Risk Score"
+                  stroke="#F97316"
+                  strokeWidth={3}
+                  dot={{ r: 4 }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Spending vs Road Health"
+          subtitle="This is the main transparency check: spending should improve road quality."
+        >
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={SPENDING_CHECKS}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis dataKey="road" tick={{ fontSize: 10 }} />
+                <YAxis yAxisId="left" tick={{ fontSize: 10 }} />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  domain={[0, 100]}
+                  tick={{ fontSize: 10 }}
+                />
+                <Tooltip />
+                <Legend />
+                <Bar
+                  yAxisId="left"
+                  dataKey="spent"
+                  name="Spent ₹Cr"
+                  radius={[6, 6, 0, 0]}
+                >
+                  {SPENDING_CHECKS.map((item) => (
+                    <Cell
+                      key={item.road}
+                      fill={getStatusColor(item.status)}
+                    />
+                  ))}
+                </Bar>
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="health"
+                  name="Road Health"
+                  stroke="#3B82F6"
+                  strokeWidth={3}
+                  dot={{ r: 4 }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </SectionCard>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <SectionCard
+          title="Priority Road Actions"
+          subtitle="Roads ranked by risk, road health and accountability requirement."
+        >
+          <div className="space-y-3">
+            {ROAD_PRIORITIES.map((road) => (
+              <RoadPriorityCard key={road.id} road={road} />
+            ))}
           </div>
 
-          <span className="text-xs text-muted-foreground">
-            All buttons route to working pages
-          </span>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {QUICK_ACTIONS.map(({ label, href, icon: Icon, color, description }) => (
-            <Link key={href} href={href}>
-              <div
-                className="group cursor-pointer rounded-2xl p-4 transition hover:-translate-y-0.5"
-                style={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                }}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div
-                    className="flex h-11 w-11 items-center justify-center rounded-xl"
-                    style={{ background: `${color}16` }}
-                  >
-                    <Icon className="h-5 w-5" style={{ color }} />
-                  </div>
-
-                  <ArrowUpRight className="h-4 w-4 text-muted-foreground transition group-hover:text-primary" />
-                </div>
-
-                <div className="mt-4 font-semibold">{label}</div>
-
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {description}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {SECONDARY_ACTIONS.map(({ label, href, icon: Icon }) => (
-            <Link key={href} href={href}>
-              <div
-                className="flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3 text-sm transition hover:bg-muted"
-                style={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                }}
-              >
-                <span className="flex items-center gap-2">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                  {label}
-                </span>
-
-                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" />
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-        <SectionCard
-          title="Priority Board"
-          action={
-            <Link href="/analytics">
-              <button
-                className="flex items-center gap-1 text-xs"
-                style={{ color: "#0EA5A4" }}
-              >
-                View analytics
-                <ArrowUpRight className="h-3.5 w-3.5" />
+          <div className="mt-4">
+            <Link href="/risk-map">
+              <button className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2.5 text-sm font-semibold hover:bg-white/15">
+                Open Full Risk Map
+                <ArrowRight className="h-4 w-4" />
               </button>
             </Link>
-          }
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Contractor Accountability Snapshot"
+          subtitle="Road Accountability Score links quality, timeliness, budget discipline and repeat failures."
         >
-          <div className="divide-y" style={{ borderColor: "hsl(var(--border))" }}>
-            {PILOT_ACTIVITY.map((item) => {
-              const color = getSeverityColor(item.severity);
+          <div className="space-y-4">
+            {CONTRACTOR_SIGNALS.map((contractor) => {
+              const statusColor = getStatusColor(contractor.status);
 
               return (
-                <div key={item.id} className="px-5 py-4">
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ background: color }}
-                    />
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <h3 className="font-medium">{item.title}</h3>
-
-                        <span
-                          className="w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase"
-                          style={{
-                            background: `${color}18`,
-                            color,
-                          }}
-                        >
-                          {item.severity}
-                        </span>
-                      </div>
+                <div
+                  key={contractor.contractor}
+                  className="rounded-2xl p-4"
+                  style={{
+                    background: "hsl(var(--muted))",
+                    border: `1px solid ${statusColor}30`,
+                  }}
+                >
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold">
+                        {contractor.contractor}
+                      </h3>
 
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {item.location} · {item.time}
-                      </p>
-
-                      <p className="mt-2 text-sm leading-5 text-muted-foreground">
-                        {item.summary}
+                        Repeat failure: {contractor.repeatFailure}%
                       </p>
                     </div>
+
+                    <span
+                      className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+                      style={{
+                        background: `${statusColor}18`,
+                        color: statusColor,
+                      }}
+                    >
+                      {contractor.status}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <ScoreBar label="RAS" value={contractor.ras} />
+                    <ScoreBar label="Quality" value={contractor.quality} />
                   </div>
                 </div>
               );
             })}
           </div>
+
+          <div className="mt-4">
+            <Link href="/contractors">
+              <button className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2.5 text-sm font-semibold hover:bg-white/15">
+                Review Contractors
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </Link>
+          </div>
         </SectionCard>
+      </section>
 
-        <div className="space-y-6">
-          <SectionCard
-            title="Notifications"
-            action={
-              unreadNotifications > 0 ? (
-                <span
-                  className="rounded-full px-2 py-0.5 text-xs font-semibold text-white"
-                  style={{ background: "#DC2626" }}
-                >
-                  {unreadNotifications}
-                </span>
-              ) : null
-            }
-          >
-            <div className="divide-y" style={{ borderColor: "hsl(var(--border))" }}>
-              {PILOT_NOTIFICATIONS.map((notification) => {
-                const color = getSeverityColor(notification.severity);
-
-                return (
-                  <div key={notification.id} className="px-5 py-3">
-                    <div className="flex items-start gap-2">
-                      <Bell className="mt-0.5 h-4 w-4" style={{ color }} />
-
-                      <div>
-                        <div
-                          className={`text-sm font-medium ${
-                            notification.read ? "opacity-70" : ""
-                          }`}
-                        >
-                          {notification.title}
-                        </div>
-
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                          {notification.message}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </SectionCard>
-
-          <SectionCard title="Decision Engine">
-            <div className="space-y-3 p-4">
-              {DECISION_INSIGHTS.map((insight) => {
-                const color = getSeverityColor(insight.severity);
-
-                return (
-                  <div
-                    key={insight.id}
-                    className="rounded-2xl p-3"
-                    style={{
-                      background: "hsl(var(--muted))",
-                      border: "1px solid hsl(var(--border))",
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="text-sm font-semibold">
-                        {insight.title}
-                      </div>
-
-                      <span
-                        className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                        style={{
-                          background: `${color}18`,
-                          color,
-                        }}
-                      >
-                        {(insight.confidence * 100).toFixed(0)}%
-                      </span>
-                    </div>
-
-                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                      {insight.description}
-                    </p>
-                  </div>
-                );
-              })}
-
-              <div className="rounded-xl bg-primary/10 p-3 text-xs leading-5 text-muted-foreground">
-                Labelled as a rule-based decision engine for demo honesty,
-                avoiding vague AI claims.
-              </div>
-            </div>
-          </SectionCard>
+      <section
+        className="rounded-3xl p-5"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(14,165,164,0.10), rgba(59,130,246,0.06), hsl(var(--card)))",
+          border: "1px solid hsl(var(--border))",
+        }}
+      >
+        <div className="grid gap-4 md:grid-cols-4">
+          <DashboardPrinciple
+            icon={Map}
+            title="Monitor Quality"
+            text="Road DNA profiles show condition, health score and repair history."
+            color="#0EA5A4"
+          />
+          <DashboardPrinciple
+            icon={Landmark}
+            title="Route Authority"
+            text="Complaints are mapped to PMC, PCMC, PWD or highway authority."
+            color="#3B82F6"
+          />
+          <DashboardPrinciple
+            icon={IndianRupee}
+            title="Track Spending"
+            text="Budget usage is compared with road quality and repair outcomes."
+            color="#F59E0B"
+          />
+          <DashboardPrinciple
+            icon={Radio}
+            title="Plan Integration"
+            text="Sensor Intel is clearly shown as simulated digital twin data."
+            color="#16A34A"
+          />
         </div>
       </section>
 
       <section
-        className="grid gap-4 rounded-3xl p-5 md:grid-cols-3"
-        style={{
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-        }}
+        className="rounded-3xl border border-emerald-500/25 bg-emerald-500/10 p-5"
       >
-        <SnapshotCard
-          icon={CheckCircle2}
-          label="Resolved Cases"
-          value="149"
-          note="67.7% closure in pilot"
-          color="#16A34A"
-        />
+        <div className="flex items-start gap-3">
+          <BarChart3 className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
 
-        <SnapshotCard
-          icon={Clock3}
-          label="Avg Resolution"
-          value="4.8 days"
-          note="PMC / PCMC assigned cases"
-          color="#F59E0B"
-        />
+          <div>
+            <h2
+              className="font-semibold text-emerald-100"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              RoadWatch Dashboard Summary
+            </h2>
 
-        <SnapshotCard
-          icon={IndianRupee}
-          label="Flagged Spend"
-          value="₹1.86 Cr"
-          note="Repeat-repair review queue"
-          color="#DC2626"
-        />
+            <p className="mt-2 text-sm leading-6 text-emerald-100/80">
+              This dashboard is designed to make transparency immediately
+              visible after login: road condition, citizen complaints, public
+              spending, contractor accountability and risk prediction are all
+              connected in one place.
+            </p>
+          </div>
+        </div>
       </section>
     </div>
   );
 }
 
-function SnapshotCard({
+function DashboardPrinciple({
   icon: Icon,
-  label,
-  value,
-  note,
+  title,
+  text,
   color,
 }: {
   icon: LucideIcon;
-  label: string;
-  value: string;
-  note: string;
+  title: string;
+  text: string;
   color: string;
 }) {
   return (
@@ -713,23 +964,16 @@ function SnapshotCard({
         border: "1px solid hsl(var(--border))",
       }}
     >
-      <div className="mb-3 flex items-center gap-2">
-        <Icon className="h-4 w-4" style={{ color }} />
-
-        <span className="text-sm font-medium">{label}</span>
-      </div>
-
       <div
-        className="text-2xl font-bold"
-        style={{
-          color,
-          fontFamily: "Sora, sans-serif",
-        }}
+        className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl"
+        style={{ background: `${color}18` }}
       >
-        {value}
+        <Icon className="h-5 w-5" style={{ color }} />
       </div>
 
-      <p className="mt-1 text-xs text-muted-foreground">{note}</p>
+      <h3 className="text-sm font-semibold">{title}</h3>
+
+      <p className="mt-2 text-xs leading-5 text-muted-foreground">{text}</p>
     </div>
   );
 }
