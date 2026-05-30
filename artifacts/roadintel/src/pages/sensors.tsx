@@ -1,10 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  useGetSensorOverview,
-  useGetSensorFeed,
-  useGetSensorAnalytics,
-  useGetSensorAlerts,
-} from "@workspace/api-client-react";
+import { useMemo, useState } from "react";
+import { Link } from "wouter";
 import {
   Area,
   AreaChart,
@@ -22,8 +17,10 @@ import {
 import {
   Activity,
   AlertTriangle,
+  ArrowRight,
   CheckCircle2,
   Clock3,
+  CloudRain,
   Cpu,
   Gauge,
   MapPin,
@@ -34,515 +31,263 @@ import {
   Route,
   ShieldCheck,
   SlidersHorizontal,
-  TrendingUp,
+  TrendingDown,
   Wifi,
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-type Severity = "critical" | "high" | "medium" | "low" | "info";
+type Severity = "critical" | "high" | "medium" | "low";
+type SensorStatus = "Stable" | "Watch" | "Risk" | "Critical";
 
-type SensorOverview = {
-  activeSensors: number;
-  roadsMonitored: number;
-  liveAnomalyCount: number;
-  avgVibrationScore: number;
-  currentStressLevel: string;
-  criticalZones: number;
-  dataPointsToday: number;
-  uptime: number;
-};
-
-type SensorFeedRow = {
-  id: string | number;
-  roadId: string | number;
+type SensorRoad = {
+  id: string;
   roadName: string;
-  timestamp: string;
-  vibrationIntensity: number;
-  shockSpikes: number;
+  zone: string;
+  authority: "PMC" | "PCMC" | "PWD Maharashtra";
+  simulatedSensors: number;
+  vibrationScore: number;
   roughnessIndex: number;
-  temperature: number;
-  humidity: number;
-  sensorStatus: string;
-  damageClassification: string;
+  shockSpikes: number;
+  rainfallStress: number;
+  trafficLoad: number;
   damageProbability: number;
-};
-
-const ROAD_KEYS = ["JM Road", "FC Road", "Hinjewadi", "Baner"] as const;
-type RoadKey = (typeof ROAD_KEYS)[number];
-
-type VibrationPoint = {
-  time: string;
-} & Record<RoadKey, number>;
-
-type AnomalyByRoad = {
-  road: string;
-  count: number;
+  roadHealth: number;
+  status: SensorStatus;
   severity: Severity;
+  interpretation: string;
+  recommendedAction: string;
 };
 
-type ConditionDistribution = {
-  condition: string;
-  percentage: number;
-  count: number;
+type TrendPoint = {
+  time: string;
+  jmRoad: number;
+  fcRoad: number;
+  hinjewadi: number;
+  baner: number;
 };
 
 type StressPoint = {
-  date: string;
-  stress: number;
+  road: string;
+  vibration: number;
+  roughness: number;
+  rainfall: number;
+  damage: number;
 };
 
-type SensorAnalytics = {
-  vibrationTrend: VibrationPoint[];
-  anomalyByRoad: AnomalyByRoad[];
-  conditionDistribution: ConditionDistribution[];
-  stressTrend: StressPoint[];
-  predictedFailures7Days: number;
-  predictedFailures30Days: number;
-};
-
-type SensorAlert = {
-  id: string | number;
-  roadId: string | number;
-  roadName: string;
-  alertType: string;
-  message: string;
+type AlertItem = {
+  title: string;
+  road: string;
   severity: Severity;
-  timestamp: string;
-  resolved: boolean;
+  signal: string;
+  action: string;
 };
 
-const MOCK_OVERVIEW: SensorOverview = {
-  activeSensors: 42,
-  roadsMonitored: 8,
-  liveAnomalyCount: 6,
-  avgVibrationScore: 3.8,
-  currentStressLevel: "moderate",
-  criticalZones: 2,
-  dataPointsToday: 4862,
-  uptime: 98.6,
-};
-
-const MOCK_FEED: SensorFeedRow[] = [
+const SENSOR_ROADS: SensorRoad[] = [
   {
-    id: 1,
-    roadId: 101,
+    id: "SEN-001",
     roadName: "JM Road Patch Zone",
-    timestamp: "08:42:12",
-    vibrationIntensity: 7.6,
-    shockSpikes: 9,
-    roughnessIndex: 8.4,
-    temperature: 29.8,
-    humidity: 78,
-    sensorStatus: "watch",
-    damageClassification: "pothole cluster probable",
-    damageProbability: 0.82,
+    zone: "Pune Central",
+    authority: "PMC",
+    simulatedSensors: 5,
+    vibrationScore: 8.4,
+    roughnessIndex: 78,
+    shockSpikes: 19,
+    rainfallStress: 82,
+    trafficLoad: 88,
+    damageProbability: 86,
+    roadHealth: 42,
+    status: "Critical",
+    severity: "critical",
+    interpretation:
+      "High vibration, repeated shock spikes and rainfall stress indicate unstable patch repair.",
+    recommendedAction:
+      "Send field team for physical verification within 24 hours and review contractor repair quality.",
   },
   {
-    id: 2,
-    roadId: 102,
+    id: "SEN-002",
     roadName: "FC Road Junction",
-    timestamp: "08:39:44",
-    vibrationIntensity: 6.4,
-    shockSpikes: 6,
-    roughnessIndex: 7.1,
-    temperature: 30.2,
-    humidity: 74,
-    sensorStatus: "watch",
-    damageClassification: "surface cracking",
-    damageProbability: 0.68,
-  },
-  {
-    id: 3,
-    roadId: 103,
-    roadName: "Wakad-Hinjewadi Road",
-    timestamp: "08:35:19",
-    vibrationIntensity: 5.8,
-    shockSpikes: 5,
-    roughnessIndex: 6.6,
-    temperature: 30.7,
-    humidity: 71,
-    sensorStatus: "active",
-    damageClassification: "edge deterioration",
-    damageProbability: 0.57,
-  },
-  {
-    id: 4,
-    roadId: 104,
-    roadName: "Baner Link Road",
-    timestamp: "08:29:03",
-    vibrationIntensity: 3.2,
-    shockSpikes: 2,
-    roughnessIndex: 4.1,
-    temperature: 29.1,
-    humidity: 69,
-    sensorStatus: "active",
-    damageClassification: "minor roughness",
-    damageProbability: 0.28,
-  },
-  {
-    id: 5,
-    roadId: 105,
-    roadName: "Katraj Bypass",
-    timestamp: "08:23:58",
-    vibrationIntensity: 4.9,
-    shockSpikes: 4,
-    roughnessIndex: 5.6,
-    temperature: 31.0,
-    humidity: 80,
-    sensorStatus: "active",
-    damageClassification: "waterlogging stress",
-    damageProbability: 0.46,
-  },
-  {
-    id: 6,
-    roadId: 106,
-    roadName: "Sinhagad Road",
-    timestamp: "08:18:37",
-    vibrationIntensity: 2.7,
-    shockSpikes: 1,
-    roughnessIndex: 3.4,
-    temperature: 28.8,
-    humidity: 73,
-    sensorStatus: "active",
-    damageClassification: "normal wear",
-    damageProbability: 0.18,
-  },
-];
-
-const MOCK_ANALYTICS: SensorAnalytics = {
-  vibrationTrend: [
-    { time: "06:00", "JM Road": 5.4, "FC Road": 4.8, Hinjewadi: 4.2, Baner: 2.4 },
-    { time: "07:00", "JM Road": 5.8, "FC Road": 5.1, Hinjewadi: 4.4, Baner: 2.6 },
-    { time: "08:00", "JM Road": 6.3, "FC Road": 5.6, Hinjewadi: 4.8, Baner: 2.8 },
-    { time: "09:00", "JM Road": 6.9, "FC Road": 6.0, Hinjewadi: 5.1, Baner: 3.0 },
-    { time: "10:00", "JM Road": 7.3, "FC Road": 6.2, Hinjewadi: 5.2, Baner: 3.1 },
-    { time: "11:00", "JM Road": 7.1, "FC Road": 6.1, Hinjewadi: 5.0, Baner: 3.0 },
-    { time: "12:00", "JM Road": 6.7, "FC Road": 5.8, Hinjewadi: 4.8, Baner: 2.8 },
-    { time: "13:00", "JM Road": 6.2, "FC Road": 5.5, Hinjewadi: 4.6, Baner: 2.7 },
-    { time: "14:00", "JM Road": 6.5, "FC Road": 5.7, Hinjewadi: 4.9, Baner: 2.9 },
-    { time: "15:00", "JM Road": 7.0, "FC Road": 6.1, Hinjewadi: 5.4, Baner: 3.2 },
-    { time: "16:00", "JM Road": 7.4, "FC Road": 6.4, Hinjewadi: 5.8, Baner: 3.5 },
-    { time: "17:00", "JM Road": 7.8, "FC Road": 6.8, Hinjewadi: 6.1, Baner: 3.8 },
-  ],
-  anomalyByRoad: [
-    { road: "JM Road", count: 9, severity: "high" },
-    { road: "FC Road", count: 6, severity: "medium" },
-    { road: "Hinjewadi", count: 5, severity: "medium" },
-    { road: "Katraj", count: 4, severity: "medium" },
-    { road: "Baner", count: 2, severity: "low" },
-  ],
-  conditionDistribution: [
-    { condition: "Stable", percentage: 50, count: 4 },
-    { condition: "Watch", percentage: 25, count: 2 },
-    { condition: "High Risk", percentage: 12.5, count: 1 },
-    { condition: "Repair Due", percentage: 12.5, count: 1 },
-  ],
-  stressTrend: [
-    { date: "Apr 01", stress: 2.8 },
-    { date: "Apr 04", stress: 3.0 },
-    { date: "Apr 07", stress: 3.3 },
-    { date: "Apr 10", stress: 3.6 },
-    { date: "Apr 13", stress: 3.7 },
-    { date: "Apr 16", stress: 4.1 },
-    { date: "Apr 19", stress: 4.3 },
-    { date: "Apr 22", stress: 4.8 },
-    { date: "Apr 25", stress: 5.1 },
-    { date: "Apr 28", stress: 5.4 },
-  ],
-  predictedFailures7Days: 2,
-  predictedFailures30Days: 4,
-};
-
-const MOCK_ALERTS: SensorAlert[] = [
-  {
-    id: 1,
-    roadId: 101,
-    roadName: "JM Road Patch Zone",
-    alertType: "Failure Risk Rising",
-    message: "Shock spikes increased after rainfall. Field inspection recommended within 48 hours.",
+    zone: "Pune Central",
+    authority: "PMC",
+    simulatedSensors: 4,
+    vibrationScore: 7.1,
+    roughnessIndex: 65,
+    shockSpikes: 13,
+    rainfallStress: 71,
+    trafficLoad: 84,
+    damageProbability: 74,
+    roadHealth: 56,
+    status: "Risk",
     severity: "high",
-    timestamp: "08:42",
-    resolved: false,
+    interpretation:
+      "Surface cracking and drainage stress are creating high commuter discomfort.",
+    recommendedAction:
+      "Schedule drainage inspection and crack sealing before the next heavy rainfall period.",
   },
   {
-    id: 2,
-    roadId: 102,
-    roadName: "FC Road Junction",
-    alertType: "Surface Cracking",
-    message: "Vibration pattern suggests early longitudinal cracking near junction approach.",
-    severity: "medium",
-    timestamp: "08:39",
-    resolved: false,
-  },
-  {
-    id: 3,
-    roadId: 103,
+    id: "SEN-003",
     roadName: "Wakad-Hinjewadi Road",
-    alertType: "Edge Stress",
-    message: "Heavy commuter traffic correlated with edge deterioration signal.",
-    severity: "medium",
-    timestamp: "08:35",
-    resolved: false,
+    zone: "PCMC Corridor",
+    authority: "PCMC",
+    simulatedSensors: 6,
+    vibrationScore: 6.6,
+    roughnessIndex: 59,
+    shockSpikes: 11,
+    rainfallStress: 64,
+    trafficLoad: 92,
+    damageProbability: 68,
+    roadHealth: 61,
+    status: "Risk",
+    severity: "high",
+    interpretation:
+      "High traffic load and edge deterioration are increasing road stress during peak hours.",
+    recommendedAction:
+      "Review resurfacing need and monitor morning/evening commuter vibration patterns.",
   },
   {
-    id: 4,
-    roadId: 104,
+    id: "SEN-004",
     roadName: "Baner Link Road",
-    alertType: "Stable Segment",
-    message: "No urgent anomaly. Routine monitoring only.",
+    zone: "Pune West",
+    authority: "PMC",
+    simulatedSensors: 3,
+    vibrationScore: 4.8,
+    roughnessIndex: 43,
+    shockSpikes: 6,
+    rainfallStress: 52,
+    trafficLoad: 61,
+    damageProbability: 49,
+    roadHealth: 72,
+    status: "Watch",
+    severity: "medium",
+    interpretation:
+      "Moderate roughness pattern. Preventive maintenance can avoid future escalation.",
+    recommendedAction:
+      "Plan preventive crack sealing and keep under weekly monitoring.",
+  },
+  {
+    id: "SEN-005",
+    roadName: "Ravet BRT Service Road",
+    zone: "PCMC Corridor",
+    authority: "PCMC",
+    simulatedSensors: 3,
+    vibrationScore: 2.7,
+    roughnessIndex: 25,
+    shockSpikes: 3,
+    rainfallStress: 31,
+    trafficLoad: 48,
+    damageProbability: 22,
+    roadHealth: 81,
+    status: "Stable",
     severity: "low",
-    timestamp: "08:29",
-    resolved: true,
+    interpretation:
+      "Low vibration and low roughness show stable road condition.",
+    recommendedAction:
+      "Continue routine inspection cycle.",
   },
 ];
 
-const ROAD_COLORS: Record<RoadKey, string> = {
-  "JM Road": "#DC2626",
-  "FC Road": "#F59E0B",
-  Hinjewadi: "#0EA5A4",
-  Baner: "#16A34A",
-};
+const VIBRATION_TREND: TrendPoint[] = [
+  { time: "08:00", jmRoad: 6.9, fcRoad: 5.4, hinjewadi: 5.8, baner: 3.7 },
+  { time: "10:00", jmRoad: 7.4, fcRoad: 5.9, hinjewadi: 6.1, baner: 4.1 },
+  { time: "12:00", jmRoad: 7.8, fcRoad: 6.3, hinjewadi: 6.5, baner: 4.4 },
+  { time: "14:00", jmRoad: 8.1, fcRoad: 6.8, hinjewadi: 6.4, baner: 4.6 },
+  { time: "16:00", jmRoad: 8.4, fcRoad: 7.1, hinjewadi: 6.6, baner: 4.8 },
+  { time: "18:00", jmRoad: 8.2, fcRoad: 6.9, hinjewadi: 6.8, baner: 4.5 },
+];
 
-const BANNED_REMOTE_ROADS = ["AIIMS", "Delhi", "Bangalore", "Andheri", "Outer Ring", "NH-48"];
+const STRESS_BREAKDOWN: StressPoint[] = SENSOR_ROADS.slice(0, 4).map((road) => ({
+  road: road.roadName
+    .replace(" Patch Zone", "")
+    .replace(" Junction", "")
+    .replace(" Road", ""),
+  vibration: Math.round(road.vibrationScore * 10),
+  roughness: road.roughnessIndex,
+  rainfall: road.rainfallStress,
+  damage: road.damageProbability,
+}));
 
-function toNumber(value: unknown, fallback = 0): number {
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : fallback;
+const SENSOR_ALERTS: AlertItem[] = [
+  {
+    title: "Critical vibration cluster",
+    road: "JM Road Patch Zone",
+    severity: "critical",
+    signal:
+      "Vibration score crossed 8.0/10 with repeated shock spikes after rainfall.",
+    action: "Verify patch quality and schedule immediate field inspection.",
+  },
+  {
+    title: "Drainage stress signal",
+    road: "FC Road Junction",
+    severity: "high",
+    signal:
+      "Rainfall stress and roughness are rising together near a commercial junction.",
+    action: "Inspect water outlets and seal visible cracks.",
+  },
+  {
+    title: "Peak-hour commuter stress",
+    road: "Wakad-Hinjewadi Road",
+    severity: "high",
+    signal:
+      "Traffic load and vibration pattern indicate increasing edge deterioration.",
+    action: "Schedule resurfacing review and monitor commuter-hour spikes.",
+  },
+];
+
+function getSeverityColor(severity: Severity) {
+  if (severity === "critical") return "#DC2626";
+  if (severity === "high") return "#F97316";
+  if (severity === "medium") return "#F59E0B";
+  return "#16A34A";
 }
 
-function clamp(value: number, min = 0, max = 100): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-function formatNumber(value: number, digits = 0): string {
-  if (!Number.isFinite(value)) return "0";
-
-  return value.toLocaleString("en-IN", {
-    maximumFractionDigits: digits,
-    minimumFractionDigits: digits,
-  });
-}
-
-function getSeverityMeta(severity: Severity | string) {
-  switch (severity) {
-    case "critical":
-      return {
-        color: "#DC2626",
-        bg: "rgba(220,38,38,0.12)",
-        label: "Critical",
-      };
-
-    case "high":
-      return {
-        color: "#F97316",
-        bg: "rgba(249,115,22,0.12)",
-        label: "High",
-      };
-
-    case "medium":
-      return {
-        color: "#F59E0B",
-        bg: "rgba(245,158,11,0.12)",
-        label: "Medium",
-      };
-
-    case "low":
-      return {
-        color: "#16A34A",
-        bg: "rgba(22,163,74,0.12)",
-        label: "Low",
-      };
-
-    default:
-      return {
-        color: "#0EA5A4",
-        bg: "rgba(14,165,164,0.12)",
-        label: "Info",
-      };
-  }
-}
-
-function isPilotRoadName(name: string) {
-  return !BANNED_REMOTE_ROADS.some((blocked) =>
-    name.toLowerCase().includes(blocked.toLowerCase()),
-  );
-}
-
-function normalizeOverview(data: unknown): SensorOverview {
-  const source = ((data as { data?: unknown })?.data ?? data ?? {}) as Partial<SensorOverview>;
-
-  const activeSensors = toNumber(source.activeSensors, MOCK_OVERVIEW.activeSensors);
-  const roadsMonitored = toNumber(source.roadsMonitored, MOCK_OVERVIEW.roadsMonitored);
-  const liveAnomalyCount = toNumber(source.liveAnomalyCount, MOCK_OVERVIEW.liveAnomalyCount);
-  const avgVibrationScore = toNumber(source.avgVibrationScore, MOCK_OVERVIEW.avgVibrationScore);
-  const criticalZones = toNumber(source.criticalZones, MOCK_OVERVIEW.criticalZones);
-  const dataPointsToday = toNumber(source.dataPointsToday, MOCK_OVERVIEW.dataPointsToday);
-  const uptime = toNumber(source.uptime, MOCK_OVERVIEW.uptime);
-
-  if (activeSensors > 120 || roadsMonitored > 30 || liveAnomalyCount > 25) {
-    return MOCK_OVERVIEW;
-  }
-
-  return {
-    activeSensors,
-    roadsMonitored,
-    liveAnomalyCount,
-    avgVibrationScore,
-    currentStressLevel:
-      typeof source.currentStressLevel === "string"
-        ? source.currentStressLevel
-        : MOCK_OVERVIEW.currentStressLevel,
-    criticalZones,
-    dataPointsToday,
-    uptime,
-  };
-}
-
-function getArrayFromUnknown<T>(data: unknown, keys: string[]): T[] {
-  if (Array.isArray(data)) return data as T[];
-
-  if (!data || typeof data !== "object") return [];
-
-  const record = data as Record<string, unknown>;
-
-  if (Array.isArray(record.data)) return record.data as T[];
-
-  for (const key of keys) {
-    if (Array.isArray(record[key])) return record[key] as T[];
-  }
-
-  return [];
-}
-
-function normalizeFeed(data: unknown): SensorFeedRow[] {
-  const source = getArrayFromUnknown<Record<string, unknown>>(data, [
-    "feed",
-    "items",
-    "rows",
-  ]);
-
-  if (source.length === 0) return MOCK_FEED;
-
-  const normalized = source.map((row, index): SensorFeedRow => {
-    const roadName = String(row.roadName ?? row.road_name ?? row.name ?? "");
-
+function getStatusMeta(status: SensorStatus) {
+  if (status === "Critical") {
     return {
-      id: row.id ?? row._id ?? index + 1,
-      roadId: row.roadId ?? row.road_id ?? index + 1,
-      roadName: roadName || "Unknown Road",
-      timestamp: String(row.timestamp ?? row.time ?? "08:00"),
-      vibrationIntensity: toNumber(row.vibrationIntensity ?? row.vibration, 0),
-      shockSpikes: toNumber(row.shockSpikes ?? row.shock_spikes, 0),
-      roughnessIndex: toNumber(row.roughnessIndex ?? row.roughness, 0),
-      temperature: toNumber(row.temperature, 0),
-      humidity: toNumber(row.humidity, 0),
-      sensorStatus: String(row.sensorStatus ?? row.status ?? "active"),
-      damageClassification: String(
-        row.damageClassification ?? row.classification ?? "normal",
-      ),
-      damageProbability: toNumber(
-        row.damageProbability ?? row.damage_probability,
-        0,
-      ),
+      color: "#DC2626",
+      bg: "rgba(220,38,38,0.12)",
+      border: "rgba(220,38,38,0.28)",
+      icon: AlertTriangle,
     };
-  });
-
-  if (normalized.some((row) => !isPilotRoadName(row.roadName))) {
-    return MOCK_FEED;
   }
 
-  return normalized.length > 0 ? normalized : MOCK_FEED;
-}
-
-function normalizeAnalytics(data: unknown): SensorAnalytics {
-  const source = ((data as { data?: unknown })?.data ?? data ?? {}) as Record<
-    string,
-    unknown
-  >;
-
-  const anomalyByRoad = getArrayFromUnknown<Record<string, unknown>>(
-    source.anomalyByRoad,
-    [],
-  ).map((item): AnomalyByRoad => ({
-    road: String(item.road ?? item.roadName ?? item.name ?? "Unknown"),
-    count: toNumber(item.count ?? item.value, 0),
-    severity: String(item.severity ?? "medium") as Severity,
-  }));
-
-  const hasBadRoad = anomalyByRoad.some((item) => !isPilotRoadName(item.road));
-
-  if (hasBadRoad || anomalyByRoad.length === 0) {
-    return MOCK_ANALYTICS;
-  }
-
-  return {
-    ...MOCK_ANALYTICS,
-    anomalyByRoad,
-  };
-}
-
-function normalizeAlerts(data: unknown): SensorAlert[] {
-  const source = getArrayFromUnknown<Record<string, unknown>>(data, [
-    "alerts",
-    "items",
-  ]);
-
-  if (source.length === 0) return MOCK_ALERTS;
-
-  const normalized = source.map((alert, index): SensorAlert => {
-    const roadName = String(alert.roadName ?? alert.road_name ?? alert.name ?? "");
-
+  if (status === "Risk") {
     return {
-      id: alert.id ?? alert._id ?? index + 1,
-      roadId: alert.roadId ?? alert.road_id ?? index + 1,
-      roadName: roadName || "Unknown Road",
-      alertType: String(alert.alertType ?? alert.type ?? "Sensor Alert"),
-      message: String(alert.message ?? alert.description ?? "Sensor anomaly detected."),
-      severity: String(alert.severity ?? "medium") as Severity,
-      timestamp: String(alert.timestamp ?? alert.time ?? "08:00"),
-      resolved: Boolean(alert.resolved),
+      color: "#F97316",
+      bg: "rgba(249,115,22,0.12)",
+      border: "rgba(249,115,22,0.28)",
+      icon: Zap,
     };
-  });
-
-  if (normalized.some((alert) => !isPilotRoadName(alert.roadName))) {
-    return MOCK_ALERTS;
   }
 
-  return normalized.length > 0 ? normalized : MOCK_ALERTS;
-}
-
-function buildSimulatedPoint(
-  tick: number,
-  traffic: number,
-  rainfall: number,
-): VibrationPoint {
-  const hour = 8 + (tick % 10);
-  const minute = (tick * 7) % 60;
-  const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(
-    2,
-    "0",
-  )}`;
-
-  const trafficFactor = traffic / 100;
-  const rainfallFactor = rainfall / 100;
-  const wave = Math.sin(tick * 0.65);
+  if (status === "Watch") {
+    return {
+      color: "#F59E0B",
+      bg: "rgba(245,158,11,0.12)",
+      border: "rgba(245,158,11,0.28)",
+      icon: Clock3,
+    };
+  }
 
   return {
-    time,
-    "JM Road": Number(
-      clamp(5.7 + trafficFactor * 1.4 + rainfallFactor * 1.8 + wave * 0.35, 0, 10).toFixed(1),
-    ),
-    "FC Road": Number(
-      clamp(4.9 + trafficFactor * 1.1 + rainfallFactor * 1.2 + wave * 0.25, 0, 10).toFixed(1),
-    ),
-    Hinjewadi: Number(
-      clamp(4.2 + trafficFactor * 1.5 + rainfallFactor * 0.7 + wave * 0.2, 0, 10).toFixed(1),
-    ),
-    Baner: Number(
-      clamp(2.4 + trafficFactor * 0.6 + rainfallFactor * 0.4 + wave * 0.15, 0, 10).toFixed(1),
-    ),
+    color: "#16A34A",
+    bg: "rgba(22,163,74,0.12)",
+    border: "rgba(22,163,74,0.28)",
+    icon: CheckCircle2,
   };
+}
+
+function getScoreColor(score: number) {
+  if (score >= 80) return "#16A34A";
+  if (score >= 65) return "#0EA5A4";
+  if (score >= 50) return "#F59E0B";
+  return "#DC2626";
+}
+
+function getStressColor(value: number) {
+  if (value >= 75) return "#DC2626";
+  if (value >= 60) return "#F97316";
+  if (value >= 40) return "#F59E0B";
+  return "#16A34A";
 }
 
 function KpiCard({
@@ -578,7 +323,7 @@ function KpiCard({
           className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
           style={{ background: `${color}14`, color }}
         >
-          Demo
+          Simulated
         </span>
       </div>
 
@@ -590,87 +335,49 @@ function KpiCard({
       </div>
 
       <div className="mt-1 text-sm font-medium">{label}</div>
-
       <div className="mt-1 text-xs text-muted-foreground">{note}</div>
     </div>
   );
 }
 
-function StatusPill({ severity }: { severity: Severity | string }) {
-  const meta = getSeverityMeta(severity);
+function StatusPill({ status }: { status: SensorStatus }) {
+  const meta = getStatusMeta(status);
+  const Icon = meta.icon;
 
   return (
     <span
-      className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase"
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold"
       style={{
         background: meta.bg,
+        border: `1px solid ${meta.border}`,
         color: meta.color,
       }}
     >
-      {meta.label}
+      <Icon className="h-3.5 w-3.5" />
+      {status}
     </span>
   );
 }
 
-function SectionCard({
-  title,
-  subtitle,
-  children,
-  action,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  action?: React.ReactNode;
-}) {
-  return (
-    <section
-      className="rounded-3xl"
-      style={{
-        background: "hsl(var(--card))",
-        border: "1px solid hsl(var(--border))",
-      }}
-    >
-      <div
-        className="flex flex-col gap-2 border-b px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
-        style={{ borderColor: "hsl(var(--border))" }}
-      >
-        <div>
-          <h2
-            className="font-semibold"
-            style={{ fontFamily: "Sora, sans-serif" }}
-          >
-            {title}
-          </h2>
-
-          {subtitle && (
-            <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
-          )}
-        </div>
-
-        {action}
-      </div>
-
-      {children}
-    </section>
-  );
-}
-
-function MetricRow({
+function SignalBar({
   label,
   value,
-  color,
+  max = 100,
 }: {
   label: string;
   value: number;
-  color: string;
+  max?: number;
 }) {
+  const percentage = Math.max(0, Math.min(100, (value / max) * 100));
+  const color = getStressColor(percentage);
+
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-bold" style={{ color }}>
-          {formatNumber(value, 1)}
+          {max === 10 ? value.toFixed(1) : Math.round(value)}
+          {max === 10 ? "/10" : "/100"}
         </span>
       </div>
 
@@ -680,76 +387,243 @@ function MetricRow({
       >
         <div
           className="h-full rounded-full"
-          style={{
-            width: `${clamp(value * 10, 0, 100)}%`,
-            background: color,
-          }}
+          style={{ width: `${percentage}%`, background: color }}
         />
       </div>
     </div>
   );
 }
 
+function SensorRoadCard({ road }: { road: SensorRoad }) {
+  const meta = getStatusMeta(road.status);
+  const StatusIcon = meta.icon;
+
+  return (
+    <article
+      className="rounded-3xl p-5"
+      style={{
+        background: "hsl(var(--background))",
+        border: "1px solid hsl(var(--border))",
+      }}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="font-mono text-xs text-muted-foreground">{road.id}</p>
+
+          <h3
+            className="mt-1 text-xl font-bold"
+            style={{ fontFamily: "Sora, sans-serif" }}
+          >
+            {road.roadName}
+          </h3>
+
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5" />
+            {road.zone} · {road.authority}
+          </p>
+        </div>
+
+        <StatusPill status={road.status} />
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <MiniMetric
+          label="Sensors"
+          value={String(road.simulatedSensors)}
+          icon={Radio}
+          color="#0EA5A4"
+        />
+        <MiniMetric
+          label="Shock Spikes"
+          value={String(road.shockSpikes)}
+          icon={Zap}
+          color={road.shockSpikes >= 12 ? "#F97316" : "#16A34A"}
+        />
+        <MiniMetric
+          label="Damage Risk"
+          value={`${road.damageProbability}%`}
+          icon={TrendingDown}
+          color={getStressColor(road.damageProbability)}
+        />
+      </div>
+
+      <div className="mt-5 space-y-4">
+        <SignalBar label="Vibration Score" value={road.vibrationScore} max={10} />
+        <SignalBar label="Road Roughness" value={road.roughnessIndex} />
+        <SignalBar label="Rainfall Stress" value={road.rainfallStress} />
+        <SignalBar label="Traffic Load" value={road.trafficLoad} />
+      </div>
+
+      <div
+        className="mt-5 rounded-2xl p-4"
+        style={{
+          background: meta.bg,
+          border: `1px solid ${meta.border}`,
+        }}
+      >
+        <div className="flex items-start gap-3">
+          <StatusIcon
+            className="mt-0.5 h-5 w-5 shrink-0"
+            style={{ color: meta.color }}
+          />
+
+          <div>
+            <p className="text-sm font-semibold" style={{ color: meta.color }}>
+              Digital Twin Interpretation
+            </p>
+
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              {road.interpretation}
+            </p>
+
+            <p className="mt-3 text-xs font-semibold">Recommended Action</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              {road.recommendedAction}
+            </p>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function MiniMetric({
+  label,
+  value,
+  icon: Icon,
+  color,
+}: {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  color: string;
+}) {
+  return (
+    <div
+      className="rounded-2xl p-3"
+      style={{
+        background: "hsl(var(--muted))",
+        border: "1px solid hsl(var(--border))",
+      }}
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-[11px] text-muted-foreground">{label}</p>
+        <Icon className="h-3.5 w-3.5" style={{ color }} />
+      </div>
+
+      <p className="font-bold" style={{ color }}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function AlertCard({ alert }: { alert: AlertItem }) {
+  const color = getSeverityColor(alert.severity);
+
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{
+        background: "hsl(var(--muted))",
+        border: `1px solid ${color}30`,
+      }}
+    >
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <h3 className="text-sm font-semibold">{alert.title}</h3>
+
+        <span
+          className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase"
+          style={{
+            background: `${color}18`,
+            color,
+          }}
+        >
+          {alert.severity}
+        </span>
+      </div>
+
+      <p className="text-xs text-muted-foreground">{alert.road}</p>
+
+      <p className="mt-3 text-xs leading-5 text-muted-foreground">
+        <span className="font-semibold text-foreground">Signal: </span>
+        {alert.signal}
+      </p>
+
+      <p className="mt-3 text-xs leading-5 text-muted-foreground">
+        <span className="font-semibold text-foreground">Action: </span>
+        {alert.action}
+      </p>
+    </div>
+  );
+}
+
+function MethodCard({
+  icon: Icon,
+  title,
+  text,
+  color,
+}: {
+  icon: LucideIcon;
+  title: string;
+  text: string;
+  color: string;
+}) {
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{
+        background: "hsl(var(--muted))",
+        border: "1px solid hsl(var(--border))",
+      }}
+    >
+      <div className="mb-2 flex items-center gap-2">
+        <Icon className="h-4 w-4" style={{ color }} />
+        <h3 className="text-sm font-semibold">{title}</h3>
+      </div>
+
+      <p className="text-xs leading-5 text-muted-foreground">{text}</p>
+    </div>
+  );
+}
+
 export default function Sensors() {
-  const { data: overviewData } = useGetSensorOverview();
-  const { data: feedData } = useGetSensorFeed();
-  const { data: analyticsData } = useGetSensorAnalytics();
-  const { data: alertsData } = useGetSensorAlerts();
+  const [simulationRunning, setSimulationRunning] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState("Just now");
 
-  const [simRunning, setSimRunning] = useState(false);
-  const [traffic, setTraffic] = useState(54);
-  const [rainfall, setRainfall] = useState(28);
-  const [selectedRoad, setSelectedRoad] = useState<RoadKey | "all">("all");
-  const [tick, setTick] = useState(0);
-  const [liveTrend, setLiveTrend] = useState<VibrationPoint[]>(
-    MOCK_ANALYTICS.vibrationTrend,
-  );
+  const stats = useMemo(() => {
+    const sensorCount = SENSOR_ROADS.reduce(
+      (total, road) => total + road.simulatedSensors,
+      0,
+    );
 
-  const overview = useMemo(() => normalizeOverview(overviewData), [overviewData]);
-  const feed = useMemo(() => normalizeFeed(feedData), [feedData]);
-  const analytics = useMemo(
-    () => normalizeAnalytics(analyticsData),
-    [analyticsData],
-  );
-  const alerts = useMemo(() => normalizeAlerts(alertsData), [alertsData]);
+    const avgVibration =
+      SENSOR_ROADS.reduce((total, road) => total + road.vibrationScore, 0) /
+      SENSOR_ROADS.length;
 
-  useEffect(() => {
-    setLiveTrend(analytics.vibrationTrend);
-  }, [analytics.vibrationTrend]);
+    const avgDamage = Math.round(
+      SENSOR_ROADS.reduce((total, road) => total + road.damageProbability, 0) /
+        SENSOR_ROADS.length,
+    );
 
-  useEffect(() => {
-    if (!simRunning) return;
+    const riskRoads = SENSOR_ROADS.filter(
+      (road) => road.status === "Critical" || road.status === "Risk",
+    ).length;
 
-    const interval = window.setInterval(() => {
-      setTick((previousTick) => {
-        const nextTick = previousTick + 1;
-        const nextPoint = buildSimulatedPoint(nextTick, traffic, rainfall);
+    return {
+      sensorCount,
+      avgVibration,
+      avgDamage,
+      riskRoads,
+    };
+  }, []);
 
-        setLiveTrend((previousTrend) => [
-          ...previousTrend.slice(-17),
-          nextPoint,
-        ]);
-
-        return nextTick;
-      });
-    }, 1800);
-
-    return () => window.clearInterval(interval);
-  }, [simRunning, traffic, rainfall]);
-
-  const visibleRoadKeys: RoadKey[] =
-    selectedRoad === "all" ? [...ROAD_KEYS] : [selectedRoad];
-
-  const topRiskFeed = [...feed].sort(
-    (a, b) => b.damageProbability - a.damageProbability,
-  );
-
-  const highRiskRoads = feed.filter((row) => row.damageProbability >= 0.55).length;
-
-  const avgDamageProbability =
-    feed.length === 0
-      ? 0
-      : feed.reduce((total, row) => total + row.damageProbability, 0) / feed.length;
+  function handleRefresh() {
+    setLastRefreshed(new Date().toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }));
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -770,8 +644,8 @@ export default function Sensors() {
                 color: "#0EA5A4",
               }}
             >
-              <Cpu className="h-3.5 w-3.5" />
-              RoadSense Digital Twin
+              <Radio className="h-3.5 w-3.5" />
+              Simulated Road Sensor Digital Twin
             </div>
 
             <h1
@@ -781,538 +655,269 @@ export default function Sensors() {
               Sensor Intelligence
             </h1>
 
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              Simulated edge-sensor and mobile accelerometer network for
-              detecting roughness, shock spikes, monsoon stress, and early road
-              failure signals across Pune and PCMC pilot roads.
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">
+              This page demonstrates how RoadIntel can use future sensor or
+              mobile accelerometer data to estimate vibration, roughness, shock
+              spikes, rainfall stress and damage probability. It is clearly
+              presented as simulated pilot data, not a fake live government feed.
             </p>
           </div>
 
-          <div
-            className="rounded-2xl px-4 py-3"
-            style={{
-              background: "hsl(var(--background))",
-              border: "1px solid hsl(var(--border))",
-            }}
-          >
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <Wifi className="h-4 w-4 text-emerald-500" />
-              Simulated Feed Online
-            </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => setSimulationRunning((current) => !current)}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold transition hover:bg-white/15"
+            >
+              {simulationRunning ? (
+                <>
+                  <Pause className="h-4 w-4" />
+                  Pause Simulation
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4" />
+                  Resume Simulation
+                </>
+              )}
+            </button>
 
-            <p className="mt-1 text-xs text-muted-foreground">
-              Demo mode · Deterministic digital twin · No live government feed
-            </p>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-4 py-3 text-sm font-bold text-white"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh Demo
+            </button>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Edge Nodes"
-          value={overview.activeSensors}
-          note="Fixed + mobile samples"
-          icon={Radio}
+          label="Simulated Sensors"
+          value={stats.sensorCount}
+          note="Across Pune / PCMC pilot roads"
+          icon={Cpu}
           color="#0EA5A4"
         />
 
         <KpiCard
-          label="Roads Observed"
-          value={overview.roadsMonitored}
-          note="Pune / PCMC corridors"
-          icon={Route}
-          color="#16A34A"
-        />
-
-        <KpiCard
-          label="Anomalies Today"
-          value={overview.liveAnomalyCount}
-          note="Needs field review"
-          icon={AlertTriangle}
-          color="#F97316"
-        />
-
-        <KpiCard
           label="Avg Vibration"
-          value={`${formatNumber(overview.avgVibrationScore, 1)}/10`}
-          note="Composite signal score"
-          icon={Gauge}
+          value={`${stats.avgVibration.toFixed(1)}/10`}
+          note="Road-surface stress indicator"
+          icon={Activity}
+          color="#3B82F6"
+        />
+
+        <KpiCard
+          label="Damage Probability"
+          value={`${stats.avgDamage}%`}
+          note="Average across pilot roads"
+          icon={TrendingDown}
           color="#F59E0B"
         />
 
         <KpiCard
-          label="Failure Risk"
-          value={`${highRiskRoads} roads`}
-          note={`${formatNumber(avgDamageProbability * 100, 0)}% avg probability`}
-          icon={TrendingUp}
+          label="Risk Roads"
+          value={stats.riskRoads}
+          note={`Last refreshed: ${lastRefreshed}`}
+          icon={AlertTriangle}
           color="#DC2626"
         />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-        <SectionCard
-          title="Road Vibration Timeline"
-          subtitle="Deterministic simulation based on traffic and rainfall inputs."
-          action={
-            <span
-              className="rounded-full px-2.5 py-1 text-xs font-semibold"
-              style={{
-                background: simRunning
-                  ? "rgba(22,163,74,0.14)"
-                  : "hsl(var(--muted))",
-                color: simRunning ? "#16A34A" : "hsl(var(--muted-foreground))",
-              }}
+      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <section
+          className="rounded-3xl p-5"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <div className="mb-4">
+            <h2
+              className="font-semibold"
+              style={{ fontFamily: "Sora, sans-serif" }}
             >
-              {simRunning ? "Running" : "Paused"}
-            </span>
-          }
-        >
-          <div className="p-5">
-            <div className="h-[310px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={liveTrend}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis dataKey="time" tick={{ fontSize: 10 }} />
-                  <YAxis domain={[0, 10]} tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  {visibleRoadKeys.map((road) => (
-                    <Line
-                      key={road}
-                      type="monotone"
-                      dataKey={road}
-                      stroke={ROAD_COLORS[road]}
-                      strokeWidth={2.5}
-                      dot={false}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+              Simulated Vibration Trend
+            </h2>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <button
-                type="button"
-                onClick={() => setSimRunning((current) => !current)}
-                className="flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
-                style={{
-                  background: simRunning
-                    ? "rgba(220,38,38,0.12)"
-                    : "rgba(14,165,164,0.14)",
-                  color: simRunning ? "#DC2626" : "#0EA5A4",
-                }}
-              >
-                {simRunning ? (
-                  <>
-                    <Pause className="h-4 w-4" />
-                    Pause Twin
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4" />
-                    Run Twin
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSimRunning(false);
-                  setTick(0);
-                  setTraffic(54);
-                  setRainfall(28);
-                  setSelectedRoad("all");
-                  setLiveTrend(analytics.vibrationTrend);
-                }}
-                className="flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
-                style={{
-                  background: "hsl(var(--muted))",
-                  color: "hsl(var(--foreground))",
-                }}
-              >
-                <RefreshCw className="h-4 w-4" />
-                Reset
-              </button>
-
-              <select
-                value={selectedRoad}
-                onChange={(event) =>
-                  setSelectedRoad(event.target.value as RoadKey | "all")
-                }
-                className="rounded-xl px-3 py-2 text-sm outline-none"
-                style={{
-                  background: "hsl(var(--muted))",
-                  border: "1px solid hsl(var(--border))",
-                }}
-              >
-                <option value="all">All Roads</option>
-                {ROAD_KEYS.map((road) => (
-                  <option key={road} value={road}>
-                    {road}
-                  </option>
-                ))}
-              </select>
-
-              <div className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
-                <SlidersHorizontal className="h-4 w-4" />
-                Scenario controls below
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">
-                  Traffic Load: {traffic}%
-                </label>
-
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={traffic}
-                  onChange={(event) => setTraffic(Number(event.target.value))}
-                  className="w-full accent-teal-500"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">
-                  Rainfall / Waterlogging Stress: {rainfall}%
-                </label>
-
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={rainfall}
-                  onChange={(event) => setRainfall(Number(event.target.value))}
-                  className="w-full accent-teal-500"
-                />
-              </div>
-            </div>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Higher vibration suggests roughness, pothole impact, patch
+              instability or poor ride quality.
+            </p>
           </div>
-        </SectionCard>
 
-        <SectionCard
-          title="Predictive Failure Queue"
-          subtitle="Ranked using vibration, shock spikes, roughness, and complaint risk."
-        >
-          <div className="space-y-3 p-4">
-            {topRiskFeed.slice(0, 4).map((row, index) => {
-              const severity =
-                row.damageProbability >= 0.75
-                  ? "high"
-                  : row.damageProbability >= 0.5
-                    ? "medium"
-                    : "low";
-
-              const meta = getSeverityMeta(severity);
-
-              return (
-                <div
-                  key={row.id}
-                  className="rounded-2xl p-4"
-                  style={{
-                    background: "hsl(var(--muted))",
-                    border: `1px solid ${meta.color}30`,
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white"
-                          style={{ background: meta.color }}
-                        >
-                          {index + 1}
-                        </span>
-
-                        <h3 className="font-semibold">{row.roadName}</h3>
-                      </div>
-
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {row.damageClassification}
-                      </p>
-                    </div>
-
-                    <StatusPill severity={severity} />
-                  </div>
-
-                  <div className="mt-3 space-y-2">
-                    <MetricRow
-                      label="Vibration"
-                      value={row.vibrationIntensity}
-                      color={meta.color}
-                    />
-
-                    <MetricRow
-                      label="Roughness"
-                      value={row.roughnessIndex}
-                      color="#0EA5A4"
-                    />
-                  </div>
-
-                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                    Damage probability:{" "}
-                    <span className="font-bold" style={{ color: meta.color }}>
-                      {formatNumber(row.damageProbability * 100, 0)}%
-                    </span>
-                    . Recommended action: field verification before repair
-                    approval.
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </SectionCard>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-3">
-        <SectionCard
-          title="Anomalies by Road"
-          subtitle="Count of detected signal deviations today."
-        >
-          <div className="h-[260px] p-5">
+          <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analytics.anomalyByRoad} layout="vertical">
+              <LineChart data={VIBRATION_TREND}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="hsl(var(--border))"
                 />
-                <XAxis type="number" tick={{ fontSize: 10 }} />
+                <XAxis dataKey="time" tick={{ fontSize: 10 }} />
+                <YAxis domain={[0, 10]} tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="jmRoad"
+                  name="JM Road"
+                  stroke="#DC2626"
+                  strokeWidth={3}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="fcRoad"
+                  name="FC Road"
+                  stroke="#F97316"
+                  strokeWidth={3}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="hinjewadi"
+                  name="Hinjewadi"
+                  stroke="#3B82F6"
+                  strokeWidth={3}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="baner"
+                  name="Baner"
+                  stroke="#16A34A"
+                  strokeWidth={3}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        <section
+          className="rounded-3xl p-5"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <h2
+            className="font-semibold"
+            style={{ fontFamily: "Sora, sans-serif" }}
+          >
+            Sensor Alerts
+          </h2>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            Explainable demo alerts based on vibration, roughness and rainfall
+            stress.
+          </p>
+
+          <div className="mt-4 space-y-3">
+            {SENSOR_ALERTS.map((alert) => (
+              <AlertCard key={alert.title} alert={alert} />
+            ))}
+          </div>
+        </section>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <section
+          className="rounded-3xl p-5"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <div className="mb-4">
+            <h2
+              className="font-semibold"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              Stress Signal Breakdown
+            </h2>
+
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Shows how different signal types contribute to road stress.
+            </p>
+          </div>
+
+          <div className="h-[340px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={STRESS_BREAKDOWN} layout="vertical">
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} />
                 <YAxis
-                  dataKey="road"
                   type="category"
-                  width={80}
+                  dataKey="road"
+                  width={85}
                   tick={{ fontSize: 10 }}
                 />
                 <Tooltip />
-                <Bar dataKey="count" radius={[0, 6, 6, 0]}>
-                  {analytics.anomalyByRoad.map((item) => (
-                    <Cell
-                      key={item.road}
-                      fill={getSeverityMeta(item.severity).color}
-                    />
-                  ))}
-                </Bar>
+                <Bar dataKey="vibration" name="Vibration" fill="#3B82F6" />
+                <Bar dataKey="roughness" name="Roughness" fill="#F59E0B" />
+                <Bar dataKey="rainfall" name="Rainfall" fill="#0EA5A4" />
+                <Bar dataKey="damage" name="Damage Risk" fill="#DC2626" />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </SectionCard>
+        </section>
 
-        <SectionCard
-          title="Road Network Condition"
-          subtitle="Pilot distribution across monitored road segments."
+        <section
+          className="rounded-3xl p-5"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
         >
-          <div className="space-y-4 p-5">
-            {analytics.conditionDistribution.map((item) => {
-              const severity =
-                item.condition === "Stable"
-                  ? "low"
-                  : item.condition === "Watch"
-                    ? "medium"
-                    : "high";
+          <h2
+            className="font-semibold"
+            style={{ fontFamily: "Sora, sans-serif" }}
+          >
+            How Sensor Intel Supports RoadWatch
+          </h2>
 
-              const meta = getSeverityMeta(severity);
+          <p className="mt-1 text-xs text-muted-foreground">
+            The purpose is not to show fake live data. The purpose is to show a
+            realistic integration path for transparent road monitoring.
+          </p>
 
-              return (
-                <div key={item.condition}>
-                  <div className="mb-1 flex items-center justify-between text-sm">
-                    <span>{item.condition}</span>
+          <div className="mt-4 space-y-3">
+            <MethodCard
+              icon={Gauge}
+              title="1. Capture road roughness"
+              text="Future sensors or mobile accelerometers can detect vibration and uneven ride quality."
+              color="#3B82F6"
+            />
 
-                    <span className="text-muted-foreground">
-                      {item.count} roads
-                    </span>
-                  </div>
+            <MethodCard
+              icon={Zap}
+              title="2. Detect shock spikes"
+              text="Sudden spikes can indicate potholes, patch failures or sharp surface defects."
+              color="#F97316"
+            />
 
-                  <div
-                    className="h-2 overflow-hidden rounded-full"
-                    style={{ background: "hsl(var(--border))" }}
-                  >
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${item.percentage}%`,
-                        background: meta.color,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+            <MethodCard
+              icon={CloudRain}
+              title="3. Add rainfall stress"
+              text="Roads with high water exposure are more likely to deteriorate quickly."
+              color="#0EA5A4"
+            />
 
-            <div className="rounded-2xl bg-primary/10 p-3 text-xs leading-5 text-muted-foreground">
-              This is intentionally labelled as a pilot-grade simulated sensor
-              network. Judges can understand the architecture without assuming
-              fake live government data.
-            </div>
+            <MethodCard
+              icon={Route}
+              title="4. Connect to Road DNA"
+              text="Signals can update road health, risk score and recommended field action."
+              color="#16A34A"
+            />
           </div>
-        </SectionCard>
-
-        <SectionCard
-          title="30-Day Stress Trend"
-          subtitle="Monsoon and traffic-linked stress index."
-        >
-          <div className="h-[260px] p-5">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={analytics.stressTrend}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                <YAxis domain={[0, 8]} tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Area
-                  type="monotone"
-                  dataKey="stress"
-                  stroke="#0EA5A4"
-                  fill="rgba(14,165,164,0.16)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </SectionCard>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <SectionCard
-          title="Sensor Event Stream"
-          subtitle="Compact feed of latest edge-device observations."
-          action={
-            <span
-              className="rounded-full px-2.5 py-1 text-xs font-semibold"
-              style={{
-                background: "rgba(14,165,164,0.14)",
-                color: "#0EA5A4",
-              }}
-            >
-              Simulated stream
-            </span>
-          }
-        >
-          <div className="divide-y" style={{ borderColor: "hsl(var(--border))" }}>
-            {feed.map((row) => {
-              const severity =
-                row.damageProbability >= 0.75
-                  ? "high"
-                  : row.damageProbability >= 0.5
-                    ? "medium"
-                    : "low";
-
-              const meta = getSeverityMeta(severity);
-
-              return (
-                <div key={row.id} className="px-5 py-4">
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <MapPin className="h-4 w-4" style={{ color: meta.color }} />
-
-                        <h3 className="font-semibold">{row.roadName}</h3>
-
-                        <StatusPill severity={severity} />
-                      </div>
-
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {row.timestamp} · {row.damageClassification}
-                      </p>
-
-                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                        <MiniSignal
-                          label="Vibration"
-                          value={`${formatNumber(row.vibrationIntensity, 1)}/10`}
-                        />
-
-                        <MiniSignal
-                          label="Shock Spikes"
-                          value={String(row.shockSpikes)}
-                        />
-
-                        <MiniSignal
-                          label="Roughness"
-                          value={`${formatNumber(row.roughnessIndex, 1)}/10`}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="min-w-[150px] rounded-2xl bg-muted p-3">
-                      <p className="text-xs text-muted-foreground">
-                        Damage Probability
-                      </p>
-
-                      <p
-                        className="mt-1 text-2xl font-bold"
-                        style={{
-                          color: meta.color,
-                          fontFamily: "Sora, sans-serif",
-                        }}
-                      >
-                        {formatNumber(row.damageProbability * 100, 0)}%
-                      </p>
-
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Temp {formatNumber(row.temperature, 1)}°C · Humidity{" "}
-                        {formatNumber(row.humidity, 0)}%
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          title="Sensor-Triggered Alerts"
-          subtitle="Only decision-relevant alerts are shown."
-        >
-          <div className="divide-y" style={{ borderColor: "hsl(var(--border))" }}>
-            {alerts.map((alert) => {
-              const meta = getSeverityMeta(alert.severity);
-
-              return (
-                <div key={alert.id} className="px-5 py-4">
-                  <div className="flex items-start gap-3">
-                    {alert.resolved ? (
-                      <CheckCircle2
-                        className="mt-0.5 h-4 w-4 shrink-0"
-                        style={{ color: "#16A34A" }}
-                      />
-                    ) : (
-                      <AlertTriangle
-                        className="mt-0.5 h-4 w-4 shrink-0"
-                        style={{ color: meta.color }}
-                      />
-                    )}
-
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm font-semibold">
-                          {alert.alertType}
-                        </h3>
-
-                        <StatusPill severity={alert.severity} />
-                      </div>
-
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {alert.roadName} · {alert.timestamp}
-                      </p>
-
-                      <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                        {alert.message}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </SectionCard>
+        </section>
       </section>
 
       <section
@@ -1322,69 +927,146 @@ export default function Sensors() {
           border: "1px solid hsl(var(--border))",
         }}
       >
-        <div className="grid gap-4 md:grid-cols-3">
-          <ArchitectureBlock
-            icon={Cpu}
-            title="Edge Sensing"
-            text="Low-cost accelerometer nodes and mobile-device samples detect vibration, shock, and roughness patterns."
-          />
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2
+              className="font-semibold"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              Road-Wise Simulated Sensor Records
+            </h2>
 
-          <ArchitectureBlock
-            icon={Zap}
-            title="Digital Twin"
-            text="Traffic and rainfall controls simulate how road stress changes under monsoon and commuter load."
-          />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Clean road-level cards showing how sensor-like signals can support
+              inspection prioritization.
+            </p>
+          </div>
 
-          <ArchitectureBlock
-            icon={ShieldCheck}
-            title="Explainable Triage"
-            text="Alerts are ranked by vibration, roughness, shock spikes, and damage probability — not vague AI claims."
-          />
+          <div className="flex flex-wrap gap-2">
+            <Link href="/risk-map">
+              <button className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2.5 text-sm font-semibold hover:bg-white/15">
+                Open Risk Map
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </Link>
+
+            <Link href="/roads">
+              <button className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-4 py-2.5 text-sm font-bold text-white">
+                View Road DNA
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-2">
+          {SENSOR_ROADS.map((road) => (
+            <SensorRoadCard key={road.id} road={road} />
+          ))}
         </div>
       </section>
-    </div>
-  );
-}
 
-function MiniSignal({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      className="rounded-xl px-3 py-2"
-      style={{
-        background: "hsl(var(--muted))",
-        border: "1px solid hsl(var(--border))",
-      }}
-    >
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-sm font-bold">{value}</p>
-    </div>
-  );
-}
+      <section
+        className="rounded-3xl p-5"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(14,165,164,0.10), rgba(59,130,246,0.06), hsl(var(--card)))",
+          border: "1px solid hsl(var(--border))",
+        }}
+      >
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-emerald-500" />
 
-function ArchitectureBlock({
-  icon: Icon,
-  title,
-  text,
-}: {
-  icon: LucideIcon;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div
-      className="rounded-2xl p-4"
-      style={{
-        background: "hsl(var(--background))",
-        border: "1px solid hsl(var(--border))",
-      }}
-    >
-      <div className="mb-3 flex items-center gap-2">
-        <Icon className="h-4 w-4" style={{ color: "#0EA5A4" }} />
+          <div>
+            <h2
+              className="font-semibold"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              Audit-Safe Data Note
+            </h2>
 
-        <h3 className="font-semibold">{title}</h3>
-      </div>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Sensor Intel uses simulated Pune / PCMC pilot-style values to
+              demonstrate how future road sensors, mobile accelerometers or
+              field devices could support transparent road monitoring. It does
+              not claim to be connected to an official live sensor network.
+            </p>
+          </div>
+        </div>
+      </section>
 
-      <p className="text-xs leading-5 text-muted-foreground">{text}</p>
+      <section
+        className="rounded-3xl p-5"
+        style={{
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
+        }}
+      >
+        <div className="flex items-start gap-3">
+          <SlidersHorizontal className="mt-1 h-5 w-5 shrink-0 text-cyan-400" />
+
+          <div>
+            <h2
+              className="font-semibold"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              Integration Roadmap
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              In a real deployment, this module can be connected to mobile
+              accelerometer readings, vehicle-mounted sensors, municipal
+              inspection devices, rainfall APIs and GIS road ownership data. The
+              current demo keeps the workflow honest while showing technical
+              scalability.
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-white/10 px-3 py-1.5">
+                Mobile accelerometer
+              </span>
+              <span className="rounded-full bg-white/10 px-3 py-1.5">
+                Road roughness detection
+              </span>
+              <span className="rounded-full bg-white/10 px-3 py-1.5">
+                Rainfall stress
+              </span>
+              <span className="rounded-full bg-white/10 px-3 py-1.5">
+                GIS authority mapping
+              </span>
+              <span className="rounded-full bg-white/10 px-3 py-1.5">
+                Field verification
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        className="rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-5"
+      >
+        <div className="flex items-start gap-3">
+          <Wifi className="mt-1 h-5 w-5 shrink-0 text-cyan-300" />
+
+          <div>
+            <h2
+              className="font-semibold text-cyan-100"
+              style={{ fontFamily: "Sora, sans-serif" }}
+            >
+              Simulation Status
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-cyan-100/80">
+              Demo simulation is currently{" "}
+              <span className="font-bold">
+                {simulationRunning ? "running" : "paused"}
+              </span>
+              . This control is functional and only changes the demo state. It
+              does not pretend to start or stop a real government sensor system.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
