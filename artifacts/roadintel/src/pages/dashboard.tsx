@@ -1,16 +1,13 @@
 import { Link } from "wouter";
 import {
-  Activity,
   AlertTriangle,
   ArrowRight,
   BarChart3,
   CheckCircle2,
   ClipboardList,
-  Eye,
   FileText,
   IndianRupee,
   Landmark,
-  Map,
   MapPin,
   Radio,
   Route,
@@ -29,13 +26,15 @@ import {
   CartesianGrid,
   Cell,
   ComposedChart,
-  Legend,
   Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+
+import { NetworkStatusCard } from "@/components/offline/NetworkStatusCard";
+import { OfflineReportsList } from "@/components/offline/OfflineReportsList";
 
 type Severity = "critical" | "high" | "medium" | "low";
 
@@ -197,183 +196,137 @@ const SPENDING_CHECKS: SpendingCheck[] = [
     health: 72,
     status: "Clear",
   },
-  {
-    road: "Ravet",
-    approved: 5.1,
-    spent: 4.9,
-    health: 81,
-    status: "Clear",
-  },
 ];
 
 const CONTRACTOR_SIGNALS: ContractorSignal[] = [
   {
-    contractor: "Shivneri Infra",
+    contractor: "Urban Infra Works",
     ras: 91,
-    quality: 92,
-    repeatFailure: 5,
+    quality: 88,
+    repeatFailure: 2,
     status: "Strong",
   },
   {
-    contractor: "PCMC Infra",
-    ras: 86,
-    quality: 86,
-    repeatFailure: 9,
-    status: "Strong",
-  },
-  {
-    contractor: "MahaRoad",
-    ras: 76,
-    quality: 76,
-    repeatFailure: 15,
+    contractor: "Metro Patch Systems",
+    ras: 69,
+    quality: 64,
+    repeatFailure: 8,
     status: "Watchlist",
   },
   {
-    contractor: "UrbanBuild",
-    ras: 58,
-    quality: 58,
-    repeatFailure: 31,
-    status: "Audit Required",
-  },
-  {
-    contractor: "QuickPatch",
+    contractor: "Civic Roadcare",
     ras: 52,
     quality: 49,
-    repeatFailure: 38,
+    repeatFailure: 13,
     status: "Audit Required",
   },
 ];
 
-const RECENT_ACTIVITY: ActivityItem[] = [
+const LIVE_ACTIVITY: ActivityItem[] = [
   {
-    title: "Critical road risk detected",
-    location: "JM Road Patch Zone",
-    time: "Demo signal",
-    severity: "critical",
-    description:
-      "Road health dropped to 42/100 while spending crossed approved budget.",
-  },
-  {
-    title: "Complaint routed to PMC",
+    title: "Pothole report routed",
     location: "FC Road Junction",
-    time: "Demo signal",
+    time: "12 min ago",
     severity: "high",
-    description:
-      "Pothole and cracking complaint assigned to PMC Roads Department.",
+    description: "Citizen report assigned to PMC Roads Department.",
   },
   {
-    title: "Contractor audit flag created",
-    location: "Pune Central",
-    time: "Demo signal",
-    severity: "high",
-    description:
-      "UrbanBuild shows repeated patch failures and budget-quality mismatch.",
+    title: "Repair evidence verified",
+    location: "Ravet BRT Service Road",
+    time: "38 min ago",
+    severity: "medium",
+    description: "Before-after evidence matched and case marked verified.",
   },
   {
-    title: "Verified repair pattern identified",
-    location: "Baner Link Road",
-    time: "Demo signal",
-    severity: "low",
-    description:
-      "Good road health and budget discipline marked as clear case.",
+    title: "Contractor quality flag raised",
+    location: "JM Road Patch Zone",
+    time: "1 hr ago",
+    severity: "critical",
+    description: "Repeat failure detected after recent repair closure.",
   },
 ];
 
-const QUICK_ACTIONS = [
-  {
-    title: "File Road Complaint",
-    text: "Report potholes, cracks, waterlogging or unsafe road conditions.",
-    href: "/complaints",
-    icon: ClipboardList,
-    color: "#3B82F6",
-  },
-  {
-    title: "Scan Road Image",
-    text: "Use demo classifier for pothole, crack or waterlogging detection.",
-    href: "/scan",
-    icon: ScanLine,
-    color: "#0EA5A4",
-  },
-  {
-    title: "Check Public Spending",
-    text: "Compare approved budget, actual spend and road quality.",
-    href: "/spending",
-    icon: Wallet,
-    color: "#F59E0B",
-  },
-  {
-    title: "Review Contractors",
-    text: "Check Road Accountability Score and audit-risk contractors.",
-    href: "/contractors",
-    icon: Users,
-    color: "#16A34A",
-  },
-];
+const SEVERITY_COLORS: Record<Severity, string> = {
+  critical: "#DC2626",
+  high: "#F97316",
+  medium: "#F59E0B",
+  low: "#16A34A",
+};
 
-function getSeverityColor(severity: Severity) {
-  if (severity === "critical") return "#DC2626";
-  if (severity === "high") return "#F97316";
-  if (severity === "medium") return "#F59E0B";
-  return "#16A34A";
-}
-
-function getScoreColor(score: number) {
-  if (score >= 80) return "#16A34A";
-  if (score >= 65) return "#0EA5A4";
-  if (score >= 50) return "#F59E0B";
-  return "#DC2626";
-}
-
-function getStatusColor(status: SpendingCheck["status"] | ContractorSignal["status"]) {
-  if (status === "Audit Required") return "#DC2626";
-  if (status === "Watchlist") return "#F59E0B";
-  return "#16A34A";
-}
-
-function KpiCard({ item }: { item: Kpi }) {
-  const Icon = item.icon;
-
+function MetricCard({ label, value, note, icon: Icon, color }: Kpi) {
   return (
     <div
-      className="rounded-2xl p-5"
+      className="rounded-3xl p-5"
       style={{
         background: "hsl(var(--card))",
         border: "1px solid hsl(var(--border))",
       }}
     >
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-5 flex items-center justify-between">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-xl"
-          style={{ background: `${item.color}18` }}
+          className="flex h-11 w-11 items-center justify-center rounded-2xl"
+          style={{ background: `${color}18` }}
         >
-          <Icon className="h-5 w-5" style={{ color: item.color }} />
+          <Icon className="h-5 w-5" style={{ color }} />
         </div>
 
         <span
-          className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
-          style={{
-            background: `${item.color}14`,
-            color: item.color,
-          }}
+          className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
+          style={{ background: `${color}14`, color }}
         >
           Pilot
         </span>
       </div>
 
-      <div
+      <p
         className="text-2xl font-bold"
         style={{ fontFamily: "Sora, sans-serif" }}
       >
-        {item.value}
-      </div>
+        {value}
+      </p>
 
-      <div className="mt-1 text-sm font-medium">{item.label}</div>
-      <div className="mt-1 text-xs text-muted-foreground">{item.note}</div>
+      <p className="mt-1 text-sm font-semibold">{label}</p>
+
+      <p className="mt-1 text-xs text-muted-foreground">{note}</p>
     </div>
   );
 }
 
-function SectionCard({
+function SeverityBadge({ severity }: { severity: Severity }) {
+  const color = SEVERITY_COLORS[severity];
+
+  return (
+    <span
+      className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
+      style={{
+        background: `${color}18`,
+        color,
+      }}
+    >
+      {severity}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const isGood = status === "Clear" || status === "Strong";
+  const isWarning = status === "Watchlist";
+  const color = isGood ? "#16A34A" : isWarning ? "#F59E0B" : "#DC2626";
+
+  return (
+    <span
+      className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
+      style={{
+        background: `${color}18`,
+        color,
+      }}
+    >
+      {status}
+    </span>
+  );
+}
+
+function DashboardCard({
   title,
   subtitle,
   children,
@@ -398,196 +351,11 @@ function SectionCard({
           {title}
         </h2>
 
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          {subtitle}
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
       </div>
 
       {children}
     </section>
-  );
-}
-
-function ScoreBar({
-  label,
-  value,
-}: {
-  label: string;
-  value: number;
-}) {
-  const color = getScoreColor(value);
-
-  return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-bold" style={{ color }}>
-          {value}/100
-        </span>
-      </div>
-
-      <div
-        className="h-2 overflow-hidden rounded-full"
-        style={{ background: "hsl(var(--border))" }}
-      >
-        <div
-          className="h-full rounded-full"
-          style={{
-            width: `${value}%`,
-            background: color,
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function SeverityPill({ severity }: { severity: Severity }) {
-  const color = getSeverityColor(severity);
-
-  return (
-    <span
-      className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase"
-      style={{
-        background: `${color}18`,
-        color,
-      }}
-    >
-      {severity}
-    </span>
-  );
-}
-
-function RoadPriorityCard({ road }: { road: RoadPriority }) {
-  const color = getSeverityColor(road.severity);
-
-  return (
-    <div
-      className="rounded-2xl p-4"
-      style={{
-        background: "hsl(var(--muted))",
-        border: `1px solid ${color}30`,
-      }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-mono text-[11px] text-muted-foreground">
-            {road.id}
-          </p>
-
-          <h3 className="mt-1 font-semibold">{road.road}</h3>
-
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5" />
-            {road.zone} · {road.authority}
-          </p>
-        </div>
-
-        <SeverityPill severity={road.severity} />
-      </div>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <ScoreBar label="Risk Score" value={road.risk} />
-        <ScoreBar label="Road Health" value={road.health} />
-      </div>
-
-      <p className="mt-4 text-xs leading-5 text-muted-foreground">
-        <span className="font-semibold text-foreground">Why: </span>
-        {road.reason}
-      </p>
-
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">
-        <span className="font-semibold text-foreground">Action: </span>
-        {road.action}
-      </p>
-    </div>
-  );
-}
-
-function ActivityCard({ activity }: { activity: ActivityItem }) {
-  const color = getSeverityColor(activity.severity);
-
-  return (
-    <div
-      className="rounded-2xl p-4"
-      style={{
-        background: "hsl(var(--muted))",
-        border: `1px solid ${color}28`,
-      }}
-    >
-      <div className="flex items-start gap-3">
-        {activity.severity === "low" ? (
-          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
-        ) : (
-          <AlertTriangle
-            className="mt-0.5 h-5 w-5 shrink-0"
-            style={{ color }}
-          />
-        )}
-
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-semibold">{activity.title}</h3>
-            <SeverityPill severity={activity.severity} />
-          </div>
-
-          <p className="mt-1 text-xs text-muted-foreground">
-            {activity.location} · {activity.time}
-          </p>
-
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {activity.description}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function QuickActionCard({
-  title,
-  text,
-  href,
-  icon: Icon,
-  color,
-}: {
-  title: string;
-  text: string;
-  href: string;
-  icon: LucideIcon;
-  color: string;
-}) {
-  return (
-    <Link href={href}>
-      <button
-        type="button"
-        className="group w-full rounded-3xl p-5 text-left transition hover:-translate-y-0.5"
-        style={{
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-        }}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <div
-            className="flex h-11 w-11 items-center justify-center rounded-2xl"
-            style={{ background: `${color}18` }}
-          >
-            <Icon className="h-5 w-5" style={{ color }} />
-          </div>
-
-          <ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-1" />
-        </div>
-
-        <h3
-          className="font-semibold"
-          style={{ fontFamily: "Sora, sans-serif" }}
-        >
-          {title}
-        </h3>
-
-        <p className="mt-2 text-xs leading-5 text-muted-foreground">{text}</p>
-      </button>
-    </Link>
   );
 }
 
@@ -598,382 +366,385 @@ export default function Dashboard() {
         className="overflow-hidden rounded-3xl p-6"
         style={{
           background:
-            "linear-gradient(135deg, rgba(14,165,164,0.20), rgba(59,130,246,0.10), hsl(var(--card)))",
+            "linear-gradient(135deg, rgba(14,165,164,0.20), rgba(59,130,246,0.12), hsl(var(--card)))",
           border: "1px solid hsl(var(--border))",
         }}
       >
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div
-              className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+              className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold uppercase"
               style={{
                 background: "rgba(14,165,164,0.14)",
                 color: "#0EA5A4",
               }}
             >
-              <Eye className="h-3.5 w-3.5" />
-              RoadWatch Transparency Command Center
+              <ShieldCheck className="h-3.5 w-3.5" />
+              RoadIntel Civic Command Dashboard
             </div>
 
             <h1
-              className="text-2xl font-bold md:text-3xl"
+              className="max-w-4xl text-2xl font-bold md:text-4xl"
               style={{ fontFamily: "Sora, sans-serif" }}
             >
-              RoadIntel Dashboard
+              Monitor, verify, assign, repair and prove road safety action.
             </h1>
 
-            <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">
-              Monitor road quality, track public spending, report issues to
-              responsible authorities and review contractor accountability from
-              one RoadWatch-focused dashboard.
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
+              RoadIntel combines citizen reports, repair tracking, spending
+              visibility and contractor accountability into one civic road
+              intelligence dashboard.
             </p>
           </div>
 
-          <div
-            className="rounded-2xl p-5 xl:min-w-[300px]"
-            style={{
-              background: "hsl(var(--background))",
-              border: "1px solid hsl(var(--border))",
-            }}
-          >
-            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
-              <ShieldCheck className="h-4 w-4" />
-              Audit-safe pilot data
-            </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link
+              href="/complaints"
+              className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-cyan-500/20 transition hover:scale-[1.02]"
+            >
+              <ClipboardList className="h-4 w-4" />
+              File Complaint
+            </Link>
 
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Pune / PCMC demo dataset. No fake live government feed. Built to
-              show transparent civic workflow and future integration potential.
-            </p>
+            <Link
+              href="/scan"
+              className="flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold"
+              style={{
+                background: "hsl(var(--background))",
+                border: "1px solid hsl(var(--border))",
+              }}
+            >
+              <ScanLine className="h-4 w-4" />
+              Scan Road
+            </Link>
           </div>
         </div>
       </section>
 
+      <NetworkStatusCard />
+
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {KPI_DATA.map((item) => (
-          <KpiCard key={item.label} item={item} />
+          <MetricCard key={item.label} {...item} />
         ))}
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-4">
-        {QUICK_ACTIONS.map((action) => (
-          <QuickActionCard key={action.title} {...action} />
-        ))}
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <SectionCard
-          title="Complaint Lifecycle"
-          subtitle="Filed, resolved and escalated complaints across the pilot window."
+      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <DashboardCard
+          title="Complaint Resolution Trend"
+          subtitle="Filed, resolved and escalated complaint movement across the pilot months."
         >
-          <div className="h-[310px]">
+          <div className="h-[290px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={COMPLAINT_TREND}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
+              <ComposedChart data={COMPLAINT_TREND}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
-                <Legend />
-                <Area
-                  type="monotone"
-                  dataKey="filed"
-                  name="Filed"
-                  stroke="#0EA5A4"
-                  fill="rgba(14,165,164,0.14)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="resolved"
-                  name="Resolved"
-                  stroke="#16A34A"
-                  fill="rgba(22,163,74,0.14)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="escalated"
-                  name="Escalated"
-                  stroke="#F59E0B"
-                  fill="rgba(245,158,11,0.14)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          title="Recent Transparency Signals"
-          subtitle="Decision-relevant updates only. No fake live claims."
-        >
-          <div className="space-y-3">
-            {RECENT_ACTIVITY.map((activity) => (
-              <ActivityCard key={activity.title} activity={activity} />
-            ))}
-          </div>
-        </SectionCard>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-2">
-        <SectionCard
-          title="Road Health vs Risk"
-          subtitle="Road health should improve while risk decreases. Divergence indicates review need."
-        >
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={HEALTH_RISK_TREND}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Legend />
+                <Bar dataKey="filed" fill="#3B82F6" radius={[6, 6, 0, 0]} />
                 <Bar
-                  dataKey="health"
-                  name="Road Health"
-                  fill="#0EA5A4"
+                  dataKey="resolved"
+                  fill="#16A34A"
                   radius={[6, 6, 0, 0]}
                 />
                 <Line
                   type="monotone"
-                  dataKey="risk"
-                  name="Risk Score"
-                  stroke="#F97316"
+                  dataKey="escalated"
+                  stroke="#DC2626"
                   strokeWidth={3}
                   dot={{ r: 4 }}
                 />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-        </SectionCard>
+        </DashboardCard>
 
-        <SectionCard
-          title="Spending vs Road Health"
-          subtitle="This is the main transparency check: spending should improve road quality."
+        <DashboardCard
+          title="Road Health vs Risk"
+          subtitle="Lower health and rising risk indicate roads needing early intervention."
         >
-          <div className="h-[300px]">
+          <div className="h-[290px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={SPENDING_CHECKS}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis dataKey="road" tick={{ fontSize: 10 }} />
-                <YAxis yAxisId="left" tick={{ fontSize: 10 }} />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  domain={[0, 100]}
-                  tick={{ fontSize: 10 }}
-                />
+              <AreaChart data={HEALTH_RISK_TREND}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
-                <Legend />
-                <Bar
-                  yAxisId="left"
-                  dataKey="spent"
-                  name="Spent ₹Cr"
-                  radius={[6, 6, 0, 0]}
-                >
-                  {SPENDING_CHECKS.map((item) => (
-                    <Cell
-                      key={item.road}
-                      fill={getStatusColor(item.status)}
-                    />
-                  ))}
-                </Bar>
-                <Line
-                  yAxisId="right"
+                <Area
                   type="monotone"
                   dataKey="health"
-                  name="Road Health"
-                  stroke="#3B82F6"
+                  stroke="#0EA5A4"
+                  fill="#0EA5A4"
+                  fillOpacity={0.18}
                   strokeWidth={3}
-                  dot={{ r: 4 }}
                 />
-              </BarChart>
+                <Area
+                  type="monotone"
+                  dataKey="risk"
+                  stroke="#F97316"
+                  fill="#F97316"
+                  fillOpacity={0.16}
+                  strokeWidth={3}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
-        </SectionCard>
+        </DashboardCard>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <SectionCard
-          title="Priority Road Actions"
-          subtitle="Roads ranked by risk, road health and accountability requirement."
-        >
-          <div className="space-y-3">
-            {ROAD_PRIORITIES.map((road) => (
-              <RoadPriorityCard key={road.id} road={road} />
-            ))}
-          </div>
-
-          <div className="mt-4">
-            <Link href="/risk-map">
-              <button className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2.5 text-sm font-semibold hover:bg-white/15">
-                Open Full Risk Map
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </Link>
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          title="Contractor Accountability Snapshot"
-          subtitle="Road Accountability Score links quality, timeliness, budget discipline and repeat failures."
+      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <DashboardCard
+          title="Priority Roads"
+          subtitle="Road DNA risk scoring highlights where inspection or repair should happen first."
         >
           <div className="space-y-4">
-            {CONTRACTOR_SIGNALS.map((contractor) => {
-              const statusColor = getStatusColor(contractor.status);
-
-              return (
-                <div
-                  key={contractor.contractor}
-                  className="rounded-2xl p-4"
-                  style={{
-                    background: "hsl(var(--muted))",
-                    border: `1px solid ${statusColor}30`,
-                  }}
-                >
-                  <div className="mb-3 flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-semibold">
-                        {contractor.contractor}
-                      </h3>
-
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Repeat failure: {contractor.repeatFailure}%
-                      </p>
+            {ROAD_PRIORITIES.map((road) => (
+              <div
+                key={road.id}
+                className="rounded-2xl p-4"
+                style={{
+                  background: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                }}
+              >
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {road.id}
+                      </span>
+                      <SeverityBadge severity={road.severity} />
                     </div>
 
-                    <span
-                      className="rounded-full px-2.5 py-1 text-[11px] font-bold"
-                      style={{
-                        background: `${statusColor}18`,
-                        color: statusColor,
-                      }}
-                    >
-                      {contractor.status}
-                    </span>
+                    <h3 className="mt-2 font-bold">{road.road}</h3>
+
+                    <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      {road.zone} · {road.authority}
+                    </p>
+
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                      {road.reason}
+                    </p>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <ScoreBar label="RAS" value={contractor.ras} />
-                    <ScoreBar label="Quality" value={contractor.quality} />
+                  <div className="grid min-w-[180px] grid-cols-2 gap-2 text-center">
+                    <div className="rounded-2xl bg-red-500/10 p-3">
+                      <p className="text-xl font-bold text-red-400">
+                        {road.risk}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Risk</p>
+                    </div>
+
+                    <div className="rounded-2xl bg-emerald-500/10 p-3">
+                      <p className="text-xl font-bold text-emerald-400">
+                        {road.health}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Health</p>
+                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
 
-          <div className="mt-4">
-            <Link href="/contractors">
-              <button className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2.5 text-sm font-semibold hover:bg-white/15">
-                Review Contractors
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </Link>
+                <div
+                  className="mt-4 rounded-2xl p-3 text-sm"
+                  style={{
+                    background: "rgba(14,165,164,0.08)",
+                    border: "1px solid rgba(14,165,164,0.18)",
+                  }}
+                >
+                  <span className="font-semibold text-teal-400">
+                    Suggested action:
+                  </span>{" "}
+                  <span className="text-muted-foreground">{road.action}</span>
+                </div>
+              </div>
+            ))}
           </div>
-        </SectionCard>
+        </DashboardCard>
+
+        <DashboardCard
+          title="Live Civic Activity"
+          subtitle="Recent RoadIntel actions from citizen reports and repair verification."
+        >
+          <div className="space-y-4">
+            {LIVE_ACTIVITY.map((item) => (
+              <div
+                key={`${item.title}-${item.time}`}
+                className="rounded-2xl p-4"
+                style={{
+                  background: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold">{item.title}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {item.location}
+                    </p>
+                  </div>
+
+                  <SeverityBadge severity={item.severity} />
+                </div>
+
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {item.description}
+                </p>
+
+                <p className="mt-3 text-xs text-muted-foreground">
+                  {item.time}
+                </p>
+              </div>
+            ))}
+          </div>
+        </DashboardCard>
       </section>
 
-      <section
-        className="rounded-3xl p-5"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(14,165,164,0.10), rgba(59,130,246,0.06), hsl(var(--card)))",
-          border: "1px solid hsl(var(--border))",
-        }}
-      >
-        <div className="grid gap-4 md:grid-cols-4">
-          <DashboardPrinciple
-            icon={Map}
-            title="Monitor Quality"
-            text="Road DNA profiles show condition, health score and repair history."
-            color="#0EA5A4"
-          />
-          <DashboardPrinciple
-            icon={Landmark}
-            title="Route Authority"
-            text="Complaints are mapped to PMC, PCMC, PWD or highway authority."
-            color="#3B82F6"
-          />
-          <DashboardPrinciple
-            icon={IndianRupee}
-            title="Track Spending"
-            text="Budget usage is compared with road quality and repair outcomes."
-            color="#F59E0B"
-          />
-          <DashboardPrinciple
-            icon={Radio}
-            title="Plan Integration"
-            text="Sensor Intel is clearly shown as simulated digital twin data."
-            color="#16A34A"
-          />
-        </div>
-      </section>
+      <section className="grid gap-6 xl:grid-cols-2">
+        <DashboardCard
+          title="Public Spending Verification"
+          subtitle="Compares approved budget, actual spend and resulting road health."
+        >
+          <div className="space-y-3">
+            {SPENDING_CHECKS.map((item) => (
+              <div
+                key={item.road}
+                className="grid gap-3 rounded-2xl p-4 sm:grid-cols-[1fr_auto]"
+                style={{
+                  background: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                }}
+              >
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold">{item.road}</h3>
+                    <StatusBadge status={item.status} />
+                  </div>
 
-      <section
-        className="rounded-3xl border border-emerald-500/25 bg-emerald-500/10 p-5"
-      >
-        <div className="flex items-start gap-3">
-          <BarChart3 className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Approved</p>
+                      <p className="font-bold">₹{item.approved}Cr</p>
+                    </div>
 
-          <div>
-            <h2
-              className="font-semibold text-emerald-100"
-              style={{ fontFamily: "Sora, sans-serif" }}
-            >
-              RoadWatch Dashboard Summary
-            </h2>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Spent</p>
+                      <p className="font-bold">₹{item.spent}Cr</p>
+                    </div>
 
-            <p className="mt-2 text-sm leading-6 text-emerald-100/80">
-              This dashboard is designed to make transparency immediately
-              visible after login: road condition, citizen complaints, public
-              spending, contractor accountability and risk prediction are all
-              connected in one place.
-            </p>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Health</p>
+                      <p className="font-bold">{item.health}/100</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end">
+                  <Wallet className="h-6 w-6 text-yellow-400" />
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        </DashboardCard>
+
+        <DashboardCard
+          title="Contractor Accountability"
+          subtitle="Repair Accountability Score combines quality, delay and repeat-failure signals."
+        >
+          <div className="space-y-3">
+            {CONTRACTOR_SIGNALS.map((item) => (
+              <div
+                key={item.contractor}
+                className="rounded-2xl p-4"
+                style={{
+                  background: "hsl(var(--background))",
+                  border: "1px solid hsl(var(--border))",
+                }}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-semibold">{item.contractor}</h3>
+                  <StatusBadge status={item.status} />
+                </div>
+
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-2xl bg-blue-500/10 p-3">
+                    <p className="text-lg font-bold text-blue-400">
+                      {item.ras}
+                    </p>
+                    <p className="text-xs text-muted-foreground">RAS</p>
+                  </div>
+
+                  <div className="rounded-2xl bg-emerald-500/10 p-3">
+                    <p className="text-lg font-bold text-emerald-400">
+                      {item.quality}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Quality</p>
+                  </div>
+
+                  <div className="rounded-2xl bg-red-500/10 p-3">
+                    <p className="text-lg font-bold text-red-400">
+                      {item.repeatFailure}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Repeat</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DashboardCard>
       </section>
-    </div>
-  );
-}
 
-function DashboardPrinciple({
-  icon: Icon,
-  title,
-  text,
-  color,
-}: {
-  icon: LucideIcon;
-  title: string;
-  text: string;
-  color: string;
-}) {
-  return (
-    <div
-      className="rounded-2xl p-4"
-      style={{
-        background: "hsl(var(--background))",
-        border: "1px solid hsl(var(--border))",
-      }}
-    >
-      <div
-        className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl"
-        style={{ background: `${color}18` }}
-      >
-        <Icon className="h-5 w-5" style={{ color }} />
-      </div>
+      <section className="grid gap-4 md:grid-cols-3">
+        <Link
+          href="/risk-map"
+          className="group rounded-3xl p-5 transition hover:scale-[1.01]"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <BarChart3 className="mb-4 h-6 w-6 text-blue-400" />
+          <h3 className="font-bold">Open Risk Intelligence</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            View Road DNA scoring and risk prioritization.
+          </p>
+          <ArrowRight className="mt-4 h-4 w-4 transition group-hover:translate-x-1" />
+        </Link>
 
-      <h3 className="text-sm font-semibold">{title}</h3>
+        <Link
+          href="/spending"
+          className="group rounded-3xl p-5 transition hover:scale-[1.01]"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <Landmark className="mb-4 h-6 w-6 text-yellow-400" />
+          <h3 className="font-bold">Track Public Spending</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Compare budgets, repairs and road quality.
+          </p>
+          <ArrowRight className="mt-4 h-4 w-4 transition group-hover:translate-x-1" />
+        </Link>
 
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">{text}</p>
+        <Link
+          href="/sensors"
+          className="group rounded-3xl p-5 transition hover:scale-[1.01]"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <Radio className="mb-4 h-6 w-6 text-teal-400" />
+          <h3 className="font-bold">Sensor Signals</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Monitor vibration, surface and inspection signals.
+          </p>
+          <ArrowRight className="mt-4 h-4 w-4 transition group-hover:translate-x-1" />
+        </Link>
+      </section>
+
+      <OfflineReportsList />
     </div>
   );
 }

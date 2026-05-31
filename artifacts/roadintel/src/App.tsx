@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import RootLayout from "@/components/layout/root-layout";
 import AppLayout from "@/components/layout/app-layout";
 import FloatingRoadIntelBot from "@/components/FloatingRoadIntelBot";
+import { OfflineSyncProvider } from "@/components/offline/OfflineSyncProvider";
 
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
@@ -143,7 +144,9 @@ function Router() {
       </Route>
 
       <Route>
-        <NotFound />
+        <PublicPage>
+          <NotFound />
+        </PublicPage>
       </Route>
     </Switch>
   );
@@ -154,7 +157,10 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="roadintel-theme">
         <TooltipProvider>
+          <OfflineSyncProvider />
+
           <Router />
+
           <FloatingRoadIntelBot />
           <Toaster />
         </TooltipProvider>

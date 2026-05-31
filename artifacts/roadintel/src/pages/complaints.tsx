@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { useListComplaints } from "@workspace/api-client-react";
 import {
   Bar,
@@ -21,9 +27,22 @@ import {
   Route,
   ShieldCheck,
   Upload,
+  Wifi,
+  WifiOff,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import {
+  fileToDataUrl,
+  getOfflineReports,
+  OFFLINE_REPORTS_CHANGED_EVENT,
+  saveRoadDefectOffline,
+  syncPendingReports,
+  type ReportSyncStatus,
+  type RoadDefectReport,
+} from "@/lib/offlineReports";
 
 type Severity = "critical" | "high" | "medium" | "low";
 
@@ -50,6 +69,9 @@ type Complaint = {
   authority: string;
   zone: string;
   description: string;
+  offlineReportId?: string | null;
+  syncStatus?: ReportSyncStatus | null;
+  photoStored?: boolean;
 };
 
 type ComplaintForm = {
@@ -88,6 +110,8 @@ const MOCK_COMPLAINTS: Complaint[] = [
     zone: "Pune Central",
     description:
       "Citizen reported a large pothole near the bus stop after recent rainfall. Two-wheeler risk is high.",
+    syncStatus: "Synced",
+    photoStored: true,
   },
   {
     id: 2,
@@ -105,6 +129,8 @@ const MOCK_COMPLAINTS: Complaint[] = [
     zone: "Pune West",
     description:
       "Water accumulation near school gate is creating pedestrian and traffic risk during morning hours.",
+    syncStatus: "Synced",
+    photoStored: true,
   },
   {
     id: 3,
@@ -122,6 +148,8 @@ const MOCK_COMPLAINTS: Complaint[] = [
     zone: "PCMC Corridor",
     description:
       "Longitudinal cracking observed near high-traffic IT corridor. Preventive sealing recommended.",
+    syncStatus: "Synced",
+    photoStored: true,
   },
   {
     id: 4,
@@ -139,6 +167,8 @@ const MOCK_COMPLAINTS: Complaint[] = [
     zone: "Pune South",
     description:
       "Minor edge damage near roadside parking area. Needs inspection before monsoon escalation.",
+    syncStatus: "Synced",
+    photoStored: false,
   },
   {
     id: 5,
@@ -156,6 +186,8 @@ const MOCK_COMPLAINTS: Complaint[] = [
     zone: "Pune Central",
     description:
       "Same patch failed again after repair. Case escalated for contractor quality review.",
+    syncStatus: "Synced",
+    photoStored: true,
   },
   {
     id: 6,
@@ -173,6 +205,8 @@ const MOCK_COMPLAINTS: Complaint[] = [
     zone: "PCMC Corridor",
     description:
       "Multiple small potholes reported. Repair was verified through field image and citizen confirmation.",
+    syncStatus: "Synced",
+    photoStored: true,
   },
 ];
 
@@ -333,6 +367,8 @@ function normalizeComplaints(value: unknown): Complaint[] {
         item.description ??
           "Citizen complaint routed through RoadIntel pilot workflow.",
       ),
+      syncStatus: "Synced",
+      photoStored: Boolean(item.photoStored ?? item.photo_stored ?? false),
     };
   });
 
@@ -446,6 +482,44 @@ function buildChartData(complaints: Complaint[], key: "status" | "issueType") {
   return Object.entries(counts).map(([name, count]) => ({ name, count }));
 }
 
+function getObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object") return {};
+  return value as Record<string, unknown>;
+}
+
+function offlineReportToComplaint(report: RoadDefectReport): Complaint {
+  const extra = getObject(report.extra);
+  const routing = getObject(extra.routing);
+
+  return {
+    id: String(extra.localComplaintId ?? `offline-${report.id}`),
+    complaintId: String(
+      extra.complaintId ?? `RI-OFF-${report.id.slice(0, 8).toUpperCase()}`,
+    ),
+    title: String(extra.title ?? `${report.defectType} reported`),
+    location: String(report.address ?? "Location saved offline"),
+    status: normalizeStatus(extra.complaintWorkflowStatus ?? "filed"),
+    severity: normalizeSeverity(report.severity),
+    issueType: report.defectType,
+    createdAt: report.createdAt,
+    assignedDepartment: String(
+      extra.assignedDepartment ?? routing.department ?? "Roads Department",
+    ),
+    assignedEngineer: String(
+      extra.assignedEngineer ?? routing.engineer ?? "Engineer Review Pending",
+    ),
+    sla: String(extra.sla ?? routing.sla ?? "Pending SLA"),
+    authority: String(extra.authority ?? routing.authority ?? "Authority Review"),
+    zone: String(extra.zone ?? routing.zone ?? "Pilot Zone"),
+    description: String(
+      report.description ?? "Road defect saved through offline-first workflow.",
+    ),
+    offlineReportId: report.id,
+    syncStatus: report.status,
+    photoStored: Boolean(report.photoDataUrl),
+  };
+}
+
 function MetricCard({
   label,
   value,
@@ -529,6 +603,35 @@ function StatusPill({ status }: { status: ComplaintStatus }) {
   );
 }
 
+function SyncPill({ status }: { status?: ReportSyncStatus | null }) {
+  if (!status) return null;
+
+  const isPending = status === "Pending Sync";
+  const color = isPending ? "#F59E0B" : "#16A34A";
+
+  return (
+    <span
+      className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase"
+      style={{
+        background: `${color}18`,
+        color,
+      }}
+    >
+      {status}
+    </span>
+  );
+}
+
+function PhotoEvidencePill({ stored }: { stored?: boolean }) {
+  if (!stored) return null;
+
+  return (
+    <span className="rounded-full bg-cyan-500/10 px-2.5 py-1 text-[11px] font-bold uppercase text-cyan-300">
+      Photo Saved
+    </span>
+  );
+}
+
 function StatusStepper({ status }: { status: ComplaintStatus }) {
   const activeIndex = getStatusIndex(status);
 
@@ -584,6 +687,8 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
 
             <SeverityPill severity={complaint.severity} />
             <StatusPill status={complaint.status} />
+            <SyncPill status={complaint.syncStatus} />
+            <PhotoEvidencePill stored={complaint.photoStored} />
           </div>
 
           <h3
@@ -697,12 +802,15 @@ function RoutingPreview({ form }: { form: ComplaintForm }) {
 
 export default function Complaints() {
   const { data: complaintData, isLoading } = useListComplaints();
+  const isOnline = useOnlineStatus();
 
   const [showForm, setShowForm] = useState(false);
   const [attachmentName, setAttachmentName] = useState("");
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [localComplaints, setLocalComplaints] =
     useState<Complaint[]>(readLocalComplaints);
   const [submitResult, setSubmitResult] = useState<RoutingDecision | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState<ComplaintForm>({
     title: "",
@@ -717,6 +825,72 @@ export default function Complaints() {
     saveLocalComplaints(localComplaints);
   }, [localComplaints]);
 
+  useEffect(() => {
+    const reconcileOfflineReports = async () => {
+      try {
+        const offlineReports = await getOfflineReports();
+
+        setLocalComplaints((current) => {
+          const reportsById = new Map(
+            offlineReports.map((report) => [report.id, report]),
+          );
+
+          const updatedCurrent = current.map((complaint) => {
+            if (!complaint.offlineReportId) return complaint;
+
+            const matchedReport = reportsById.get(complaint.offlineReportId);
+            if (!matchedReport) return complaint;
+
+            return {
+              ...complaint,
+              syncStatus: matchedReport.status,
+              photoStored:
+                complaint.photoStored || Boolean(matchedReport.photoDataUrl),
+            };
+          });
+
+          const existingOfflineIds = new Set(
+            updatedCurrent
+              .map((complaint) => complaint.offlineReportId)
+              .filter(Boolean),
+          );
+
+          const restoredFromIndexedDb = offlineReports
+            .filter((report) => !existingOfflineIds.has(report.id))
+            .map(offlineReportToComplaint);
+
+          const next = [...restoredFromIndexedDb, ...updatedCurrent];
+
+          return JSON.stringify(next) === JSON.stringify(current)
+            ? current
+            : next;
+        });
+      } catch (error) {
+        console.error("Failed to reconcile offline reports:", error);
+      }
+    };
+
+    const handleOfflineReportsChanged = () => {
+      void reconcileOfflineReports();
+    };
+
+    void reconcileOfflineReports();
+
+    window.addEventListener(
+      OFFLINE_REPORTS_CHANGED_EVENT,
+      handleOfflineReportsChanged,
+    );
+    window.addEventListener("online", handleOfflineReportsChanged);
+
+    return () => {
+      window.removeEventListener(
+        OFFLINE_REPORTS_CHANGED_EVENT,
+        handleOfflineReportsChanged,
+      );
+      window.removeEventListener("online", handleOfflineReportsChanged);
+    };
+  }, []);
+
   const apiComplaints = useMemo(
     () => normalizeComplaints(complaintData),
     [complaintData],
@@ -724,10 +898,20 @@ export default function Complaints() {
 
   const complaints = useMemo(() => {
     const localIds = new Set(localComplaints.map((item) => String(item.id)));
-
-    const filteredApiComplaints = apiComplaints.filter(
-      (item) => !localIds.has(String(item.id)),
+    const localOfflineIds = new Set(
+      localComplaints
+        .map((item) => item.offlineReportId)
+        .filter(Boolean)
+        .map(String),
     );
+
+    const filteredApiComplaints = apiComplaints.filter((item) => {
+      const idExists = localIds.has(String(item.id));
+      const offlineIdExists =
+        item.offlineReportId && localOfflineIds.has(String(item.offlineReportId));
+
+      return !idExists && !offlineIdExists;
+    });
 
     return [...localComplaints, ...filteredApiComplaints];
   }, [localComplaints, apiComplaints]);
@@ -756,6 +940,10 @@ export default function Complaints() {
     (complaint) => complaint.status === "escalated",
   ).length;
 
+  const pendingSyncCount = complaints.filter(
+    (complaint) => complaint.syncStatus === "Pending Sync",
+  ).length;
+
   function updateForm<K extends keyof ComplaintForm>(
     key: K,
     value: ComplaintForm[K],
@@ -773,51 +961,118 @@ export default function Complaints() {
       description: "",
     });
     setAttachmentName("");
+    setSelectedPhoto(null);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (isSubmitting) return;
 
     if (!form.title.trim() || !form.location.trim() || !form.description.trim()) {
       alert("Please fill title, location and description.");
       return;
     }
 
-    const routing = getRoutingDecision(form);
+    if (selectedPhoto && selectedPhoto.size > 4 * 1024 * 1024) {
+      alert("Please upload an image smaller than 4 MB.");
+      return;
+    }
 
-    const complaintNumber = localComplaints.length + apiComplaints.length + 1;
+    setIsSubmitting(true);
 
-    const newComplaint: Complaint = {
-      id: `local-${Date.now()}`,
-      complaintId: `RI-PILOT-${String(complaintNumber).padStart(3, "0")}`,
-      title: form.title.trim(),
-      location: form.location.trim(),
-      status: "assigned",
-      severity: form.severity,
-      issueType: form.issueType,
-      createdAt: new Date().toISOString(),
-      assignedDepartment: routing.department,
-      assignedEngineer: routing.engineer,
-      sla: routing.sla,
-      authority: routing.authority,
-      zone: routing.zone,
-      description: form.description.trim(),
-    };
+    try {
+      const routing = getRoutingDecision(form);
+      const complaintNumber = localComplaints.length + apiComplaints.length + 1;
+      const localComplaintId = `local-${Date.now()}`;
+      const complaintId = `RI-PILOT-${String(complaintNumber).padStart(3, "0")}`;
 
-    setLocalComplaints((current) => {
-      const updated = [newComplaint, ...current];
-      saveLocalComplaints(updated);
-      return updated;
-    });
+      const photoDataUrl = selectedPhoto
+        ? await fileToDataUrl(selectedPhoto)
+        : null;
 
-    setSubmitResult(routing);
-    setShowForm(false);
-    resetForm();
+      const offlineReport = await saveRoadDefectOffline({
+        defectType: form.issueType,
+        severity: form.severity,
+        description: form.description.trim(),
+        address: form.location.trim(),
+        latitude: null,
+        longitude: null,
+        photoDataUrl,
+        source: "Citizen Complaint",
+        extra: {
+          localComplaintId,
+          complaintId,
+          title: form.title.trim(),
+          roadType: form.roadType,
+          routing,
+          authority: routing.authority,
+          assignedDepartment: routing.department,
+          assignedEngineer: routing.engineer,
+          sla: routing.sla,
+          zone: routing.zone,
+          complaintWorkflowStatus: isOnline ? "assigned" : "filed",
+        },
+      });
 
-    window.setTimeout(() => {
-      const element = document.getElementById(`complaint-${newComplaint.id}`);
-      element?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 150);
+      let finalSyncStatus: ReportSyncStatus = "Pending Sync";
+
+      if (navigator.onLine) {
+        const syncResult = await syncPendingReports();
+
+        if (syncResult.failed === 0) {
+          finalSyncStatus = "Synced";
+        }
+      }
+
+      const newComplaint: Complaint = {
+        id: localComplaintId,
+        complaintId,
+        title: form.title.trim(),
+        location: form.location.trim(),
+        status: isOnline ? "assigned" : "filed",
+        severity: form.severity,
+        issueType: form.issueType,
+        createdAt: new Date().toISOString(),
+        assignedDepartment: routing.department,
+        assignedEngineer: routing.engineer,
+        sla: routing.sla,
+        authority: routing.authority,
+        zone: routing.zone,
+        description: form.description.trim(),
+        offlineReportId: offlineReport.id,
+        syncStatus: finalSyncStatus,
+        photoStored: Boolean(photoDataUrl),
+      };
+
+      setLocalComplaints((current) => {
+        const updated = [newComplaint, ...current];
+        saveLocalComplaints(updated);
+        return updated;
+      });
+
+      setSubmitResult(routing);
+      setShowForm(false);
+      resetForm();
+
+      if (finalSyncStatus === "Pending Sync") {
+        alert(
+          "Complaint saved offline with photo evidence. Status: Pending Sync. It will auto-sync when internet returns.",
+        );
+      } else {
+        alert("Complaint submitted and synced successfully.");
+      }
+
+      window.setTimeout(() => {
+        const element = document.getElementById(`complaint-${newComplaint.id}`);
+        element?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 150);
+    } catch (error) {
+      console.error(error);
+      alert("Unable to save complaint. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -832,15 +1087,36 @@ export default function Complaints() {
       >
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div
-              className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-              style={{
-                background: "rgba(14,165,164,0.14)",
-                color: "#0EA5A4",
-              }}
-            >
-              <Route className="h-3.5 w-3.5" />
-              ROUTING_ENGINE active
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                style={{
+                  background: "rgba(14,165,164,0.14)",
+                  color: "#0EA5A4",
+                }}
+              >
+                <Route className="h-3.5 w-3.5" />
+                ROUTING_ENGINE active
+              </div>
+
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                style={{
+                  background: isOnline
+                    ? "rgba(22,163,74,0.14)"
+                    : "rgba(245,158,11,0.16)",
+                  color: isOnline ? "#16A34A" : "#F59E0B",
+                }}
+              >
+                {isOnline ? (
+                  <Wifi className="h-3.5 w-3.5" />
+                ) : (
+                  <WifiOff className="h-3.5 w-3.5" />
+                )}
+                {isOnline
+                  ? "ONLINE — instant sync"
+                  : "OFFLINE MODE — saves locally"}
+              </div>
             </div>
 
             <h1
@@ -852,7 +1128,9 @@ export default function Complaints() {
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
               File road complaints, route them to PMC / PCMC / PWD / NHAI, and
-              track every case through a transparent status timeline.
+              track every case through a transparent status timeline. If internet
+              is unavailable, RoadIntel stores the complaint and photo locally
+              with Pending Sync status.
             </p>
           </div>
 
@@ -879,7 +1157,7 @@ export default function Complaints() {
             <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-500" />
 
             <div>
-              <h3 className="font-semibold">Complaint routed successfully</h3>
+              <h3 className="font-semibold">Complaint saved successfully</h3>
               <p className="mt-1 text-sm text-muted-foreground">
                 Assigned to {submitResult.authority} · {submitResult.engineer} ·
                 SLA: {submitResult.sla}
@@ -898,7 +1176,7 @@ export default function Complaints() {
         </section>
       )}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           label="Complaints Filed"
           value={complaints.length}
@@ -921,6 +1199,14 @@ export default function Complaints() {
           note="Closed or verified repairs"
           icon={CheckCircle2}
           color="#16A34A"
+        />
+
+        <MetricCard
+          label="Pending Sync"
+          value={pendingSyncCount}
+          note="Offline reports waiting"
+          icon={WifiOff}
+          color="#F59E0B"
         />
 
         <MetricCard
@@ -1034,8 +1320,8 @@ export default function Complaints() {
             </h2>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Newly filed complaints appear immediately at the top and are saved
-              in this browser.
+              New complaints appear immediately. Offline reports are stored with
+              photo evidence and marked as Pending Sync until internet returns.
             </p>
           </div>
 
@@ -1075,7 +1361,9 @@ export default function Complaints() {
                 </h2>
 
                 <p className="mt-1 text-xs text-muted-foreground">
-                  RoadIntel routes the issue to the most relevant authority.
+                  {isOnline
+                    ? "Online mode active. Complaint will sync immediately."
+                    : "Offline mode active. Complaint and photo will be saved locally."}
                 </p>
               </div>
 
@@ -1197,13 +1485,19 @@ export default function Complaints() {
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/jpg,image/webp"
+                      capture="environment"
                       className="hidden"
                       onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) setAttachmentName(file.name);
+                        const file = event.target.files?.[0] ?? null;
+                        setSelectedPhoto(file);
+                        setAttachmentName(file?.name ?? "");
                       }}
                     />
                   </label>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Photo is stored locally first, so it is not lost offline.
+                  </p>
                 </InputBlock>
               </div>
 
@@ -1225,6 +1519,32 @@ export default function Complaints() {
 
               <RoutingPreview form={form} />
 
+              <div
+                className="rounded-2xl p-4 text-sm"
+                style={{
+                  background: isOnline
+                    ? "rgba(22,163,74,0.08)"
+                    : "rgba(245,158,11,0.10)",
+                  border: isOnline
+                    ? "1px solid rgba(22,163,74,0.22)"
+                    : "1px solid rgba(245,158,11,0.28)",
+                }}
+              >
+                <div className="flex items-start gap-2">
+                  {isOnline ? (
+                    <Wifi className="mt-0.5 h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <WifiOff className="mt-0.5 h-4 w-4 text-yellow-500" />
+                  )}
+
+                  <p className="text-muted-foreground">
+                    {isOnline
+                      ? "Internet is available. RoadIntel will save the report locally first and then sync it."
+                      : "Internet is unavailable. RoadIntel will save this report and photo locally with Pending Sync status."}
+                  </p>
+                </div>
+              </div>
+
               <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <button
                   type="button"
@@ -1240,9 +1560,14 @@ export default function Complaints() {
 
                 <button
                   type="submit"
-                  className="rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-5 py-3 text-sm font-bold text-white"
+                  disabled={isSubmitting}
+                  className="rounded-2xl bg-gradient-to-r from-blue-500 to-teal-500 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Submit & Route Complaint
+                  {isSubmitting
+                    ? "Saving Complaint..."
+                    : isOnline
+                      ? "Submit & Sync Complaint"
+                      : "Save Offline Complaint"}
                 </button>
               </div>
             </form>
