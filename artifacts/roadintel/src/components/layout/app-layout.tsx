@@ -13,7 +13,6 @@ import {
   Radio,
   Scan,
   Settings,
-  Shield,
   Siren,
   TrendingDown,
   UserCircle,
@@ -300,8 +299,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           style={{ borderColor: "rgba(255,255,255,0.08)" }}
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-teal-500 shadow-lg shadow-cyan-500/20">
-              <Shield className="h-5 w-5 text-white" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white p-1.5 shadow-lg shadow-cyan-500/20">
+              <img
+                src="/roadintel-logo.png"
+                alt="RoadIntel Logo"
+                className="h-full w-full object-contain"
+              />
             </div>
 
             <div>
