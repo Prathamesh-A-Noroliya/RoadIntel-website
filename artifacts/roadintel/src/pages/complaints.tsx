@@ -5,7 +5,6 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { useListComplaints } from "@workspace/api-client-react";
 import {
   Bar,
   BarChart,
@@ -34,15 +33,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import {
-  fileToDataUrl,
-  getOfflineReports,
-  OFFLINE_REPORTS_CHANGED_EVENT,
-  saveRoadDefectOffline,
-  syncPendingReports,
-  type ReportSyncStatus,
-  type RoadDefectReport,
-} from "@/lib/offlineReports";
+import { createRoadReport, getRoadReports } from "@/lib/roadintel-api";
+import { supabase } from "@/lib/supabase";
+import { fileToDataUrl } from "@/lib/offlineReports";
 
 type Severity = "critical" | "high" | "medium" | "low";
 
@@ -53,6 +46,8 @@ type ComplaintStatus =
   | "verified"
   | "resolved"
   | "escalated";
+
+type SyncStatus = "Synced" | "Pending Sync" | "Backend Saved" | "Local Saved";
 
 type Complaint = {
   id: string | number;
@@ -69,9 +64,10 @@ type Complaint = {
   authority: string;
   zone: string;
   description: string;
-  offlineReportId?: string | null;
-  syncStatus?: ReportSyncStatus | null;
+  syncStatus?: SyncStatus;
   photoStored?: boolean;
+  supabaseId?: string | null;
+  photoUrl?: string | null;
 };
 
 type ComplaintForm = {
@@ -91,124 +87,7 @@ type RoutingDecision = {
   zone: string;
 };
 
-const LOCAL_COMPLAINTS_KEY = "roadintel-local-complaints-v2";
-
-const MOCK_COMPLAINTS: Complaint[] = [
-  {
-    id: 1,
-    complaintId: "RI-PUN-2026-001",
-    title: "Large pothole near bus stop",
-    location: "FC Road Junction, Pune",
-    status: "in_progress",
-    severity: "high",
-    issueType: "Pothole",
-    createdAt: "2026-04-18",
-    assignedDepartment: "PMC Roads Department",
-    assignedEngineer: "Ward Engineer — Shivajinagar",
-    sla: "48 hours",
-    authority: "PMC",
-    zone: "Pune Central",
-    description:
-      "Citizen reported a large pothole near the bus stop after recent rainfall. Two-wheeler risk is high.",
-    syncStatus: "Synced",
-    photoStored: true,
-  },
-  {
-    id: 2,
-    complaintId: "RI-PUN-2026-002",
-    title: "Waterlogging near school entrance",
-    location: "Baner Link Road, Pune",
-    status: "assigned",
-    severity: "medium",
-    issueType: "Waterlogging",
-    createdAt: "2026-04-19",
-    assignedDepartment: "PMC Stormwater + Roads Cell",
-    assignedEngineer: "Assistant Engineer — Baner Ward",
-    sla: "5 days",
-    authority: "PMC",
-    zone: "Pune West",
-    description:
-      "Water accumulation near school gate is creating pedestrian and traffic risk during morning hours.",
-    syncStatus: "Synced",
-    photoStored: true,
-  },
-  {
-    id: 3,
-    complaintId: "RI-PCMC-2026-003",
-    title: "Cracked road surface",
-    location: "Wakad-Hinjewadi Road, PCMC",
-    status: "verified",
-    severity: "medium",
-    issueType: "Cracking",
-    createdAt: "2026-04-16",
-    assignedDepartment: "PCMC Roads Department",
-    assignedEngineer: "Junior Engineer — Wakad Zone",
-    sla: "7 days",
-    authority: "PCMC",
-    zone: "PCMC Corridor",
-    description:
-      "Longitudinal cracking observed near high-traffic IT corridor. Preventive sealing recommended.",
-    syncStatus: "Synced",
-    photoStored: true,
-  },
-  {
-    id: 4,
-    complaintId: "RI-PUN-2026-004",
-    title: "Broken road edge near market",
-    location: "Sinhagad Road, Pune",
-    status: "filed",
-    severity: "low",
-    issueType: "Edge Damage",
-    createdAt: "2026-04-20",
-    assignedDepartment: "PMC Ward Roads Team",
-    assignedEngineer: "Ward Review Pending",
-    sla: "10 days",
-    authority: "PMC",
-    zone: "Pune South",
-    description:
-      "Minor edge damage near roadside parking area. Needs inspection before monsoon escalation.",
-    syncStatus: "Synced",
-    photoStored: false,
-  },
-  {
-    id: 5,
-    complaintId: "RI-PUN-2026-005",
-    title: "Repeated patch failure",
-    location: "JM Road Patch Zone, Pune",
-    status: "escalated",
-    severity: "critical",
-    issueType: "Repeat Repair Failure",
-    createdAt: "2026-04-21",
-    assignedDepartment: "PMC Emergency Roads Cell",
-    assignedEngineer: "Executive Engineer — Roads",
-    sla: "24 hours",
-    authority: "PMC",
-    zone: "Pune Central",
-    description:
-      "Same patch failed again after repair. Case escalated for contractor quality review.",
-    syncStatus: "Synced",
-    photoStored: true,
-  },
-  {
-    id: 6,
-    complaintId: "RI-PCMC-2026-006",
-    title: "Potholes on service road",
-    location: "Ravet BRT Service Road, PCMC",
-    status: "resolved",
-    severity: "medium",
-    issueType: "Pothole",
-    createdAt: "2026-04-12",
-    assignedDepartment: "PCMC Roads Department",
-    assignedEngineer: "Assistant Engineer — Ravet",
-    sla: "5 days",
-    authority: "PCMC",
-    zone: "PCMC Corridor",
-    description:
-      "Multiple small potholes reported. Repair was verified through field image and citizen confirmation.",
-    syncStatus: "Synced",
-    photoStored: true,
-  },
-];
+const LOCAL_COMPLAINTS_KEY = "roadintel-local-complaints-v3";
 
 const STATUS_FLOW: ComplaintStatus[] = [
   "filed",
@@ -250,16 +129,71 @@ const ISSUE_TYPES = [
   "Edge Damage",
   "Surface Damage",
   "Repeat Repair Failure",
-  "Missing Road Marking",
+  "Broken Signal",
+  "Bad Lighting",
+  "Debris",
+  "Unsafe Turn",
+  "Other",
 ];
 
-const BANNED_REMOTE_TERMS = [
-  "AIIMS",
-  "Delhi",
-  "Bangalore",
-  "Andheri",
-  "Outer Ring",
-  "NH-48",
+const MOCK_COMPLAINTS: Complaint[] = [
+  {
+    id: "demo-1",
+    complaintId: "RI-PUN-001",
+    title: "Large pothole near bus stop",
+    location: "FC Road Junction, Pune",
+    status: "in_progress",
+    severity: "high",
+    issueType: "Pothole",
+    createdAt: new Date().toISOString(),
+    assignedDepartment: "PMC Roads Department",
+    assignedEngineer: "Ward Engineer — Shivajinagar",
+    sla: "48 hours",
+    authority: "PMC",
+    zone: "Pune Central",
+    description:
+      "Citizen reported a large pothole near the bus stop after recent rainfall. Two-wheeler risk is high.",
+    syncStatus: "Backend Saved",
+    photoStored: true,
+  },
+  {
+    id: "demo-2",
+    complaintId: "RI-PUN-002",
+    title: "Waterlogging near school entrance",
+    location: "Baner Link Road, Pune",
+    status: "assigned",
+    severity: "medium",
+    issueType: "Waterlogging",
+    createdAt: new Date().toISOString(),
+    assignedDepartment: "PMC Stormwater + Roads Cell",
+    assignedEngineer: "Assistant Engineer — Baner Ward",
+    sla: "5 days",
+    authority: "PMC",
+    zone: "Pune West",
+    description:
+      "Water accumulation near school gate is creating pedestrian and traffic risk during morning hours.",
+    syncStatus: "Backend Saved",
+    photoStored: true,
+  },
+  {
+    id: "demo-3",
+    complaintId: "RI-PCMC-003",
+    title: "Cracked road surface",
+    location: "Wakad-Hinjewadi Road, PCMC",
+    status: "verified",
+    severity: "medium",
+    issueType: "Cracking",
+    createdAt: new Date().toISOString(),
+    assignedDepartment: "PCMC Roads Department",
+    assignedEngineer: "Junior Engineer — Wakad Zone",
+    sla: "7 days",
+    authority: "PCMC",
+    zone: "PCMC Corridor",
+    description:
+      "Longitudinal cracking observed near high-traffic IT corridor. Preventive sealing recommended.",
+    syncStatus: "Backend Saved",
+    photoStored: true,
+  },
 ];
 
 function readLocalComplaints(): Complaint[] {
@@ -281,21 +215,6 @@ function saveLocalComplaints(complaints: Complaint[]) {
   localStorage.setItem(LOCAL_COMPLAINTS_KEY, JSON.stringify(complaints));
 }
 
-function normalizeStatus(value: unknown): ComplaintStatus {
-  const status = String(value ?? "filed")
-    .toLowerCase()
-    .replace(/\s+/g, "_");
-
-  if (status === "pending") return "filed";
-  if (status === "assigned") return "assigned";
-  if (status === "in_progress") return "in_progress";
-  if (status === "verified") return "verified";
-  if (status === "resolved") return "resolved";
-  if (status === "escalated") return "escalated";
-
-  return "filed";
-}
-
 function normalizeSeverity(value: unknown): Severity {
   const severity = String(value ?? "medium").toLowerCase();
 
@@ -306,77 +225,54 @@ function normalizeSeverity(value: unknown): Severity {
   return "medium";
 }
 
-function toArray<T>(value: unknown): T[] {
-  if (Array.isArray(value)) return value as T[];
+function normalizeStatus(value: unknown): ComplaintStatus {
+  const status = String(value ?? "submitted")
+    .toLowerCase()
+    .replace(/\s+/g, "_");
 
-  if (!value || typeof value !== "object") return [];
+  if (status === "submitted") return "filed";
+  if (status === "filed") return "filed";
+  if (status === "verified") return "verified";
+  if (status === "assigned") return "assigned";
+  if (status === "in_progress") return "in_progress";
+  if (status === "repaired") return "resolved";
+  if (status === "closed") return "resolved";
+  if (status === "resolved") return "resolved";
+  if (status === "rejected") return "escalated";
+  if (status === "escalated") return "escalated";
 
-  const record = value as Record<string, unknown>;
-
-  for (const key of ["data", "complaints", "items", "results", "rows", "list"]) {
-    const item = record[key];
-
-    if (Array.isArray(item)) return item as T[];
-
-    if (item && typeof item === "object") {
-      const nested = toArray<T>(item);
-      if (nested.length > 0) return nested;
-    }
-  }
-
-  return [];
+  return "filed";
 }
 
-function isPilotLocation(location: string) {
-  return !BANNED_REMOTE_TERMS.some((term) =>
-    location.toLowerCase().includes(term.toLowerCase()),
-  );
+function toSupabaseIssueType(issueType: string) {
+  const normalized = issueType.toLowerCase();
+
+  if (normalized.includes("pothole")) return "pothole";
+  if (normalized.includes("crack")) return "crack";
+  if (normalized.includes("water")) return "waterlogging";
+  if (normalized.includes("signal")) return "broken_signal";
+  if (normalized.includes("light")) return "bad_lighting";
+  if (normalized.includes("debris")) return "debris";
+  if (normalized.includes("turn")) return "unsafe_turn";
+
+  return "other";
 }
 
-function normalizeComplaints(value: unknown): Complaint[] {
-  const source = toArray<Record<string, unknown>>(value);
+function toDisplayIssueType(issueType: unknown) {
+  const value = String(issueType ?? "other");
 
-  if (source.length === 0) return MOCK_COMPLAINTS;
+  const labels: Record<string, string> = {
+    pothole: "Pothole",
+    crack: "Cracking",
+    waterlogging: "Waterlogging",
+    broken_signal: "Broken Signal",
+    bad_lighting: "Bad Lighting",
+    debris: "Debris",
+    unsafe_turn: "Unsafe Turn",
+    other: "Other",
+  };
 
-  const normalized = source.map((item, index): Complaint => {
-    const location = String(item.location ?? item.address ?? "Pune Pilot Zone");
-
-    return {
-      id: item.id ?? index + 1,
-      complaintId: String(
-        item.complaintId ?? item.complaint_id ?? `RI-PILOT-${index + 1}`,
-      ),
-      title: String(item.title ?? item.subject ?? "Road issue reported"),
-      location,
-      status: normalizeStatus(item.status),
-      severity: normalizeSeverity(item.severity),
-      issueType: String(item.issueType ?? item.issue_type ?? "Road Damage"),
-      createdAt: String(item.createdAt ?? item.created_at ?? "2026-04-20"),
-      assignedDepartment: String(
-        item.assignedDepartment ??
-          item.assigned_department ??
-          "PMC Roads Department",
-      ),
-      assignedEngineer: String(
-        item.assignedEngineer ?? item.assigned_engineer ?? "Ward Engineer",
-      ),
-      sla: String(item.sla ?? "5 days"),
-      authority: String(item.authority ?? "PMC"),
-      zone: String(item.zone ?? "Pune Pilot"),
-      description: String(
-        item.description ??
-          "Citizen complaint routed through RoadIntel pilot workflow.",
-      ),
-      syncStatus: "Synced",
-      photoStored: Boolean(item.photoStored ?? item.photo_stored ?? false),
-    };
-  });
-
-  if (normalized.some((item) => !isPilotLocation(item.location))) {
-    return MOCK_COMPLAINTS;
-  }
-
-  return normalized;
+  return labels[value] ?? value;
 }
 
 function getRoutingDecision(form: ComplaintForm): RoutingDecision {
@@ -482,42 +378,99 @@ function buildChartData(complaints: Complaint[], key: "status" | "issueType") {
   return Object.entries(counts).map(([name, count]) => ({ name, count }));
 }
 
-function getObject(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== "object") return {};
-  return value as Record<string, unknown>;
+function getAreaFromLocation(location: string) {
+  return location.split(",")[0]?.trim() || location.trim() || "Pune";
 }
 
-function offlineReportToComplaint(report: RoadDefectReport): Complaint {
-  const extra = getObject(report.extra);
-  const routing = getObject(extra.routing);
+function getRoadTypeFromLocation(location: string): ComplaintForm["roadType"] {
+  const lower = location.toLowerCase();
+
+  if (
+    lower.includes("pcmc") ||
+    lower.includes("wakad") ||
+    lower.includes("hinjewadi") ||
+    lower.includes("ravet") ||
+    lower.includes("pimpri") ||
+    lower.includes("chinchwad")
+  ) {
+    return "pcmc";
+  }
+
+  if (lower.includes("highway") || lower.includes("nh") || lower.includes("expressway")) {
+    return "national";
+  }
+
+  return "urban";
+}
+
+function supabaseReportToComplaint(report: Record<string, unknown>): Complaint {
+  const title = String(report.title ?? "Road issue reported");
+  const area = String(report.area ?? "Pune");
+  const city = String(report.city ?? "Pune");
+  const location = `${area}, ${city}`;
+  const severity = normalizeSeverity(report.severity);
+  const issueType = toDisplayIssueType(report.issue_type);
+  const formLike: ComplaintForm = {
+    title,
+    location,
+    issueType,
+    severity,
+    roadType: getRoadTypeFromLocation(location),
+    description: String(report.description ?? ""),
+  };
+  const routing = getRoutingDecision(formLike);
+  const id = String(report.id ?? crypto.randomUUID());
 
   return {
-    id: String(extra.localComplaintId ?? `offline-${report.id}`),
-    complaintId: String(
-      extra.complaintId ?? `RI-OFF-${report.id.slice(0, 8).toUpperCase()}`,
-    ),
-    title: String(extra.title ?? `${report.defectType} reported`),
-    location: String(report.address ?? "Location saved offline"),
-    status: normalizeStatus(extra.complaintWorkflowStatus ?? "filed"),
-    severity: normalizeSeverity(report.severity),
-    issueType: report.defectType,
-    createdAt: report.createdAt,
-    assignedDepartment: String(
-      extra.assignedDepartment ?? routing.department ?? "Roads Department",
-    ),
-    assignedEngineer: String(
-      extra.assignedEngineer ?? routing.engineer ?? "Engineer Review Pending",
-    ),
-    sla: String(extra.sla ?? routing.sla ?? "Pending SLA"),
-    authority: String(extra.authority ?? routing.authority ?? "Authority Review"),
-    zone: String(extra.zone ?? routing.zone ?? "Pilot Zone"),
+    id,
+    supabaseId: id,
+    complaintId: `RI-SUP-${id.slice(0, 8).toUpperCase()}`,
+    title,
+    location,
+    status: normalizeStatus(report.status),
+    severity,
+    issueType,
+    createdAt: String(report.created_at ?? new Date().toISOString()),
+    assignedDepartment: routing.department,
+    assignedEngineer: routing.engineer,
+    sla: routing.sla,
+    authority: routing.authority,
+    zone: routing.zone,
     description: String(
-      report.description ?? "Road defect saved through offline-first workflow.",
+      report.description ??
+        "Citizen complaint submitted through RoadIntel Supabase backend.",
     ),
-    offlineReportId: report.id,
-    syncStatus: report.status,
-    photoStored: Boolean(report.photoDataUrl),
+    syncStatus: "Backend Saved",
+    photoStored: false,
   };
+}
+
+async function uploadComplaintPhoto(file: File, reportId: string) {
+  const extension = file.name.split(".").pop() || "jpg";
+  const safeName = file.name
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[^a-zA-Z0-9-_]/g, "-")
+    .slice(0, 60);
+
+  const filePath = `${reportId}/${Date.now()}-${safeName}.${extension}`;
+
+  const { error } = await supabase.storage
+    .from("road-damage-photos")
+    .upload(filePath, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+
+  if (error) {
+    console.warn("Photo upload skipped:", error.message);
+    return null;
+  }
+
+  const { data } = supabase.storage
+    .from("road-damage-photos")
+    .getPublicUrl(filePath);
+
+  return data.publicUrl;
 }
 
 function MetricCard({
@@ -553,7 +506,7 @@ function MetricCard({
           className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
           style={{ background: `${color}14`, color }}
         >
-          Pilot
+          Live
         </span>
       </div>
 
@@ -603,11 +556,15 @@ function StatusPill({ status }: { status: ComplaintStatus }) {
   );
 }
 
-function SyncPill({ status }: { status?: ReportSyncStatus | null }) {
+function SyncPill({ status }: { status?: SyncStatus }) {
   if (!status) return null;
 
-  const isPending = status === "Pending Sync";
-  const color = isPending ? "#F59E0B" : "#16A34A";
+  const color =
+    status === "Pending Sync"
+      ? "#F59E0B"
+      : status === "Backend Saved"
+        ? "#0EA5A4"
+        : "#16A34A";
 
   return (
     <span
@@ -706,6 +663,17 @@ function ComplaintCard({ complaint }: { complaint: Complaint }) {
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
             {complaint.description}
           </p>
+
+          {complaint.photoUrl && (
+            <a
+              href={complaint.photoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex text-xs font-semibold text-cyan-400 hover:underline"
+            >
+              View uploaded evidence
+            </a>
+          )}
         </div>
 
         <div
@@ -801,7 +769,6 @@ function RoutingPreview({ form }: { form: ComplaintForm }) {
 }
 
 export default function Complaints() {
-  const { data: complaintData, isLoading } = useListComplaints();
   const isOnline = useOnlineStatus();
 
   const [showForm, setShowForm] = useState(false);
@@ -809,6 +776,8 @@ export default function Complaints() {
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [localComplaints, setLocalComplaints] =
     useState<Complaint[]>(readLocalComplaints);
+  const [backendComplaints, setBackendComplaints] = useState<Complaint[]>([]);
+  const [isLoadingBackend, setIsLoadingBackend] = useState(true);
   const [submitResult, setSubmitResult] = useState<RoutingDecision | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -826,95 +795,53 @@ export default function Complaints() {
   }, [localComplaints]);
 
   useEffect(() => {
-    const reconcileOfflineReports = async () => {
+    let mounted = true;
+
+    async function loadReports() {
+      setIsLoadingBackend(true);
+
       try {
-        const offlineReports = await getOfflineReports();
+        const reports = await getRoadReports();
 
-        setLocalComplaints((current) => {
-          const reportsById = new Map(
-            offlineReports.map((report) => [report.id, report]),
-          );
+        if (!mounted) return;
 
-          const updatedCurrent = current.map((complaint) => {
-            if (!complaint.offlineReportId) return complaint;
+        const normalized = reports.map((report) =>
+          supabaseReportToComplaint(report as Record<string, unknown>),
+        );
 
-            const matchedReport = reportsById.get(complaint.offlineReportId);
-            if (!matchedReport) return complaint;
-
-            return {
-              ...complaint,
-              syncStatus: matchedReport.status,
-              photoStored:
-                complaint.photoStored || Boolean(matchedReport.photoDataUrl),
-            };
-          });
-
-          const existingOfflineIds = new Set(
-            updatedCurrent
-              .map((complaint) => complaint.offlineReportId)
-              .filter(Boolean),
-          );
-
-          const restoredFromIndexedDb = offlineReports
-            .filter((report) => !existingOfflineIds.has(report.id))
-            .map(offlineReportToComplaint);
-
-          const next = [...restoredFromIndexedDb, ...updatedCurrent];
-
-          return JSON.stringify(next) === JSON.stringify(current)
-            ? current
-            : next;
-        });
+        setBackendComplaints(normalized);
       } catch (error) {
-        console.error("Failed to reconcile offline reports:", error);
+        console.error("Failed to load Supabase complaints:", error);
+        if (mounted) setBackendComplaints([]);
+      } finally {
+        if (mounted) setIsLoadingBackend(false);
       }
-    };
+    }
 
-    const handleOfflineReportsChanged = () => {
-      void reconcileOfflineReports();
-    };
-
-    void reconcileOfflineReports();
-
-    window.addEventListener(
-      OFFLINE_REPORTS_CHANGED_EVENT,
-      handleOfflineReportsChanged,
-    );
-    window.addEventListener("online", handleOfflineReportsChanged);
+    void loadReports();
 
     return () => {
-      window.removeEventListener(
-        OFFLINE_REPORTS_CHANGED_EVENT,
-        handleOfflineReportsChanged,
-      );
-      window.removeEventListener("online", handleOfflineReportsChanged);
+      mounted = false;
     };
   }, []);
 
-  const apiComplaints = useMemo(
-    () => normalizeComplaints(complaintData),
-    [complaintData],
-  );
-
   const complaints = useMemo(() => {
-    const localIds = new Set(localComplaints.map((item) => String(item.id)));
-    const localOfflineIds = new Set(
+    const localSupabaseIds = new Set(
       localComplaints
-        .map((item) => item.offlineReportId)
+        .map((item) => item.supabaseId)
         .filter(Boolean)
         .map(String),
     );
 
-    const filteredApiComplaints = apiComplaints.filter((item) => {
-      const idExists = localIds.has(String(item.id));
-      const offlineIdExists =
-        item.offlineReportId && localOfflineIds.has(String(item.offlineReportId));
-
-      return !idExists && !offlineIdExists;
+    const filteredBackend = backendComplaints.filter((item) => {
+      if (!item.supabaseId) return true;
+      return !localSupabaseIds.has(String(item.supabaseId));
     });
 
-    return [...localComplaints, ...filteredApiComplaints];
-  }, [localComplaints, apiComplaints]);
+    const combined = [...localComplaints, ...filteredBackend];
+
+    return combined.length > 0 ? combined : MOCK_COMPLAINTS;
+  }, [localComplaints, backendComplaints]);
 
   const statusData = useMemo(
     () => buildChartData(complaints, "status"),
@@ -983,66 +910,64 @@ export default function Complaints() {
 
     try {
       const routing = getRoutingDecision(form);
-      const complaintNumber = localComplaints.length + apiComplaints.length + 1;
-      const localComplaintId = `local-${Date.now()}`;
-      const complaintId = `RI-PILOT-${String(complaintNumber).padStart(3, "0")}`;
+      const now = new Date().toISOString();
+      let savedReport: Record<string, unknown> | null = null;
+      let photoDataUrl: string | null = null;
+      let uploadedPhotoUrl: string | null = null;
+      let syncStatus: SyncStatus = "Local Saved";
 
-      const photoDataUrl = selectedPhoto
-        ? await fileToDataUrl(selectedPhoto)
-        : null;
-
-      const offlineReport = await saveRoadDefectOffline({
-        defectType: form.issueType,
-        severity: form.severity,
-        description: form.description.trim(),
-        address: form.location.trim(),
-        latitude: null,
-        longitude: null,
-        photoDataUrl,
-        source: "Citizen Complaint",
-        extra: {
-          localComplaintId,
-          complaintId,
-          title: form.title.trim(),
-          roadType: form.roadType,
-          routing,
-          authority: routing.authority,
-          assignedDepartment: routing.department,
-          assignedEngineer: routing.engineer,
-          sla: routing.sla,
-          zone: routing.zone,
-          complaintWorkflowStatus: isOnline ? "assigned" : "filed",
-        },
-      });
-
-      let finalSyncStatus: ReportSyncStatus = "Pending Sync";
-
-      if (navigator.onLine) {
-        const syncResult = await syncPendingReports();
-
-        if (syncResult.failed === 0) {
-          finalSyncStatus = "Synced";
-        }
+      if (selectedPhoto) {
+        photoDataUrl = await fileToDataUrl(selectedPhoto);
       }
 
+      if (isOnline) {
+        savedReport = await createRoadReport({
+          title: form.title.trim(),
+          description: form.description.trim(),
+          issue_type: toSupabaseIssueType(form.issueType),
+          severity: form.severity,
+          area: getAreaFromLocation(form.location),
+          city: "Pune",
+          state: "Maharashtra",
+        });
+
+        syncStatus = "Backend Saved";
+
+        if (selectedPhoto && savedReport?.id) {
+          uploadedPhotoUrl = await uploadComplaintPhoto(
+            selectedPhoto,
+            String(savedReport.id),
+          );
+        }
+      } else {
+        syncStatus = "Pending Sync";
+      }
+
+      const localId = `local-${Date.now()}`;
+      const supabaseId = savedReport?.id ? String(savedReport.id) : null;
+      const complaintId = supabaseId
+        ? `RI-SUP-${supabaseId.slice(0, 8).toUpperCase()}`
+        : `RI-OFF-${String(Date.now()).slice(-6)}`;
+
       const newComplaint: Complaint = {
-        id: localComplaintId,
+        id: supabaseId ?? localId,
+        supabaseId,
         complaintId,
         title: form.title.trim(),
         location: form.location.trim(),
-        status: isOnline ? "assigned" : "filed",
+        status: isOnline ? "filed" : "filed",
         severity: form.severity,
         issueType: form.issueType,
-        createdAt: new Date().toISOString(),
+        createdAt: String(savedReport?.created_at ?? now),
         assignedDepartment: routing.department,
         assignedEngineer: routing.engineer,
         sla: routing.sla,
         authority: routing.authority,
         zone: routing.zone,
         description: form.description.trim(),
-        offlineReportId: offlineReport.id,
-        syncStatus: finalSyncStatus,
-        photoStored: Boolean(photoDataUrl),
+        syncStatus,
+        photoStored: Boolean(photoDataUrl || uploadedPhotoUrl),
+        photoUrl: uploadedPhotoUrl,
       };
 
       setLocalComplaints((current) => {
@@ -1055,12 +980,12 @@ export default function Complaints() {
       setShowForm(false);
       resetForm();
 
-      if (finalSyncStatus === "Pending Sync") {
-        alert(
-          "Complaint saved offline with photo evidence. Status: Pending Sync. It will auto-sync when internet returns.",
-        );
+      if (syncStatus === "Backend Saved") {
+        alert("Complaint submitted successfully and stored in Supabase.");
       } else {
-        alert("Complaint submitted and synced successfully.");
+        alert(
+          "Complaint saved locally with Pending Sync status. It can be synced when backend/auth workflow is active.",
+        );
       }
 
       window.setTimeout(() => {
@@ -1069,7 +994,7 @@ export default function Complaints() {
       }, 150);
     } catch (error) {
       console.error(error);
-      alert("Unable to save complaint. Please try again.");
+      alert("Unable to save complaint. Please check Supabase policies and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -1096,7 +1021,7 @@ export default function Complaints() {
                 }}
               >
                 <Route className="h-3.5 w-3.5" />
-                ROUTING_ENGINE active
+                SUPABASE ROUTING ACTIVE
               </div>
 
               <div
@@ -1114,8 +1039,8 @@ export default function Complaints() {
                   <WifiOff className="h-3.5 w-3.5" />
                 )}
                 {isOnline
-                  ? "ONLINE — instant sync"
-                  : "OFFLINE MODE — saves locally"}
+                  ? "ONLINE — backend save enabled"
+                  : "OFFLINE MODE — local save enabled"}
               </div>
             </div>
 
@@ -1128,9 +1053,8 @@ export default function Complaints() {
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
               File road complaints, route them to PMC / PCMC / PWD / NHAI, and
-              track every case through a transparent status timeline. If internet
-              is unavailable, RoadIntel stores the complaint and photo locally
-              with Pending Sync status.
+              store complaint data inside Supabase for transparent civic repair
+              tracking.
             </p>
           </div>
 
@@ -1180,7 +1104,7 @@ export default function Complaints() {
         <MetricCard
           label="Complaints Filed"
           value={complaints.length}
-          note="Pilot complaint records"
+          note="Local + Supabase records"
           icon={FileText}
           color="#0EA5A4"
         />
@@ -1320,14 +1244,14 @@ export default function Complaints() {
             </h2>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              New complaints appear immediately. Offline reports are stored with
-              photo evidence and marked as Pending Sync until internet returns.
+              New complaints are saved to Supabase when online. Offline entries
+              stay visible locally until full sync/auth workflow is enabled.
             </p>
           </div>
 
-          {isLoading && (
+          {isLoadingBackend && (
             <span className="text-xs text-muted-foreground">
-              Syncing complaint records...
+              Loading Supabase complaint records...
             </span>
           )}
         </div>
@@ -1362,8 +1286,8 @@ export default function Complaints() {
 
                 <p className="mt-1 text-xs text-muted-foreground">
                   {isOnline
-                    ? "Online mode active. Complaint will sync immediately."
-                    : "Offline mode active. Complaint and photo will be saved locally."}
+                    ? "Online mode active. Complaint will be stored in Supabase."
+                    : "Offline mode active. Complaint will be saved locally."}
                 </p>
               </div>
 
@@ -1496,7 +1420,8 @@ export default function Complaints() {
                   </label>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Photo is stored locally first, so it is not lost offline.
+                    Image is attached to the complaint workflow when storage
+                    permissions allow upload.
                   </p>
                 </InputBlock>
               </div>
@@ -1539,8 +1464,8 @@ export default function Complaints() {
 
                   <p className="text-muted-foreground">
                     {isOnline
-                      ? "Internet is available. RoadIntel will save the report locally first and then sync it."
-                      : "Internet is unavailable. RoadIntel will save this report and photo locally with Pending Sync status."}
+                      ? "Internet is available. This complaint will be inserted into the Supabase road_reports table."
+                      : "Internet is unavailable. This complaint will be stored locally on this device."}
                   </p>
                 </div>
               </div>
@@ -1566,8 +1491,8 @@ export default function Complaints() {
                   {isSubmitting
                     ? "Saving Complaint..."
                     : isOnline
-                      ? "Submit & Sync Complaint"
-                      : "Save Offline Complaint"}
+                      ? "Submit to Supabase"
+                      : "Save Offline"}
                 </button>
               </div>
             </form>
