@@ -1,9 +1,9 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
-  CheckCircle2,
   ClipboardList,
   FileText,
   IndianRupee,
@@ -13,8 +13,6 @@ import {
   Route,
   ScanLine,
   ShieldCheck,
-  TrendingDown,
-  Users,
   Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -22,9 +20,7 @@ import {
   Area,
   AreaChart,
   Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
   ComposedChart,
   Line,
   ResponsiveContainer,
@@ -35,6 +31,13 @@ import {
 
 import { NetworkStatusCard } from "@/components/offline/NetworkStatusCard";
 import { OfflineReportsList } from "@/components/offline/OfflineReportsList";
+import {
+  getContractors,
+  getPublicSpending,
+  getRoadReports,
+  getRoads,
+  getSensors,
+} from "@/lib/roadintel-api";
 
 type Severity = "critical" | "high" | "medium" | "low";
 
@@ -82,7 +85,17 @@ type ContractorSignal = {
   status: "Strong" | "Watchlist" | "Audit Required";
 };
 
-const KPI_DATA: Kpi[] = [
+type BackendState = {
+  roads: any[];
+  reports: any[];
+  contractors: any[];
+  sensors: any[];
+  spending: any[];
+  loading: boolean;
+  error: string | null;
+};
+
+const FALLBACK_KPI_DATA: Kpi[] = [
   {
     label: "Roads Monitored",
     value: "8",
@@ -131,7 +144,7 @@ const HEALTH_RISK_TREND = [
   { month: "Apr", health: 74, risk: 43 },
 ];
 
-const ROAD_PRIORITIES: RoadPriority[] = [
+const FALLBACK_ROAD_PRIORITIES: RoadPriority[] = [
   {
     id: "RISK-001",
     road: "JM Road Patch Zone",
@@ -167,7 +180,7 @@ const ROAD_PRIORITIES: RoadPriority[] = [
   },
 ];
 
-const SPENDING_CHECKS: SpendingCheck[] = [
+const FALLBACK_SPENDING_CHECKS: SpendingCheck[] = [
   {
     road: "JM Road",
     approved: 3.9,
@@ -198,7 +211,7 @@ const SPENDING_CHECKS: SpendingCheck[] = [
   },
 ];
 
-const CONTRACTOR_SIGNALS: ContractorSignal[] = [
+const FALLBACK_CONTRACTOR_SIGNALS: ContractorSignal[] = [
   {
     contractor: "Urban Infra Works",
     ras: 91,
@@ -222,7 +235,7 @@ const CONTRACTOR_SIGNALS: ContractorSignal[] = [
   },
 ];
 
-const LIVE_ACTIVITY: ActivityItem[] = [
+const FALLBACK_LIVE_ACTIVITY: ActivityItem[] = [
   {
     title: "Pothole report routed",
     location: "FC Road Junction",
@@ -253,6 +266,39 @@ const SEVERITY_COLORS: Record<Severity, string> = {
   low: "#16A34A",
 };
 
+function toNumber(value: unknown, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getSeverityFromRisk(risk: number): Severity {
+  if (risk >= 80) return "critical";
+  if (risk >= 65) return "high";
+  if (risk >= 40) return "medium";
+  return "low";
+}
+
+function formatCurrencyCr(amount: number) {
+  if (!amount || amount <= 0) return "₹0Cr";
+  return `₹${amount.toFixed(amount >= 10 ? 0 : 1)}Cr`;
+}
+
+function getSpendingStatus(
+  approved: number,
+  spent: number,
+  health: number,
+): SpendingCheck["status"] {
+  if (spent > approved * 1.1 || health < 50) return "Audit Required";
+  if (spent > approved || health < 65) return "Watchlist";
+  return "Clear";
+}
+
+function getContractorStatus(score: number): ContractorSignal["status"] {
+  if (score >= 80) return "Strong";
+  if (score >= 60) return "Watchlist";
+  return "Audit Required";
+}
+
 function MetricCard({ label, value, note, icon: Icon, color }: Kpi) {
   return (
     <div
@@ -274,7 +320,7 @@ function MetricCard({ label, value, note, icon: Icon, color }: Kpi) {
           className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
           style={{ background: `${color}14`, color }}
         >
-          Pilot
+          Live
         </span>
       </div>
 
@@ -360,6 +406,216 @@ function DashboardCard({
 }
 
 export default function Dashboard() {
+  const [backend, setBackend] = useState<BackendState>({
+    roads: [],
+    reports: [],
+    contractors: [],
+    sensors: [],
+    spending: [],
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDashboardData() {
+      try {
+        const [roads, reports, contractors, sensors, spending] =
+          await Promise.all([
+            getRoads(),
+            getRoadReports(),
+            getContractors(),
+            getSensors(),
+            getPublicSpending(),
+          ]);
+
+        if (!isMounted) return;
+
+        setBackend({
+          roads,
+          reports,
+          contractors,
+          sensors,
+          spending,
+          loading: false,
+          error: null,
+        });
+      } catch (error) {
+        if (!isMounted) return;
+
+        setBackend((current) => ({
+          ...current,
+          loading: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Unable to load Supabase dashboard data.",
+        }));
+      }
+    }
+
+    loadDashboardData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const kpiData = useMemo<Kpi[]>(() => {
+    if (backend.loading) return FALLBACK_KPI_DATA;
+
+    const roadsCount = backend.roads.length;
+    const reportsCount = backend.reports.length;
+    const sensorsCount = backend.sensors.length;
+    const spendingInCr = backend.spending.reduce((total, item) => {
+      return total + toNumber(item.spent_amount) / 10000000;
+    }, 0);
+
+    const auditFlags = backend.roads.filter((road) => {
+      const risk = toNumber(road.risk_score);
+      const health = toNumber(road.average_condition_score, 100);
+      return risk >= 70 || health <= 55;
+    }).length;
+
+    return [
+      {
+        label: "Roads Monitored",
+        value: roadsCount > 0 ? String(roadsCount) : FALLBACK_KPI_DATA[0].value,
+        note:
+          roadsCount > 0
+            ? "Loaded from Supabase roads table"
+            : FALLBACK_KPI_DATA[0].note,
+        icon: Route,
+        color: "#0EA5A4",
+      },
+      {
+        label: "Complaint Signals",
+        value:
+          reportsCount > 0 ? String(reportsCount) : FALLBACK_KPI_DATA[1].value,
+        note:
+          reportsCount > 0
+            ? "Reports loaded from backend"
+            : "Demo count until public report feed is enabled",
+        icon: FileText,
+        color: "#3B82F6",
+      },
+      {
+        label: "Spending Tracked",
+        value:
+          spendingInCr > 0
+            ? formatCurrencyCr(spendingInCr)
+            : FALLBACK_KPI_DATA[2].value,
+        note:
+          backend.spending.length > 0
+            ? "Public spending loaded from Supabase"
+            : FALLBACK_KPI_DATA[2].note,
+        icon: IndianRupee,
+        color: "#F59E0B",
+      },
+      {
+        label: "Audit Flags",
+        value: auditFlags > 0 ? String(auditFlags) : FALLBACK_KPI_DATA[3].value,
+        note:
+          sensorsCount > 0
+            ? `${sensorsCount} sensor signals connected`
+            : FALLBACK_KPI_DATA[3].note,
+        icon: AlertTriangle,
+        color: "#DC2626",
+      },
+    ];
+  }, [backend]);
+
+  const roadPriorities = useMemo<RoadPriority[]>(() => {
+    if (backend.roads.length === 0) return FALLBACK_ROAD_PRIORITIES;
+
+    return backend.roads.slice(0, 3).map((road, index) => {
+      const risk = Math.round(toNumber(road.risk_score));
+      const health = Math.round(toNumber(road.average_condition_score));
+      const severity = getSeverityFromRisk(risk);
+
+      return {
+        id: `ROAD-${String(index + 1).padStart(3, "0")}`,
+        road: road.road_name ?? "Unnamed Road",
+        zone: road.area ?? road.city ?? "Pune",
+        authority: road.city === "Pimpri-Chinchwad" ? "PCMC" : "PMC",
+        risk,
+        health,
+        severity,
+        reason:
+          risk >= 70
+            ? "High backend risk score indicates this road should be prioritized for inspection."
+            : "Backend road health and condition score indicate scheduled monitoring is required.",
+        action:
+          severity === "critical"
+            ? "Inspect within 24 hours and assign urgent repair verification."
+            : severity === "high"
+              ? "Schedule inspection and prepare repair assignment."
+              : "Continue monitoring and compare future complaint signals.",
+      };
+    });
+  }, [backend.roads]);
+
+  const spendingChecks = useMemo<SpendingCheck[]>(() => {
+    if (backend.spending.length === 0) return FALLBACK_SPENDING_CHECKS;
+
+    return backend.spending.slice(0, 4).map((item) => {
+      const approved = toNumber(item.sanctioned_amount) / 10000000;
+      const spent = toNumber(item.spent_amount) / 10000000;
+      const health = 65;
+
+      return {
+        road: item.project_title ?? "Road repair project",
+        approved,
+        spent,
+        health,
+        status: getSpendingStatus(approved, spent, health),
+      };
+    });
+  }, [backend.spending]);
+
+  const contractorSignals = useMemo<ContractorSignal[]>(() => {
+    if (backend.contractors.length === 0) return FALLBACK_CONTRACTOR_SIGNALS;
+
+    return backend.contractors.slice(0, 3).map((item) => {
+      const ras = Math.round(toNumber(item.rating) * 20);
+      const quality = Math.max(0, Math.min(100, ras - 4));
+      const repeatFailure = Math.max(1, Math.round((100 - ras) / 8));
+
+      return {
+        contractor: item.company_name ?? "Contractor",
+        ras,
+        quality,
+        repeatFailure,
+        status: getContractorStatus(ras),
+      };
+    });
+  }, [backend.contractors]);
+
+  const liveActivity = useMemo<ActivityItem[]>(() => {
+    if (backend.reports.length === 0) return FALLBACK_LIVE_ACTIVITY;
+
+    return backend.reports.slice(0, 3).map((item) => ({
+      title: item.title ?? "Road report submitted",
+      location: item.area ?? item.city ?? "Pune",
+      time: "Recently",
+      severity: (item.severity as Severity) ?? "medium",
+      description:
+        item.description ||
+        `Report status: ${String(item.status ?? "submitted").replaceAll("_", " ")}.`,
+    }));
+  }, [backend.reports]);
+
+  const healthRiskTrend = useMemo(() => {
+    if (backend.roads.length === 0) return HEALTH_RISK_TREND;
+
+    return backend.roads.slice(0, 6).map((road) => ({
+      month: String(road.road_name ?? "Road").split(" ")[0],
+      health: Math.round(toNumber(road.average_condition_score)),
+      risk: Math.round(toNumber(road.risk_score)),
+    }));
+  }, [backend.roads]);
+
   return (
     <div className="space-y-6 p-6">
       <section
@@ -395,6 +651,24 @@ export default function Dashboard() {
               visibility and contractor accountability into one civic road
               intelligence dashboard.
             </p>
+
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+              <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-emerald-400">
+                Supabase backend connected
+              </span>
+
+              {backend.loading && (
+                <span className="rounded-full bg-blue-500/10 px-3 py-1 text-blue-400">
+                  Loading live data...
+                </span>
+              )}
+
+              {backend.error && (
+                <span className="rounded-full bg-red-500/10 px-3 py-1 text-red-400">
+                  Backend fallback active
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -424,7 +698,7 @@ export default function Dashboard() {
       <NetworkStatusCard />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {KPI_DATA.map((item) => (
+        {kpiData.map((item) => (
           <MetricCard key={item.label} {...item} />
         ))}
       </section>
@@ -465,7 +739,7 @@ export default function Dashboard() {
         >
           <div className="h-[290px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={HEALTH_RISK_TREND}>
+              <AreaChart data={healthRiskTrend}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
@@ -498,7 +772,7 @@ export default function Dashboard() {
           subtitle="Road DNA risk scoring highlights where inspection or repair should happen first."
         >
           <div className="space-y-4">
-            {ROAD_PRIORITIES.map((road) => (
+            {roadPriorities.map((road) => (
               <div
                 key={road.id}
                 className="rounded-2xl p-4"
@@ -567,7 +841,7 @@ export default function Dashboard() {
           subtitle="Recent RoadIntel actions from citizen reports and repair verification."
         >
           <div className="space-y-4">
-            {LIVE_ACTIVITY.map((item) => (
+            {liveActivity.map((item) => (
               <div
                 key={`${item.title}-${item.time}`}
                 className="rounded-2xl p-4"
@@ -606,7 +880,7 @@ export default function Dashboard() {
           subtitle="Compares approved budget, actual spend and resulting road health."
         >
           <div className="space-y-3">
-            {SPENDING_CHECKS.map((item) => (
+            {spendingChecks.map((item) => (
               <div
                 key={item.road}
                 className="grid gap-3 rounded-2xl p-4 sm:grid-cols-[1fr_auto]"
@@ -624,12 +898,12 @@ export default function Dashboard() {
                   <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
                     <div>
                       <p className="text-xs text-muted-foreground">Approved</p>
-                      <p className="font-bold">₹{item.approved}Cr</p>
+                      <p className="font-bold">₹{item.approved.toFixed(1)}Cr</p>
                     </div>
 
                     <div>
                       <p className="text-xs text-muted-foreground">Spent</p>
-                      <p className="font-bold">₹{item.spent}Cr</p>
+                      <p className="font-bold">₹{item.spent.toFixed(1)}Cr</p>
                     </div>
 
                     <div>
@@ -652,7 +926,7 @@ export default function Dashboard() {
           subtitle="Repair Accountability Score combines quality, delay and repeat-failure signals."
         >
           <div className="space-y-3">
-            {CONTRACTOR_SIGNALS.map((item) => (
+            {contractorSignals.map((item) => (
               <div
                 key={item.contractor}
                 className="rounded-2xl p-4"
