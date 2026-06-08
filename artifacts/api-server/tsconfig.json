@@ -5,7 +5,7 @@
     "rootDir": "src",
     "types": ["node"]
   },
-  "include": ["src"],
+  "include": ["src", "../roadintel/src/lib/supabase.ts"],
   "references": [
     {
       "path": "../../lib/db"
