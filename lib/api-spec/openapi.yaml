@@ -1,0 +1,1016 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: RoadIntel API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: complaints
+    description: Complaint management
+  - name: roads
+    description: Road DNA and management
+  - name: sensors
+    description: Sensor intelligence
+  - name: contractors
+    description: Contractor accountability
+  - name: spending
+    description: Public spending transparency
+  - name: ai
+    description: AI analysis and insights
+  - name: dashboard
+    description: Dashboard aggregates
+  - name: notifications
+    description: Notifications
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary statistics
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Get recent platform activity
+      responses:
+        "200":
+          description: Recent activity feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /complaints:
+    get:
+      operationId: listComplaints
+      tags: [complaints]
+      summary: List all complaints
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of complaints
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Complaint"
+    post:
+      operationId: createComplaint
+      tags: [complaints]
+      summary: File a new complaint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateComplaintBody"
+      responses:
+        "201":
+          description: Complaint created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Complaint"
+
+  /complaints/{id}:
+    get:
+      operationId: getComplaint
+      tags: [complaints]
+      summary: Get complaint details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Complaint details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Complaint"
+
+  /complaints/stats:
+    get:
+      operationId: getComplaintStats
+      tags: [complaints]
+      summary: Get complaint statistics and trends
+      responses:
+        "200":
+          description: Complaint statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplaintStats"
+
+  /roads:
+    get:
+      operationId: listRoads
+      tags: [roads]
+      summary: List all roads
+      responses:
+        "200":
+          description: List of roads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Road"
+
+  /roads/{id}:
+    get:
+      operationId: getRoad
+      tags: [roads]
+      summary: Get Road DNA profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Road DNA profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoadDNA"
+
+  /roads/risk-map:
+    get:
+      operationId: getRiskMap
+      tags: [roads]
+      summary: Get future risk map data
+      responses:
+        "200":
+          description: Risk map data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RiskMapPoint"
+
+  /sensors/overview:
+    get:
+      operationId: getSensorOverview
+      tags: [sensors]
+      summary: Get sensor intelligence overview
+      responses:
+        "200":
+          description: Sensor overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorOverview"
+
+  /sensors/feed:
+    get:
+      operationId: getSensorFeed
+      tags: [sensors]
+      summary: Get live sensor feed data
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Sensor feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SensorReading"
+
+  /sensors/analytics:
+    get:
+      operationId: getSensorAnalytics
+      tags: [sensors]
+      summary: Get sensor analytics charts data
+      responses:
+        "200":
+          description: Sensor analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensorAnalytics"
+
+  /sensors/alerts:
+    get:
+      operationId: getSensorAlerts
+      tags: [sensors]
+      summary: Get sensor-triggered alerts
+      responses:
+        "200":
+          description: Sensor alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SensorAlert"
+
+  /contractors:
+    get:
+      operationId: listContractors
+      tags: [contractors]
+      summary: List all contractors with accountability scores
+      responses:
+        "200":
+          description: Contractors list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Contractor"
+
+  /contractors/{id}:
+    get:
+      operationId: getContractor
+      tags: [contractors]
+      summary: Get contractor details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Contractor details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contractor"
+
+  /spending/overview:
+    get:
+      operationId: getSpendingOverview
+      tags: [spending]
+      summary: Get public spending overview
+      responses:
+        "200":
+          description: Spending overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpendingOverview"
+
+  /spending/contractor-breakdown:
+    get:
+      operationId: getContractorSpendingBreakdown
+      tags: [spending]
+      summary: Get contractor-wise spending breakdown
+      responses:
+        "200":
+          description: Contractor spending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContractorSpending"
+
+  /ai/scan:
+    post:
+      operationId: analyzeRoadImage
+      tags: [ai]
+      summary: Analyze road image with AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanRequest"
+      responses:
+        "200":
+          description: AI scan result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResult"
+
+  /ai/insights:
+    get:
+      operationId: getAiInsights
+      tags: [ai]
+      summary: Get AI-generated road insights
+      responses:
+        "200":
+          description: AI insights
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AiInsight"
+
+  /ai/corruption-flags:
+    get:
+      operationId: getCorruptionFlags
+      tags: [ai]
+      summary: Get AI corruption detection flags
+      responses:
+        "200":
+          description: Corruption flags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CorruptionFlag"
+
+  /ai/chatbot:
+    post:
+      operationId: chatWithAi
+      tags: [ai]
+      summary: Chat with AI assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: Chat response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalComplaints:
+          type: integer
+        resolvedComplaints:
+          type: integer
+        activeComplaints:
+          type: integer
+        roadsMonitored:
+          type: integer
+        avgHealthScore:
+          type: number
+        totalBudgetSpent:
+          type: number
+        sensorAnomalies:
+          type: integer
+        criticalRoads:
+          type: integer
+        contractorsTracked:
+          type: integer
+        repeatFailures:
+          type: integer
+      required: [totalComplaints, resolvedComplaints, activeComplaints, roadsMonitored, avgHealthScore, totalBudgetSpent, sensorAnomalies, criticalRoads, contractorsTracked, repeatFailures]
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+        severity:
+          type: string
+        location:
+          type: string
+      required: [id, type, message, timestamp, severity]
+
+    Complaint:
+      type: object
+      properties:
+        id:
+          type: integer
+        complaintId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        status:
+          type: string
+        severity:
+          type: string
+        issueType:
+          type: string
+        roadId:
+          type: integer
+        reportedBy:
+          type: string
+        assignedDepartment:
+          type: string
+        aiAnalysis:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, complaintId, title, location, status, severity, issueType, createdAt]
+
+    CreateComplaintBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        severity:
+          type: string
+        issueType:
+          type: string
+        roadId:
+          type: integer
+        reportedBy:
+          type: string
+      required: [title, location, severity, issueType]
+
+    ComplaintStats:
+      type: object
+      properties:
+        byStatus:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              count:
+                type: integer
+            required: [status, count]
+        byType:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              count:
+                type: integer
+            required: [type, count]
+        trend:
+          type: array
+          items:
+            type: object
+            properties:
+              month:
+                type: string
+              count:
+                type: integer
+            required: [month, count]
+      required: [byStatus, byType, trend]
+
+    Road:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        roadType:
+          type: string
+        location:
+          type: string
+        healthScore:
+          type: number
+        status:
+          type: string
+        riskLevel:
+          type: string
+        contractorId:
+          type: integer
+        contractorName:
+          type: string
+        lastRepairDate:
+          type: string
+        repeatFailures:
+          type: integer
+      required: [id, name, roadType, location, healthScore, status, riskLevel]
+
+    RoadDNA:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        roadType:
+          type: string
+        location:
+          type: string
+        constructionDate:
+          type: string
+        contractorId:
+          type: integer
+        contractorName:
+          type: string
+        allocatedBudget:
+          type: number
+        spentBudget:
+          type: number
+        healthScore:
+          type: number
+        riskLevel:
+          type: string
+        status:
+          type: string
+        totalComplaints:
+          type: integer
+        lastRepairDate:
+          type: string
+        repeatFailures:
+          type: integer
+        aiSummary:
+          type: string
+        repairHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/RepairLog"
+        sensorReadings:
+          type: array
+          items:
+            $ref: "#/components/schemas/SensorReading"
+        healthTrend:
+          type: array
+          items:
+            type: object
+            properties:
+              month:
+                type: string
+              score:
+                type: number
+            required: [month, score]
+      required: [id, name, roadType, location, healthScore, riskLevel, status, totalComplaints, repeatFailures]
+
+    RepairLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        roadId:
+          type: integer
+        description:
+          type: string
+        cost:
+          type: number
+        contractorId:
+          type: integer
+        contractorName:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        status:
+          type: string
+        beforeImageUrl:
+          type: string
+        afterImageUrl:
+          type: string
+        citizenVerified:
+          type: boolean
+        aiValidated:
+          type: boolean
+      required: [id, roadId, description, cost, status, startDate]
+
+    RiskMapPoint:
+      type: object
+      properties:
+        id:
+          type: integer
+        roadId:
+          type: integer
+        roadName:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        riskScore:
+          type: number
+        riskLevel:
+          type: string
+        predictedFailureIn:
+          type: string
+        reason:
+          type: string
+      required: [id, roadId, roadName, latitude, longitude, riskScore, riskLevel]
+
+    SensorOverview:
+      type: object
+      properties:
+        activeSensors:
+          type: integer
+        roadsMonitored:
+          type: integer
+        liveAnomalyCount:
+          type: integer
+        avgVibrationScore:
+          type: number
+        currentStressLevel:
+          type: string
+        criticalZones:
+          type: integer
+        dataPointsToday:
+          type: integer
+        uptime:
+          type: number
+      required: [activeSensors, roadsMonitored, liveAnomalyCount, avgVibrationScore, currentStressLevel, criticalZones, dataPointsToday, uptime]
+
+    SensorReading:
+      type: object
+      properties:
+        id:
+          type: integer
+        roadId:
+          type: integer
+        roadName:
+          type: string
+        timestamp:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        vibrationIntensity:
+          type: number
+        shockSpikes:
+          type: integer
+        roughnessIndex:
+          type: number
+        temperature:
+          type: number
+        humidity:
+          type: number
+        sensorStatus:
+          type: string
+        damageClassification:
+          type: string
+        damageProbability:
+          type: number
+      required: [id, roadId, roadName, timestamp, vibrationIntensity, roughnessIndex, sensorStatus, damageClassification, damageProbability]
+
+    SensorAnalytics:
+      type: object
+      properties:
+        vibrationTrend:
+          type: array
+          items:
+            type: object
+            properties:
+              time:
+                type: string
+              value:
+                type: number
+              road:
+                type: string
+            required: [time, value, road]
+        anomalyByRoad:
+          type: array
+          items:
+            type: object
+            properties:
+              road:
+                type: string
+              count:
+                type: integer
+              severity:
+                type: string
+            required: [road, count, severity]
+        conditionDistribution:
+          type: array
+          items:
+            type: object
+            properties:
+              condition:
+                type: string
+              percentage:
+                type: number
+              count:
+                type: integer
+            required: [condition, percentage, count]
+        stressTrend:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+              stress:
+                type: number
+            required: [date, stress]
+        predictedFailures7Days:
+          type: integer
+        predictedFailures30Days:
+          type: integer
+      required: [vibrationTrend, anomalyByRoad, conditionDistribution, stressTrend, predictedFailures7Days, predictedFailures30Days]
+
+    SensorAlert:
+      type: object
+      properties:
+        id:
+          type: integer
+        roadId:
+          type: integer
+        roadName:
+          type: string
+        alertType:
+          type: string
+        message:
+          type: string
+        severity:
+          type: string
+        timestamp:
+          type: string
+        resolved:
+          type: boolean
+      required: [id, roadId, roadName, alertType, message, severity, timestamp, resolved]
+
+    Contractor:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        roadsManaged:
+          type: integer
+        totalContracts:
+          type: integer
+        totalValue:
+          type: number
+        avgHealthScore:
+          type: number
+        trustScore:
+          type: number
+        failedRoads:
+          type: integer
+        repeatFailures:
+          type: integer
+        corruptionFlags:
+          type: integer
+        status:
+          type: string
+        location:
+          type: string
+      required: [id, name, roadsManaged, totalContracts, totalValue, avgHealthScore, trustScore, failedRoads, repeatFailures, corruptionFlags, status]
+
+    SpendingOverview:
+      type: object
+      properties:
+        totalBudget:
+          type: number
+        totalSpent:
+          type: number
+        wastedOnRepeatRepairs:
+          type: number
+        suspiciousTransactions:
+          type: integer
+        avgCostPerKm:
+          type: number
+        roadsUnderBudget:
+          type: integer
+        roadsOverBudget:
+          type: integer
+        yearlyTrend:
+          type: array
+          items:
+            type: object
+            properties:
+              year:
+                type: string
+              budget:
+                type: number
+              spent:
+                type: number
+              quality:
+                type: number
+            required: [year, budget, spent, quality]
+      required: [totalBudget, totalSpent, wastedOnRepeatRepairs, suspiciousTransactions, avgCostPerKm, roadsUnderBudget, roadsOverBudget, yearlyTrend]
+
+    ContractorSpending:
+      type: object
+      properties:
+        contractorId:
+          type: integer
+        contractorName:
+          type: string
+        totalSpent:
+          type: number
+        qualityScore:
+          type: number
+        efficiency:
+          type: number
+        flagged:
+          type: boolean
+      required: [contractorId, contractorName, totalSpent, qualityScore, efficiency, flagged]
+
+    ScanRequest:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+        roadId:
+          type: integer
+        location:
+          type: string
+      required: [imageUrl]
+
+    ScanResult:
+      type: object
+      properties:
+        issueType:
+          type: string
+        severity:
+          type: string
+        confidence:
+          type: number
+        healthScore:
+          type: number
+        detectedIssues:
+          type: array
+          items:
+            type: string
+        recommendation:
+          type: string
+        riskLevel:
+          type: string
+        shouldFileComplaint:
+          type: boolean
+      required: [issueType, severity, confidence, healthScore, detectedIssues, recommendation, riskLevel, shouldFileComplaint]
+
+    AiInsight:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        roadId:
+          type: integer
+        roadName:
+          type: string
+        severity:
+          type: string
+        confidence:
+          type: number
+        createdAt:
+          type: string
+      required: [id, type, title, description, severity, confidence, createdAt]
+
+    CorruptionFlag:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        description:
+          type: string
+        roadId:
+          type: integer
+        roadName:
+          type: string
+        contractorId:
+          type: integer
+        contractorName:
+          type: string
+        severity:
+          type: string
+        evidence:
+          type: string
+        detectedAt:
+          type: string
+        status:
+          type: string
+      required: [id, type, description, severity, evidence, detectedAt, status]
+
+    ChatRequest:
+      type: object
+      properties:
+        message:
+          type: string
+        context:
+          type: string
+      required: [message]
+
+    ChatResponse:
+      type: object
+      properties:
+        response:
+          type: string
+        suggestions:
+          type: array
+          items:
+            type: string
+      required: [response]
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        severity:
+          type: string
+        createdAt:
+          type: string
+      required: [id, type, title, message, read, severity, createdAt]

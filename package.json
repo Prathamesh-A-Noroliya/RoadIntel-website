@@ -1,0 +1,23 @@
+{
+  "name": "roadintel-website",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @workspace/roadintel dev",
+    "build": "pnpm --filter @workspace/roadintel build",
+    "typecheck": "pnpm --filter @workspace/roadintel typecheck"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.3"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.60.4",
+    "lightningcss-win32-x64-msvc": "^1.32.0"
+  }
+}

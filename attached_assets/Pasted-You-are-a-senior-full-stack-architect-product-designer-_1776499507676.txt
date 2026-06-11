@@ -1,0 +1,49 @@
+You are a senior full-stack architect, product designer, Python engineer, and deployment expert.
+
+Your job is to MODIFY and UPGRADE my existing RoadIntel / ROADWATCH project prompt into a final, production-minded build plan and code generation instruction set.
+
+IMPORTANT CONTEXT:
+
+* I am using a FREE AI coding plan, so do not waste tokens.
+* Do not rewrite the whole project repeatedly.
+* Be concise in reasoning, but detailed in implementation.
+* Reuse components and files wherever possible.
+* Prefer simple, stable architecture over fancy but fragile architecture.
+* Build for smooth export from Replit, push to GitHub, and deploy on Vercel with minimum issues.
+* Avoid unnecessary dependencies.
+* Avoid code that is likely to fail on deployment.
+* Do not leave placeholders for critical features unless absolutely necessary.
+* If a real-world integration is not safely possible in prototype mode, implement a realistic simulation with clean upgrade path.
+
+PROJECT NAME:
+RoadIntel
+
+TAGLINE:
+Smarter Roads. Clearer Accountability.
+
+CORE PRODUCT GOAL:
+Build a modern AI-powered civic-tech platform that enables citizens to:
+
+* monitor road quality
+* report road issues
+* scan or upload road images for AI-based defect detection
+* track complaint progress
+* see road type, last relaying date, contractor name, sanctioned and spent amount
+* route complaints to the correct authority / executive engineer
+* use an AI assistant to query road, budget, and complaint data
+* work in low-network and offline conditions
+* support multilingual voice-enabled interaction
+* include a medical help / SOS feature with nearest hospital alert workflow
+* support subscriptions and payments
+* look premium, modern, non-white, and hackathon-winning
+
+THE PROJECT MUST FOLLOW THIS ROADWATCH CRITERIA:
+
+1. Show road type (NH/SH/MDR etc), last relaying date, contractor name
+2. Route complaints to correct Executive Engineer / Authority
+3. Show amount sanctioned / spent
+4. Be globally adaptable across countries
+5. Work offline and in low-network conditions
+6. Prioritize data accuracy
+7. Have strong UI / accessibility
+8. Integrate information from multiple sources in one system

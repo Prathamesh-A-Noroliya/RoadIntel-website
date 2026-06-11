@@ -1,0 +1,83 @@
+import { Router } from "express";
+import { db } from "@workspace/db";
+import { sensorStreamsTable as sensorStreams, roadsTable as roads } from "@workspace/db/schema";
+import { eq, desc } from "drizzle-orm";
+
+const router = Router();
+
+router.get("/sensors/overview", async (req, res) => {
+  try {
+    const streams = await db.select().from(sensorStreams);
+    const anomalies = streams.filter(s => (s.vibrationIntensity ?? 0) > 6);
+    res.json({
+      activeSensors: 847,
+      roadsMonitored: await db.select().from(roads).then(r => r.length),
+      liveAnomalyCount: anomalies.length,
+      avgVibrationScore: streams.reduce((a, s) => a + (s.vibrationIntensity ?? 0), 0) / (streams.length || 1),
+      currentStressLevel: anomalies.length > 3 ? "high" : "medium",
+      criticalZones: anomalies.filter(s => (s.vibrationIntensity ?? 0) > 8).length,
+      dataPointsToday: 12847,
+      uptime: 99.7,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+router.get("/sensors/feed", async (req, res) => {
+  try {
+    const streams = await db.select({
+      id: sensorStreams.id, roadId: sensorStreams.roadId, roadName: roads.name,
+      vibrationIntensity: sensorStreams.vibrationIntensity, shockSpikes: sensorStreams.shockSpikes,
+      roughnessIndex: sensorStreams.roughnessIndex, temperature: sensorStreams.temperature,
+      humidity: sensorStreams.humidity, sensorStatus: sensorStreams.sensorStatus,
+      damageClassification: sensorStreams.damageClassification, damageProbability: sensorStreams.damageProbability,
+      timestamp: sensorStreams.timestamp,
+    }).from(sensorStreams).leftJoin(roads, eq(sensorStreams.roadId, roads.id)).orderBy(desc(sensorStreams.timestamp));
+    res.json(streams);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+router.get("/sensors/analytics", async (req, res) => {
+  const streams = await db.select().from(sensorStreams).catch(() => []);
+  res.json({
+    vibrationTrend: Array.from({ length: 24 }, (_, i) => ({
+      time: `${String(i).padStart(2, "0")}:00`,
+      "NH-48": 7 + Math.random() * 3,
+      "Andheri-Kurla": 8 + Math.random() * 2,
+      "MG Road": 3 + Math.random() * 2,
+      "Outer Ring": 1.5 + Math.random(),
+    })),
+    anomalyByRoad: [
+      { road: "AIIMS Delhi", count: 18, severity: "critical" },
+      { road: "Andheri-Kurla", count: 15, severity: "critical" },
+      { road: "NH-48", count: 12, severity: "high" },
+      { road: "MG Road", count: 6, severity: "medium" },
+      { road: "GST Road", count: 4, severity: "medium" },
+    ],
+    conditionDistribution: [
+      { condition: "Smooth", percentage: 25, count: 2 },
+      { condition: "Rough", percentage: 37.5, count: 3 },
+      { condition: "Anomaly", percentage: 25, count: 2 },
+      { condition: "Critical", percentage: 12.5, count: 1 },
+    ],
+    stressTrend: Array.from({ length: 30 }, (_, i) => ({ date: `Apr ${i + 1}`, stress: 3.5 + Math.sin(i * 0.3) * 1.5 })),
+    predictedFailures7Days: 2,
+    predictedFailures30Days: 5,
+  });
+});
+
+router.get("/sensors/alerts", async (req, res) => {
+  res.json([
+    { id: 1, roadName: "AIIMS Delhi Stretch", alertType: "Critical Anomaly", message: "Likely failure imminent.", severity: "critical", timestamp: "08:03:44", resolved: false },
+    { id: 2, roadName: "Andheri-Kurla Road", alertType: "Pothole Cluster", message: "Road stress rising.", severity: "critical", timestamp: "08:02:15", resolved: false },
+    { id: 3, roadName: "NH-48 Stretch", alertType: "Sensor Alert", message: "Abnormal shock after repair.", severity: "high", timestamp: "08:01:23", resolved: false },
+    { id: 4, roadName: "MG Road", alertType: "Vibration Warning", message: "Rising vibration over 7 days.", severity: "medium", timestamp: "07:45:00", resolved: false },
+  ]);
+});
+
+export default router;
