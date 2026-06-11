@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity,
@@ -23,8 +23,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useListNotifications } from "@workspace/api-client-react";
 
-type NavGroup = "citizen" | "transparency" | "emergency" | "account" | "quick";
-type NavBadge = "SOS";
+type NavGroup = "citizen" | "transparency" | "emergency" | "account";
+type NavBadge = "DEMO" | "SOS";
 
 type NavItem = {
   label: string;
@@ -56,6 +56,12 @@ const NAV_ITEMS: NavItem[] = [
     group: "citizen",
   },
   {
+    label: "Quick Scan",
+    href: "/scan",
+    icon: Scan,
+    group: "citizen",
+  },
+  {
     label: "Road DNA",
     href: "/roads",
     icon: Map,
@@ -78,6 +84,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/sensors",
     icon: Radio,
     group: "transparency",
+    badge: "DEMO",
   },
   {
     label: "Contractors",
@@ -104,12 +111,6 @@ const NAV_ITEMS: NavItem[] = [
     icon: Settings,
     group: "account",
   },
-  {
-    label: "Quick Scan",
-    href: "/scan",
-    icon: Scan,
-    group: "quick",
-  },
 ];
 
 const GROUPS: Array<{ key: NavGroup; label: string }> = [
@@ -129,31 +130,27 @@ const GROUPS: Array<{ key: NavGroup; label: string }> = [
     key: "account",
     label: "Account",
   },
-  {
-    key: "quick",
-    label: "Rapid Capture",
-  },
 ];
 
 const FALLBACK_NOTIFICATIONS: NotificationItem[] = [
   {
     id: "n-1",
-    title: "Critical road-priority signal",
-    message: "JM Road Patch Zone should be inspected within 24 hours.",
+    title: "Critical road risk",
+    message: "JM Road Patch Zone requires inspection within 24 hours.",
     read: false,
     severity: "critical",
   },
   {
     id: "n-2",
-    title: "Budget-quality mismatch detected",
+    title: "Spending transparency flag",
     message: "UrbanBuild Pune Services shows budget-quality mismatch.",
     read: false,
     severity: "high",
   },
   {
     id: "n-3",
-    title: "Complaint assignment updated",
-    message: "New complaint assigned to PMC Roads Department.",
+    title: "Complaint routing updated",
+    message: "New complaint routed to PMC Roads Department.",
     read: true,
     severity: "medium",
   },
@@ -220,18 +217,27 @@ function getPageSubtitle(path: string) {
     return "Monitor road condition, repair history and risk.";
   }
   if (path === "/analytics") return "Connect complaints, spending, road health and accountability.";
-  return "RoadIntel civic intelligence dashboard.";
+  return "RoadWatch transparency dashboard.";
 }
 
 function Badge({ badge }: { badge: NavBadge }) {
+  const styles =
+    badge === "SOS"
+      ? {
+          background: "rgba(220,38,38,0.16)",
+          color: "#FCA5A5",
+          border: "1px solid rgba(220,38,38,0.28)",
+        }
+      : {
+          background: "rgba(14,165,164,0.16)",
+          color: "#5EEAD4",
+          border: "1px solid rgba(14,165,164,0.28)",
+        };
+
   return (
     <span
       className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-      style={{
-        background: "rgba(220,38,38,0.16)",
-        color: "#FCA5A5",
-        border: "1px solid rgba(220,38,38,0.28)",
-      }}
+      style={styles}
     >
       {badge}
     </span>
@@ -241,11 +247,7 @@ function Badge({ badge }: { badge: NavBadge }) {
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [location, navigate] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarPinned, setSidebarPinned] = useState(false);
-  const [sidebarHovered, setSidebarHovered] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const notificationPanelRef = useRef<HTMLDivElement | null>(null);
-  const isSidebarExpanded = sidebarOpen || sidebarPinned || sidebarHovered;
 
   const { data: notifications } = useListNotifications();
 
@@ -255,31 +257,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }, [notifications]);
 
   const unreadCount = notificationList.filter((notification) => notification.read !== true).length;
-
-  useEffect(() => {
-    if (!notificationsOpen) return;
-
-    function handleOutsideClick(event: MouseEvent) {
-      if (
-        notificationPanelRef.current &&
-        !notificationPanelRef.current.contains(event.target as Node)
-      ) {
-        setNotificationsOpen(false);
-      }
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") setNotificationsOpen(false);
-    }
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [notificationsOpen]);
 
   function closeSidebar() {
     setSidebarOpen(false);
@@ -309,11 +286,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       )}
 
       <aside
-        onMouseEnter={() => setSidebarHovered(true)}
-        onMouseLeave={() => setSidebarHovered(false)}
-        className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col transition-[transform,width] duration-300 lg:relative lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col transition-transform duration-300 lg:relative lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } ${isSidebarExpanded ? "lg:w-[280px]" : "lg:w-[88px]"}`}
+        }`}
         style={{
           background: "rgba(7,17,31,0.96)",
           borderRight: "1px solid rgba(255,255,255,0.08)",
@@ -323,7 +298,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           className="flex items-center justify-between border-b px-5 py-5"
           style={{ borderColor: "rgba(255,255,255,0.08)" }}
         >
-          <div className={`flex items-center gap-3 ${isSidebarExpanded ? "" : "lg:w-full lg:justify-center"}`}>
+          <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white p-1.5 shadow-lg shadow-cyan-500/20">
               <img
                 src="/roadintel-logo.png"
@@ -332,40 +307,27 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               />
             </div>
 
-            {isSidebarExpanded && (
-              <div>
-                <div
-                  className="text-lg font-bold text-white"
-                  style={{ fontFamily: "Sora, sans-serif" }}
-                >
-                  RoadIntel
-                </div>
-                <div className="text-xs text-slate-400">
-                  Civic Intelligence Platform
-                </div>
+            <div>
+              <div
+                className="text-lg font-bold text-white"
+                style={{ fontFamily: "Sora, sans-serif" }}
+              >
+                RoadIntel
               </div>
-            )}
+              <div className="text-xs text-slate-400">
+                RoadWatch Transparency
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setSidebarPinned((current) => !current)}
-              className="hidden rounded-xl p-2 text-slate-400 hover:bg-white/10 hover:text-white lg:inline-flex"
-              aria-label={sidebarPinned ? "Collapse sidebar" : "Pin expanded sidebar"}
-            >
-              <Menu className="h-4 w-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={closeSidebar}
-              className="rounded-xl p-2 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden"
-              aria-label="Close sidebar"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={closeSidebar}
+            className="rounded-xl p-2 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden"
+            aria-label="Close sidebar"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 py-4">
@@ -374,11 +336,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
             return (
               <div key={group.key} className="mb-6">
-                {isSidebarExpanded && (
-                  <div className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                    {group.label}
-                  </div>
-                )}
+                <div className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                  {group.label}
+                </div>
 
                 <div className="space-y-1">
                   {groupItems.map((item) => {
@@ -390,9 +350,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                         <button
                           type="button"
                           onClick={closeSidebar}
-                          className={`flex w-full items-center rounded-2xl py-3 text-left text-sm font-semibold transition ${
-                            isSidebarExpanded ? "justify-between px-3" : "justify-center px-2"
-                          }`}
+                          className="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm font-semibold transition"
                           style={{
                             background: active ? "rgba(59,130,246,0.18)" : "transparent",
                             color: active ? "#60A5FA" : "#E5E7EB",
@@ -406,15 +364,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                               className="h-4 w-4 shrink-0"
                               style={{ color: active ? "#60A5FA" : "#CBD5E1" }}
                             />
-                            {isSidebarExpanded && <span className="truncate">{item.label}</span>}
+                            <span className="truncate">{item.label}</span>
                           </span>
 
-                          {isSidebarExpanded && (
-                            <span className="flex items-center gap-2">
-                              {item.badge && <Badge badge={item.badge} />}
-                              {active && <ChevronRight className="h-4 w-4" />}
-                            </span>
-                          )}
+                          <span className="flex items-center gap-2">
+                            {item.badge && <Badge badge={item.badge} />}
+                            {active && <ChevronRight className="h-4 w-4" />}
+                          </span>
                         </button>
                       </Link>
                     );
@@ -429,17 +385,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           className="border-t p-4"
           style={{ borderColor: "rgba(255,255,255,0.08)" }}
         >
-          {isSidebarExpanded && (
-            <div className="mb-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3">
-              <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
-                <Activity className="h-4 w-4" />
-                Impact-ready pilot
-              </div>
-              <p className="mt-1 text-xs leading-5 text-slate-400">
-                Pune / PCMC pilot · transparency-first
-              </p>
+          <div className="mb-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
+              <Activity className="h-4 w-4" />
+              Audit-safe demo
             </div>
-          )}
+            <p className="mt-1 text-xs leading-5 text-slate-400">
+              Pilot data · Pune / PCMC · transparency-first
+            </p>
+          </div>
 
           <button
             type="button"
@@ -447,7 +401,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white/[0.06] px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-red-500/15 hover:text-red-300"
           >
             <LogOut className="h-4 w-4" />
-            {isSidebarExpanded && "Logout"}
+            Logout
           </button>
         </div>
       </aside>
@@ -491,7 +445,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </button>
               </Link>
 
-              <div ref={notificationPanelRef} className="relative">
+              <div className="relative">
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen((current) => !current)}
@@ -523,7 +477,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                         </span>
                       </div>
                       <p className="mt-1 text-xs text-slate-500">
-                        RoadIntel risk and accountability alerts
+                        RoadWatch transparency alerts
                       </p>
                     </div>
 

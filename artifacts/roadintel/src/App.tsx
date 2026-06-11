@@ -9,7 +9,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import RootLayout from "@/components/layout/root-layout";
 import AppLayout from "@/components/layout/app-layout";
 import FloatingRoadIntelBot from "@/components/FloatingRoadIntelBot";
-import GoogleTranslateToggle from "@/components/language/GoogleTranslateToggle";
 import { OfflineSyncProvider } from "@/components/offline/OfflineSyncProvider";
 
 import Landing from "@/pages/landing";
@@ -162,7 +161,6 @@ export default function App() {
 
           <Router />
 
-          <GoogleTranslateToggle />
           <FloatingRoadIntelBot />
           <Toaster />
         </TooltipProvider>
