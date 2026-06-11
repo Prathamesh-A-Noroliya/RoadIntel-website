@@ -1,0 +1,648 @@
+BUILD A HACKATHON-WINNING FULL-STACK WEB PLATFORM NAMED: ROADINTEL
+
+Tagline:
+“Smarter Roads. Clearer Accountability.”
+
+You are building a premium, modern, highly polished, scalable civic-tech platform called RoadIntel.
+
+IMPORTANT:
+This must NOT feel like a basic complaint portal.
+It must feel like an intelligent public infrastructure platform with AI insights, road monitoring, transparency tools, sensor-based analytics, and accountability systems.
+It should look outstanding, work as a prototype, and be structured cleanly enough that it can scale later.
+
+====================================================
+1. CORE PRODUCT VISION
+====================================================
+
+RoadIntel is an AI-powered road intelligence and public accountability platform that enables citizens, authorities, and judges/demo users to:
+
+- Report road issues
+- Track complaints
+- Analyze road quality
+- Monitor public spending
+- Detect repeated failures
+- Predict future road damage
+- Verify whether roads are actually repaired
+- View contractor and repair accountability
+- Use simulated IoT sensor intelligence as a core road monitoring feature
+
+The platform solves:
+- fragmented road data
+- weak accountability
+- low visibility into contractor performance
+- poor transparency in public spending
+- delayed repairs
+- repeated road failures
+- lack of predictive road maintenance
+
+====================================================
+2. TECH STACK (STRICT)
+====================================================
+
+Frontend:
+- Next.js (React)
+- Tailwind CSS
+- Framer Motion for subtle premium animations
+- Recharts for graphs/charts
+- Leaflet or Mapbox for maps
+- Zustand or Context API for state management if needed
+
+Backend:
+- Python with FastAPI
+
+Database / Auth / Storage:
+- Supabase
+
+Offline Support:
+- IndexedDB or LocalStorage
+- queue-based sync when internet returns
+
+Charts / Visualizations:
+- Recharts or equivalent React chart library
+
+AI:
+- Mock APIs are allowed
+- Python endpoints should simulate:
+  - image analysis
+  - road health scoring
+  - road risk prediction
+  - contractor trust scoring
+  - corruption pattern detection
+  - chatbot responses
+  - sensor anomaly detection
+
+====================================================
+3. DESIGN SYSTEM
+====================================================
+
+Use this exact design language:
+
+Colors:
+- Primary: #0F172A
+- Secondary: #0EA5A4
+- Accent: #F59E0B
+- Danger: #DC2626
+- Success: #16A34A
+- Background: #F8FAFC
+- Text: #1E293B
+- Muted: #64748B
+
+Fonts:
+- Headings: Poppins or Sora
+- Body: Inter
+
+Design rules:
+- premium, clean, minimal
+- highly readable
+- modern government-grade SaaS feel
+- large buttons and accessible touch targets
+- strong visual hierarchy
+- no clutter
+- consistent spacing
+- rounded cards
+- subtle shadows
+- polished hover states
+- responsive for mobile, tablet, desktop
+- demo-ready visuals
+- dark mode support
+
+====================================================
+4. ABSOLUTE PRIORITY
+====================================================
+
+The website must be visually impressive and feel complete even if some AI logic is mocked.
+
+Build the app in a way that looks like a real platform judges can interact with immediately.
+
+DO NOT build a plain CRUD complaint app.
+
+The website must strongly highlight these pillars:
+- AI intelligence
+- accountability
+- transparency
+- predictive road monitoring
+- sensor-powered analytics
+- public trust
+
+====================================================
+5. WEBSITE STRUCTURE
+====================================================
+
+Create these pages and sections:
+
+A. Landing Page
+Sections:
+- Hero section with tagline and CTA
+- Problem statement
+- Why road transparency matters
+- Core features overview
+- How it works
+- Live demo preview cards
+- Impact metrics
+- Sensor intelligence section
+- Public accountability section
+- CTA footer
+
+B. Login Page
+- email/password
+- forgot password
+- sign up
+- demo access
+- language selector
+
+C. Registration Page
+Fields:
+- full name
+- mobile
+- age
+- email
+- password
+- language
+- state/region
+- user type
+
+D. Main Dashboard
+Sections:
+- welcome banner
+- quick actions
+- road health overview
+- complaint tracker
+- nearby road status
+- AI insights panel
+- road DNA preview
+- risk map preview
+- sensor intelligence panel
+- chatbot assistant
+- notifications
+
+E. File Complaint Page
+F. Quick Scan Page
+G. Road DNA Detail Page
+H. Public Spending / Transparency Page
+I. Future Risk Map Page
+J. Authority Panel
+K. Reports / Analytics Page
+L. Settings / Language / Dark Mode Page
+
+====================================================
+6. CORE FEATURES
+====================================================
+
+Implement these as major product features:
+
+1. File Complaint System
+Flow:
+- user selects location
+- uploads image
+- AI suggests issue type
+- user submits complaint
+- complaint ID generated
+- complaint routed to appropriate authority
+- track status later
+
+2. Complaint Routing Logic
+Automatically route complaints using:
+- road type
+- location
+- authority mapping
+
+Display:
+- department name
+- complaint status
+- estimated action stage
+
+3. Quick Scan AI Scanner
+- scan road image
+- detect potholes, cracks, rough surface
+- show severity and risk
+- support offline save and later sync
+
+4. Image Upload Analysis
+- analyze uploaded image
+- generate issue classification
+- suggest complaint creation
+
+5. Road Health Score (0–100)
+Calculate using:
+- damage severity
+- complaints frequency
+- repair history
+- time since last repair
+- sensor vibration trend
+- repeat failure history
+
+Display with:
+- colored badges
+- score cards
+- gauge or progress ring
+- trend graph
+
+6. Road DNA (Unique Feature)
+Each road must have a digital profile containing:
+- road name / ID
+- road type
+- construction date
+- contractor name
+- allocated budget
+- repair history
+- complaints count
+- last repair date
+- repeat failure count
+- AI-generated summary
+- trust / risk indicators
+
+7. AI Corruption Detector
+Detect and visually flag:
+- repeated repairs in short time
+- high cost vs poor quality
+- contractor with multiple failed roads
+- suspicious repair patterns
+
+Output examples:
+- “Suspicious pattern detected”
+- “Repair cost is unusually high for short lifespan”
+- “This road failed 3 times in 2 years”
+
+8. Future Risk Map
+Show:
+- roads likely to fail
+- predicted risk percentage
+- safe vs unsafe routes
+- degradation forecast
+
+9. Public Money Tracker
+Show:
+- budget vs quality delivered
+- repair cost vs lifespan
+- contractor-wise spending
+- repeated expense zones
+
+10. Proof of Work Verification
+Repairs should show:
+- before image
+- after image
+- geo-tag
+- timestamp
+- citizen confirmation
+- AI validation badge
+
+====================================================
+7. MAKE SENSOR INTEGRATION A CORE FEATURE
+====================================================
+
+This is extremely important.
+
+Add a dedicated core feature called:
+
+“RoadSense Sensor Intelligence”
+
+This must be positioned as one of the strongest innovations of the platform.
+
+Concept:
+RoadIntel uses simulated low-cost IoT and vehicle-mounted sensor intelligence to continuously detect bad roads, potholes, vibration anomalies, and road degradation trends.
+
+For prototype purposes, simulate sensor streams instead of requiring real hardware.
+
+The system should appear production-ready and scalable to:
+- smartphone accelerometer data
+- vehicle-mounted vibration sensors
+- GPS-tagged road monitoring devices
+- low-cost municipal road sensor kits
+
+====================================================
+8. SENSOR FEATURE REQUIREMENTS
+====================================================
+
+Create a complete “Sensor Intelligence” module with:
+
+A. Sensor Overview Card
+Show:
+- active simulated sensors
+- roads monitored
+- live anomaly count
+- average vibration score
+- current road stress level
+
+B. Simulated Live Sensor Feed
+Simulate incoming data such as:
+- timestamp
+- road ID
+- latitude / longitude
+- vibration intensity
+- shock spikes
+- roughness index
+- temperature
+- humidity
+- sensor status
+- predicted damage probability
+
+C. Sensor-Based Road Detection Logic
+Use backend mock logic to classify:
+- smooth road
+- rough road
+- pothole suspected
+- severe anomaly
+- likely failure zone
+
+D. Sensor-Based AI Insights
+Examples:
+- “Repeated high vibration detected on MG Road”
+- “Road stress rising over past 7 days”
+- “Likely pothole cluster forming in this segment”
+- “This route shows abnormal shock patterns after recent repair”
+
+E. Sensor Visual Analytics
+Represent the sensor data through outstanding charts and visuals:
+- line chart for vibration trend over time
+- bar chart for road-wise anomaly count
+- area chart for stress trend
+- scatter plot or mapped markers for pothole events
+- donut or pie chart for road condition categories
+- heatmap-style road status cards
+- KPI cards with severity indicators
+- timeline of anomaly events
+
+F. Sensor Demo Simulation Controls
+Add a panel with controls to:
+- start simulation
+- pause simulation
+- change road segment
+- increase traffic load
+- increase rainfall effect
+- simulate fresh damage
+- simulate repair event
+- reset simulation
+
+G. Sensor Impact on Core System
+Sensor data must directly influence:
+- road health score
+- future risk prediction
+- road DNA page
+- AI insights
+- risk map
+- authority alerts
+
+This must make the sensor feature feel central, not decorative.
+
+====================================================
+9. REQUIRED SENSOR DASHBOARD EXPERIENCE
+====================================================
+
+Create a dedicated Sensor Intelligence dashboard or section that includes:
+
+- Live sensor stream card
+- “Road Stress Index” card
+- “Vibration Over Time” graph
+- “Anomalies by Road” bar chart
+- “Road Condition Distribution” donut chart
+- “Critical Zones” map markers
+- “Sensor-triggered alerts” feed
+- “Predicted failure in next 7 / 30 days” panel
+- “Before repair vs after repair vibration comparison” chart
+
+Make this one of the most visually impressive parts of the app.
+
+====================================================
+10. GRAPH / CHART / VISUAL REQUIREMENTS
+====================================================
+
+Use modern, clean, premium charts.
+
+Must include:
+- line charts
+- bar charts
+- donut or pie charts
+- progress indicators
+- stat cards
+- map markers
+- trend indicators
+- color-coded severity scales
+
+Suggested metrics to visualize:
+- vibration trend
+- complaint trend
+- road quality trend
+- budget vs quality
+- repeated repair counts
+- contractor failure score
+- sensor anomaly density
+- risk prediction percentages
+- trust scores
+- before/after repair comparison
+
+Use elegant animations but keep performance smooth.
+
+====================================================
+11. CHATBOT
+====================================================
+
+Include an AI chatbot assistant that:
+- guides users
+- explains road insights
+- answers questions
+- helps navigate the platform
+- supports multilingual interaction
+- summarizes road data in simple language
+
+Tone:
+- friendly
+- simple
+- helpful
+- civic-tech assistant feel
+
+Add sample user prompts like:
+- “What is the health score of this road?”
+- “How much money was spent here?”
+- “Why is this road marked risky?”
+- “Which contractor handled this road?”
+- “Has this road failed before?”
+- “What are the sensor alerts for this road?”
+
+====================================================
+12. MAP SYSTEM
+====================================================
+
+Map must show:
+- complaint markers
+- risk zones
+- road condition layers
+- safe vs unsafe routes
+- road DNA selection
+- critical sensor anomalies
+- predicted damage hotspots
+
+====================================================
+13. OFFLINE SUPPORT
+====================================================
+
+Implement prototype offline behavior:
+- store complaints locally
+- store scans locally
+- store pending sync tasks
+- show offline indicator
+- sync automatically when back online
+
+====================================================
+14. SUPABASE TABLES
+====================================================
+
+Create and wire sample schema for:
+- users
+- roads
+- complaints
+- contractors
+- repair_logs
+- ai_analysis
+- sensor_streams
+- road_risk_predictions
+- authority_routes
+- notifications
+
+====================================================
+15. FASTAPI BACKEND REQUIREMENTS
+====================================================
+
+Create backend endpoints for:
+- auth
+- complaint submission
+- road data
+- road DNA
+- image upload
+- AI analysis
+- corruption detection
+- risk prediction
+- sensor simulation feed
+- sensor anomaly detection
+- sync system
+- chatbot mock responses
+
+Important:
+Sensor endpoints must include mocked but realistic analytics.
+
+Examples:
+- GET /sensor/live
+- GET /sensor/road/{id}
+- GET /sensor/analytics
+- POST /sensor/simulate
+- GET /risk/predict/{road_id}
+- GET /road-dna/{road_id}
+
+====================================================
+16. USER FLOWS
+====================================================
+
+Flow 1:
+Landing → Register → Dashboard
+
+Flow 2:
+Dashboard → File Complaint → Upload → Submit → Track
+
+Flow 3:
+Dashboard → Quick Scan → Analyze → Save or Submit
+
+Flow 4:
+Search road → View Road DNA → Health + History + Budget + Repairs + Contractor
+
+Flow 5:
+Dashboard → Sensor Intelligence → View live simulation → Analyze graphs → Trigger alerts
+
+====================================================
+17. EXTRA FEATURES (MANDATORY)
+====================================================
+
+Include:
+- voice complaint input UI
+- dark mode
+- notifications
+- multilingual support
+- demo login
+- authority panel
+- contractor trust score
+- road comparison
+- export reports
+
+====================================================
+18. MOCK DATA REQUIREMENTS
+====================================================
+
+Seed the app with strong mock data so the prototype feels alive.
+
+Include:
+- multiple roads
+- different road health scores
+- contractor names
+- budget values
+- repair records
+- complaint statuses
+- sensor event streams
+- suspicious roads
+- high-risk roads
+- verified repair examples
+
+Make sure data is internally consistent and visually meaningful.
+
+====================================================
+19. CODE QUALITY AND STRUCTURE
+====================================================
+
+Generate:
+- full frontend code
+- full backend code
+- clear folder structure
+- reusable components
+- good naming
+- responsive layouts
+- mock data files
+- setup instructions
+- .env.example if needed
+
+Structure the project cleanly so it is understandable inside Replit.
+
+====================================================
+20. OUTPUT STYLE
+====================================================
+
+Build this as if it were a hackathon finalist project.
+
+The result must be:
+- polished
+- premium
+- coherent
+- feature-rich
+- visually strong
+- easy to demo
+- realistic enough to impress judges
+
+====================================================
+21. FINAL INSTRUCTION
+====================================================
+
+Do not give a shallow scaffold.
+
+Generate a complete, impressive prototype with:
+- beautiful landing page
+- full dashboard
+- working navigation
+- realistic mock backend
+- sensor simulation as a core hero feature
+- graphs/charts/visual analytics
+- road DNA
+- risk map
+- complaint workflow
+- public spending transparency
+- authority-facing features
+
+The platform must clearly communicate:
+AI + road intelligence + transparency + accountability + predictive monitoring.
+
+Make the Sensor Intelligence feature a signature highlight of the entire website.
+
+Also provide:
+- full project folder structure
+- concise setup steps
+- sample mock API responses
+- sample seeded data
+- comments only where useful
+- code ready to run in Replit
+
+Begin building the complete project now.

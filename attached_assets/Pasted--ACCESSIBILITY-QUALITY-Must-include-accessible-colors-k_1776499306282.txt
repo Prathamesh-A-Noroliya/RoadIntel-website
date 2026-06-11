@@ -1,0 +1,103 @@
+ ACCESSIBILITY + QUALITY
+===========================
+
+Must include:
+
+* accessible colors
+* keyboard navigation
+* visible focus states
+* aria labels where appropriate
+* readable forms
+* mobile responsiveness
+* loading states
+* empty states
+* error states
+* success states
+
+==================================================
+19. DEPLOYMENT SAFETY INSTRUCTIONS
+==================================
+
+This project must be built in a way that reduces deployment issues on Vercel.
+
+DO ALL OF THIS:
+
+* keep imports clean
+* avoid circular dependencies
+* avoid using Node-only APIs in client components
+* dynamically import Leaflet on client side
+* clearly separate server/client components
+* include exact env vars required
+* prevent hydration mismatch issues
+* include fallback for window/localStorage access
+* avoid hardcoded localhost URLs
+* use relative API routes where appropriate
+* make all route paths valid
+* ensure dark mode works in production
+* ensure images load properly
+* add error boundaries or safe fallbacks where needed
+* add README deploy steps:
+
+  1. export from Replit
+  2. initialize git if needed
+  3. push to GitHub
+  4. import repo into Vercel
+  5. add environment variables
+  6. run deploy
+* include troubleshooting section for common Vercel errors
+
+==================================================
+20. TOKEN SAVING RULES FOR FREE PLAN
+====================================
+
+Very important:
+
+* do not explain at excessive length
+* do not regenerate entire files unless needed
+* when improving code, patch only relevant files
+* keep components reusable
+* keep logic modular
+* do not create 100 unnecessary files
+* prefer stable and fewer abstractions
+* generate complete code efficiently
+
+==================================================
+21. FINAL DELIVERABLE STANDARD
+==============================
+
+The final result must feel like:
+
+* a polished hackathon-winning prototype
+* exportable from Replit
+* pushable to GitHub
+* deployable on Vercel
+* visually premium
+* functionally complete
+* easy to demo
+
+The platform should demonstrate:
+
+* road condition intelligence
+* budget transparency
+* contractor accountability
+* complaint routing
+* AI assistance
+* multilingual voice support
+* dark mode
+* subscriptions and payment
+* medical SOS workflow
+* offline robustness
+
+Now generate the upgraded final project in the following order:
+
+1. folder structure
+2. environment variables
+3. database schema
+4. seed data
+5. frontend pages
+6. backend/API logic
+7. reusable components
+8. offline logic
+9. payment logic
+10. AI assistant logic
+11. deployment checklist

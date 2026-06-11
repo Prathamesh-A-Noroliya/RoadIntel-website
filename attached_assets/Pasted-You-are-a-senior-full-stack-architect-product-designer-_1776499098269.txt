@@ -1,0 +1,657 @@
+You are a senior full-stack architect, product designer, Python engineer, and deployment expert.
+
+Your job is to MODIFY and UPGRADE my existing RoadIntel / ROADWATCH project prompt into a final, production-minded build plan and code generation instruction set.
+
+IMPORTANT CONTEXT:
+
+* I am using a FREE AI coding plan, so do not waste tokens.
+* Do not rewrite the whole project repeatedly.
+* Be concise in reasoning, but detailed in implementation.
+* Reuse components and files wherever possible.
+* Prefer simple, stable architecture over fancy but fragile architecture.
+* Build for smooth export from Replit, push to GitHub, and deploy on Vercel with minimum issues.
+* Avoid unnecessary dependencies.
+* Avoid code that is likely to fail on deployment.
+* Do not leave placeholders for critical features unless absolutely necessary.
+* If a real-world integration is not safely possible in prototype mode, implement a realistic simulation with clean upgrade path.
+
+PROJECT NAME:
+RoadIntel
+
+TAGLINE:
+Smarter Roads. Clearer Accountability.
+
+CORE PRODUCT GOAL:
+Build a modern AI-powered civic-tech platform that enables citizens to:
+
+* monitor road quality
+* report road issues
+* scan or upload road images for AI-based defect detection
+* track complaint progress
+* see road type, last relaying date, contractor name, sanctioned and spent amount
+* route complaints to the correct authority / executive engineer
+* use an AI assistant to query road, budget, and complaint data
+* work in low-network and offline conditions
+* support multilingual voice-enabled interaction
+* include a medical help / SOS feature with nearest hospital alert workflow
+* support subscriptions and payments
+* look premium, modern, non-white, and hackathon-winning
+
+THE PROJECT MUST FOLLOW THIS ROADWATCH CRITERIA:
+
+1. Show road type (NH/SH/MDR etc), last relaying date, contractor name
+2. Route complaints to correct Executive Engineer / Authority
+3. Show amount sanctioned / spent
+4. Be globally adaptable across countries
+5. Work offline and in low-network conditions
+6. Prioritize data accuracy
+7. Have strong UI / accessibility
+8. Integrate information from multiple sources in one system
+
+==================================================
+
+1. ARCHITECTURE RULES — KEEP THIS SIMPLE AND DEPLOYABLE
+   ==================================================
+
+Choose the most deployment-safe stack for Vercel.
+
+USE:
+
+* Frontend: Next.js latest stable App Router + TypeScript
+* Styling: Tailwind CSS
+* UI: shadcn/ui or simple custom components if needed
+* Animations: Framer Motion only where useful
+* Charts: Recharts
+* Maps: Leaflet with dynamic import to avoid SSR issues
+* Backend/API: Next.js API routes or server actions for core prototype logic
+* Python: use Python only for AI/road scan microservice logic OR provide a simplified JS fallback if Python deployment becomes complex on Vercel
+* Database: Supabase or PostgreSQL-compatible cloud DB preferred for deployment safety; if not, use Prisma with SQLite for local dev and include migration notes for Postgres
+* Authentication: NextAuth or Supabase Auth, whichever is simplest and stable
+* Payments: Stripe
+* Voice recognition: browser Web Speech API with multilingual support and safe fallback
+* Offline support: service worker / local storage / IndexedDB queue
+* Image uploads: local prototype abstraction + cloud-ready adapter
+* Dark mode: fully working with toggle and persisted theme
+
+VERY IMPORTANT:
+
+* Organize the project so it can run locally and also deploy cleanly.
+* Do not create overly complex microservices unless necessary.
+* If Python model hosting is fragile for Vercel, then:
+
+  1. implement the AI scan logic in a simplified JS service for deployment, and
+  2. keep Python model logic in a separate optional folder with clear instructions.
+* Code must be export-safe from Replit to GitHub and then deployable on Vercel.
+
+==================================================
+2. OUTPUT REQUIRED
+==================
+
+Generate all of the following:
+
+1. Final folder structure
+2. All source code files
+3. Environment variable template (.env.example)
+4. package.json with correct scripts
+5. vercel.json only if truly needed
+6. README.md with exact local setup + GitHub push + Vercel deploy steps
+7. Deployment checklist
+8. Common error prevention notes
+9. Fallback instructions for any external integration
+10. Dummy but realistic seed data
+
+Do not stop halfway.
+Do not give only pseudocode.
+Generate working code with comments only where necessary.
+
+==================================================
+3. UI / UX REQUIREMENTS
+=======================
+
+The entire website must look premium, modern, civic-tech, and visually rich.
+
+DESIGN STYLE:
+
+* Premium dashboard + public transparency portal
+* Gradient backgrounds and colored sections
+* Do not make the site plain white
+* Use deep, elegant, modern colors
+* Strong contrast for accessibility
+* Mobile responsive
+* Fast and clean layout
+* Smooth navigation
+* Large touch-friendly buttons
+* Minimal clutter
+
+COLOR SYSTEM:
+
+* Deep Navy: #0B1F3A
+* Rich Blue: #1E88E5
+* Emerald: #14B86A
+* Amber: #F5A623
+* Red: #E53935
+* Purple accent: #7C3AED
+* Cyan accent: #06B6D4
+* Dark background surfaces for dark mode
+* Use gradients across hero, cards, banners, CTA sections
+* Ensure pages never look empty or washed out
+
+TYPOGRAPHY:
+
+* Headings: Poppins
+* Body: Inter
+* Numeric stats: Roboto Mono or equivalent
+
+MUST HAVE:
+
+* fully working dark mode
+* beautiful gradients
+* strong visual hierarchy
+* premium cards
+* responsive navigation bar
+* animated but not overdone transitions
+* all buttons functional
+* all links and nav routes functional
+* footer links functional
+* multilingual UI hooks ready
+
+==================================================
+4. PAGE STRUCTURE
+=================
+
+Build these pages and make navigation fully functional:
+
+1. Home
+2. About
+3. Road Map
+4. Quick Scan
+5. File Complaint
+6. Track Complaint
+7. Budgets & Contractors
+8. AI Assistant
+9. Medical Help / SOS
+10. Pricing / Subscription
+11. Login
+12. Register
+13. User Dashboard
+14. Authority Dashboard
+15. Admin / Data Management (basic but functional)
+16. Contact / Help
+17. 404 page
+
+LOGIN PAGE REQUIREMENT:
+
+* Keep the login page short and minimal
+* Only login form and very short supporting text
+* Move most explanatory content to About section
+* Keep it clean and modern
+
+ABOUT PAGE:
+
+* Put detailed product information there
+* Include mission, problem, solution, how it works, features, transparency model, and hackathon value
+
+==================================================
+5. HOME PAGE REQUIREMENTS
+=========================
+
+The Home page should include:
+
+* Hero section with strong gradient background
+* Tagline and short explanation
+* CTA buttons: Scan Road, View Map, Report Issue
+* Live metrics section using animated counters in live form
+* Road health highlights
+* Complaint flow preview
+* Budget transparency preview
+* Contractor accountability preview
+* AI assistant preview
+* Medical help preview
+* Subscription preview
+* Footer
+
+LIVE NUMBERS REQUIREMENT:
+Use animated counters for:
+
+* roads monitored
+* complaints filed
+* complaints resolved
+* budget records indexed
+* contractors tracked
+* hospitals linked
+  Use seeded demo data for now.
+
+==================================================
+6. ROAD MAP PAGE
+================
+
+Build an interactive map that supports:
+
+* color-coded roads by health
+* click road segment to open Road DNA card
+* filters by road type, region, condition, contractor, authority
+* complaint hotspots
+* repeat failure zones
+* budget transparency overlays
+* contractor performance overlays
+
+ROAD DNA CARD MUST SHOW:
+
+* road name / ID
+* road type (NH / SH / MDR / urban / rural / configurable global equivalent)
+* location
+* last relaying date
+* contractor name
+* authority responsible
+* sanctioned amount
+* spent amount
+* maintenance history
+* complaint count
+* AI health score
+* repeated failures
+* trust score
+* action buttons: Ask AI, Report Issue, View History
+
+==================================================
+7. QUICK SCAN PAGE
+==================
+
+This is one of the core features.
+
+Build Quick Scan with:
+
+* real road images in demo gallery for sample testing
+* upload image
+* camera capture if browser supports it
+* image preview
+* scan button
+* result card
+
+ROAD IMAGE ANALYSIS OUTPUT:
+
+* detected issue type
+* pothole / crack / edge damage / waterlogging / faded markings / rough patch etc
+* severity score
+* safety risk
+* confidence score
+* suggested complaint category
+* suggested authority
+* suggested urgency
+* ability to autofill complaint form from scan result
+
+IMPORTANT:
+
+* Since this is a prototype, implement a practical defect classification flow
+* If full ML is too heavy, use rule-based / mock AI / lightweight inference architecture with realistic outputs
+* Also provide a separate optional Python folder for future computer vision upgrade
+* Make the deployed version stable first
+
+==================================================
+8. FILE COMPLAINT PAGE
+======================
+
+Complaint form must include:
+
+* issue type
+* road name or road ID
+* location
+* road type
+* detailed description
+* upload evidence image/video
+* scan result attach option
+* priority
+* citizen contact
+* anonymous toggle
+* submit button
+* save offline button
+
+SMART AUTOFILL:
+
+* detect road type if selected from map
+* fill authority
+* fill contractor
+* fill jurisdiction
+* fill last relaying date
+* fill budget references if available
+
+ROUTING ENGINE:
+Create a working routing mechanism based on:
+
+* road type
+* issue category
+* severity
+* location
+* jurisdiction
+* authority mapping table
+
+Simulate real routing outputs such as:
+
+* National Highway Authority
+* State PWD
+* Municipal Corporation
+* District Roads Division
+* Executive Engineer zone mapping
+
+After submit:
+
+* generate complaint ID
+* show assigned authority
+* show routing result
+* show expected timeline
+* show complaint status page link
+
+==================================================
+9. TRACK COMPLAINT PAGE
+=======================
+
+Build a complaint tracker with:
+
+* search by complaint ID
+* timeline view
+* current stage
+* authority assigned
+* officer or department details
+* latest update
+* evidence before / after
+* reopen complaint option if issue persists
+
+STATUSES:
+
+* Submitted
+* Verified
+* Assigned
+* In Progress
+* Resolved
+* Citizen Review
+* Closed
+* Escalated
+
+==================================================
+10. BUDGETS & CONTRACTORS PAGE
+==============================
+
+Must show:
+
+* sanctioned amount
+* spent amount
+* source of funding
+* contractor assigned
+* work package details
+* maintenance history
+* repeated failure history
+* budget vs quality insight
+* charts and tables
+
+INSIGHT CARDS:
+
+* High spending, low quality roads
+* Most complained roads
+* Repeated repair roads
+* Contractor performance ranking
+* Delayed projects
+* Zones with poor authority response
+
+==================================================
+11. AI ASSISTANT PAGE
+=====================
+
+Build an AI-style assistant that can answer:
+
+* Who is responsible for this road?
+* How much money was spent here?
+* When was it last repaired?
+* Which contractor handled this road?
+* Why does this road fail repeatedly?
+* Where should I file the complaint?
+* Show unsafe roads near me
+* Show roads with repeated failures
+* Explain this road in simple language
+
+REQUIREMENTS:
+
+* Chat UI
+* quick suggestion chips
+* multilingual input option
+* voice input with browser speech recognition
+* multilingual voice recognition enabled where browser supports it
+* text fallback if voice not available
+* navigation-aware assistant that can link user to relevant pages like complaint page or road map page
+* simple RAG-like or rules + local dataset architecture is acceptable for prototype
+
+==================================================
+12. MEDICAL HELP / SOS PAGE
+===========================
+
+IMPORTANT:
+Do not falsely claim actual ambulance dispatch unless integrated with a real provider.
+Instead, build a realistic emergency assistance workflow.
+
+Build:
+
+* Emergency Help page
+* SOS button
+* current location capture with permission
+* nearest hospitals list from seeded/demo data or map search abstraction
+* emergency contact form
+* alert dispatch simulation to nearest hospital / emergency center / admin dashboard
+* SMS/email notification abstraction for future real integration
+* “Request ambulance assistance” workflow marked clearly as prototype/demo unless real integration is configured
+* route to nearest hospital on map
+* emergency notes field
+* road accident quick-report mode
+
+If user requests help:
+
+* capture location
+* show nearest hospital
+* create SOS incident record
+* notify demo emergency endpoint / dashboard / mock hospital inbox
+* show clear status updates
+
+==================================================
+13. SUBSCRIPTION + PAYMENT PAGE
+===============================
+
+Build pricing and subscription models:
+
+* Free
+* Citizen Plus
+* Civic Pro
+* Government / Enterprise
+
+Include:
+
+* pricing cards
+* feature comparison
+* subscribe CTA
+* Stripe payment integration
+* graceful fallback if keys not configured
+* subscription status in user dashboard
+
+Do not overcomplicate billing.
+Use a clean, deployable starter integration.
+
+==================================================
+14. AUTHENTICATION + USER ROLES
+===============================
+
+Roles:
+
+* Citizen
+* Authority
+* Admin
+
+Implement:
+
+* login
+* register
+* session handling
+* protected dashboard routes
+* role-based dashboard visibility
+
+==================================================
+15. OFFLINE + LOW NETWORK SUPPORT
+=================================
+
+This is mandatory.
+
+Implement:
+
+* offline complaint save to IndexedDB or localStorage
+* pending sync queue
+* retry sync when online
+* cached essential assets
+* low-network-friendly UI states
+* upload compression where possible
+* “Saved offline” notification
+* sync status indicator
+
+==================================================
+16. GLOBAL APPLICABILITY
+========================
+
+Build the data model so it can support multiple countries.
+
+Include:
+
+* configurable road categories
+* configurable authority mapping
+* configurable administrative regions
+* support for multiple currencies
+* support for multiple date formats
+* localization-ready labels
+
+==================================================
+17. DATA MODELS
+===============
+
+Create practical schema/models for:
+
+* users
+* subscriptions
+* roads
+* road_segments
+* contractors
+* authorities
+* budgets
+* maintenance_records
+* complaints
+* complaint_updates
+* scan_results
+* sos_incidents
+* hospitals
+* chatbot_logs
+
+Seed them with realistic demo data.
+
+==================================================
+18. ACCESSIBILITY + QUALITY
+===========================
+
+Must include:
+
+* accessible colors
+* keyboard navigation
+* visible focus states
+* aria labels where appropriate
+* readable forms
+* mobile responsiveness
+* loading states
+* empty states
+* error states
+* success states
+
+==================================================
+19. DEPLOYMENT SAFETY INSTRUCTIONS
+==================================
+
+This project must be built in a way that reduces deployment issues on Vercel.
+
+DO ALL OF THIS:
+
+* keep imports clean
+* avoid circular dependencies
+* avoid using Node-only APIs in client components
+* dynamically import Leaflet on client side
+* clearly separate server/client components
+* include exact env vars required
+* prevent hydration mismatch issues
+* include fallback for window/localStorage access
+* avoid hardcoded localhost URLs
+* use relative API routes where appropriate
+* make all route paths valid
+* ensure dark mode works in production
+* ensure images load properly
+* add error boundaries or safe fallbacks where needed
+* add README deploy steps:
+
+  1. export from Replit
+  2. initialize git if needed
+  3. push to GitHub
+  4. import repo into Vercel
+  5. add environment variables
+  6. run deploy
+* include troubleshooting section for common Vercel errors
+
+==================================================
+20. TOKEN SAVING RULES FOR FREE PLAN
+====================================
+
+Very important:
+
+* do not explain at excessive length
+* do not regenerate entire files unless needed
+* when improving code, patch only relevant files
+* keep components reusable
+* keep logic modular
+* do not create 100 unnecessary files
+* prefer stable and fewer abstractions
+* generate complete code efficiently
+
+==================================================
+21. FINAL DELIVERABLE STANDARD
+==============================
+
+The final result must feel like:
+
+* a polished hackathon-winning prototype
+* exportable from Replit
+* pushable to GitHub
+* deployable on Vercel
+* visually premium
+* functionally complete
+* easy to demo
+
+The platform should demonstrate:
+
+* road condition intelligence
+* budget transparency
+* contractor accountability
+* complaint routing
+* AI assistance
+* multilingual voice support
+* dark mode
+* subscriptions and payment
+* medical SOS workflow
+* offline robustness
+
+Now generate the upgraded final project in the following order:
+
+1. folder structure
+2. environment variables
+3. database schema
+4. seed data
+5. frontend pages
+6. backend/API logic
+7. reusable components
+8. offline logic
+9. payment logic
+10. AI assistant logic
+11. deployment checklist
+12. README
+
+Do not skip any required feature.
+Do not leave broken navigation.
+Do not leave dummy buttons without action.
+Do not leave pages unconnected.
+Do not produce partial output.

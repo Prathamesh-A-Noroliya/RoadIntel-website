@@ -1,0 +1,10 @@
+{
+  "buildCommand": "pnpm install --frozen-lockfile=false && pnpm --filter @workspace/roadintel build",
+  "outputDirectory": "artifacts/roadintel/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
