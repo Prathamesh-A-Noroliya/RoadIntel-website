@@ -1,779 +1,590 @@
 # RoadIntel
 
-## Transparency-First RoadWatch Platform for Road Quality, Public Spending and Responsible Authority Reporting
+## Road Intelligence Transparency & Accountability Platform
 
-**RoadIntel** is a RoadWatch-focused civic technology platform designed to improve transparency in road infrastructure by helping citizens monitor road quality, track public spending, report road issues to responsible authorities, and understand contractor accountability.
+RoadIntel is a civic infrastructure intelligence platform designed to transform road-defect reporting into a verified, trackable, and accountable repair workflow. It helps citizens report road issues, supports authorities in prioritising repair action, links road condition with public spending visibility, and creates a proof-based road health record for safer and more transparent infrastructure management.
 
-The project is built for the RoadWatch problem area, where the core requirement is to create a tool that enables citizens to:
+RoadIntel is not just a complaint portal. It is an end-to-end road accountability system built around one clear workflow:
 
-```txt
-Monitor road quality
-Track public spending
-Report issues to responsible authorities
-Increase transparency in road infrastructure
-```
-
-RoadIntel is not only a complaint-reporting website. It is a complete road transparency and accountability system that connects:
-
-```txt
-Citizen reports
-→ Road condition monitoring
-→ Road DNA profiles
-→ Responsible authority routing
-→ Public spending visibility
-→ Contractor accountability
-→ Predictive risk alerts
-→ Recommended field action
-```
+**Report → Verify → Prioritise → Assign → Repair → Prove → Audit**
 
 ---
 
-## Team
+## Live Website
 
-```txt
-Team Name: HackTech Novas
-Project Name: RoadIntel
-Problem Statement: RoadWatch
-Domain: Road Safety, Civic Transparency, Public Infrastructure Accountability
-Pilot Region: Pune / PCMC
-Deployment Target: Vercel
-```
+**Website:** https://roadintel.vercel.app
+**Repository:** https://github.com/Prathamesh-A-Noroliya/RoadIntel-website
+**Contact:** [prathameshnoroliyaa@gmail.com](mailto:prathameshnoroliyaa@gmail.com)
 
 ---
 
-## Demo Login
+## Project Overview
 
-```txt
-Email: demo@roadintel.in
-Password: demo123
-```
+Road quality issues such as potholes, cracks, waterlogging, broken shoulders, and repeated surface failures are often visible to citizens before they become larger safety and governance problems. However, most reporting systems stop at complaint submission. Citizens often cannot clearly see who owns the issue, whether it has been assigned, whether repair work is progressing, whether public spending is linked to visible improvement, or whether the final repair was verified with proof.
 
----
-
-## Problem Statement
-
-Road infrastructure problems are often visible to citizens but difficult to report, track, verify or connect with public spending.
-
-Common issues include:
-
-* Citizens can see potholes, cracks, waterlogging and unsafe road conditions, but do not know which authority is responsible.
-* Repair progress is not always transparent after a complaint is filed.
-* Public spending on roads is not easily connected to visible road quality.
-* Contractors are difficult to compare based on repair quality, budget discipline and repeat failures.
-* Road problems are usually handled reactively instead of being predicted early.
-* Multiple agencies may be involved, but citizens do not get a simple accountability view.
-* Dashboards often show numbers but do not clearly explain what action should happen next.
-
-RoadIntel addresses this by creating a single transparency layer for road quality, complaint routing, spending visibility and contractor accountability.
+RoadIntel solves this gap by creating a structured road intelligence layer where every reported defect can become a traceable civic case. The platform combines citizen reports, AI-assisted defect classification, road health scoring, contractor accountability, spending-quality visibility, and proof-of-repair verification.
 
 ---
 
-## RoadWatch Requirement Mapping
+## Core Idea
 
-| RoadWatch Requirement                   | RoadIntel Implementation                                                          |
-| --------------------------------------- | --------------------------------------------------------------------------------- |
-| Citizens monitor road quality           | Road DNA Registry, Road Health Score, Risk Score, Road Detail Pages               |
-| Track public spending                   | Public Spending module, budget vs usage comparison, budget-quality mismatch flags |
-| Report issues                           | File Complaint page with structured form and status tracker                       |
-| Route issues to responsible authorities | PMC / PCMC / PWD / NHAI-MSRDC routing logic                                       |
-| Increase transparency                   | Complaint timeline, Road DNA history, spending visibility, contractor scorecards  |
-| Improve road safety                     | Risk Map, Quick Scan classifier, emergency SOS workflow, priority actions         |
-| Make data understandable                | Clean dashboard, charts, cards, audit checklist and explainable scoring           |
-| Support accountability                  | Road Accountability Score, repeat-failure tracking, contractor audit queue        |
+RoadIntel is built on the principle that road infrastructure should be:
+
+* **Visible** — citizens should be able to report and track road issues.
+* **Verified** — defect severity and repair closure should be supported by evidence.
+* **Accountable** — every case should have ownership, status, and responsible action.
+* **Auditable** — spending and repair quality should be compared with visible outcomes.
+* **Scalable** — the system should work from a ward-level pilot to a city-level road intelligence layer.
 
 ---
 
-## Core Concept
+## Key Features
 
-RoadIntel follows a transparency-first workflow:
+### 1. Citizen Road Defect Reporting
 
-```txt
-1. Citizen observes a road issue
-2. RoadIntel helps file and classify the issue
-3. Complaint is routed to the responsible authority
-4. Road DNA profile stores road condition and repair history
-5. Public spending is compared with road quality
-6. Contractor performance is scored
-7. Risk prediction highlights future failure zones
-8. Recommended action is shown clearly
-```
+Citizens can file structured reports for:
 
-This makes RoadIntel useful for citizens, civic authorities, road maintenance teams, auditors and evaluators.
+* Potholes
+* Road cracks
+* Waterlogging
+* Damaged shoulders
+* Unsafe road patches
+* Repeated surface failures
+* Other road-condition issues
+
+Each report can include location, issue type, severity, description, ownership hint, and image evidence.
 
 ---
 
-## Key Modules
+### 2. Quick Scan Road Classifier
 
-## 1. Road DNA Registry
+RoadIntel includes a prototype Quick Scan module that supports AI-assisted classification of road defects.
 
-The Road DNA Registry gives every monitored road a unique profile.
+It can classify or demonstrate detection support for:
 
-Each road profile includes:
+* Potholes
+* Cracks
+* Waterlogging
+* Surface condition issues
+* Severity indicators
 
-* Road health score
-* Risk score
-* Location
-* Road type
-* Authority
-* Contractor
-* Repair history
+The current classifier is a prototype/demo layer and is designed to evolve into a trained computer-vision model using verified road image datasets.
+
+---
+
+### 3. Road DNA Registry
+
+Road DNA is RoadIntel’s road health intelligence model. Each road segment can receive a profile based on multiple indicators such as:
+
 * Complaint history
-* Budget used
-* Repeat failure count
-* Monsoon risk
-* Recommended next action
+* Defect severity
+* Repair frequency
+* Monsoon or weather stress
+* Contractor performance
+* Spending signals
+* Repeat failure patterns
+* Road health trend
 
-This helps users understand the full history and current condition of a road instead of seeing only one isolated complaint.
-
----
-
-## 2. Road Detail Page
-
-Each road opens a dedicated detail page with different, road-specific information.
-
-The detail page includes:
-
-* Health vs risk trend
-* Complaint mix
-* Budget flow
-* Repair history
-* Contractor details
-* Risk factors
-* Recommended civic action
-
-This makes RoadIntel more explainable and easier to demonstrate during evaluation.
+This helps identify roads that need urgent attention, repeated maintenance review, or preventive repair.
 
 ---
 
-## 3. Citizen Complaint Routing
+### 4. Smart Routing and Ownership Mapping
 
-RoadIntel includes a complaint filing and tracking workflow.
+RoadIntel is designed to route road issues to the likely responsible authority or repair owner, such as:
 
-Complaint status follows:
+* Municipal road departments
+* Public Works Department divisions
+* Highway authorities
+* Assigned contractors
+* Local maintenance teams
 
-```txt
-Filed → Assigned → In Progress → Verified → Resolved
-```
-
-Complaint routing is based on road ownership and issue severity:
-
-| Road Type                     | Responsible Authority |
-| ----------------------------- | --------------------- |
-| Pune urban road               | PMC                   |
-| Pimpri-Chinchwad road         | PCMC                  |
-| State road                    | PWD Maharashtra       |
-| Highway / expressway corridor | NHAI / MSRDC          |
-
-Each complaint includes:
-
-* Complaint ID
-* Issue type
-* Severity
-* Location
-* Description
-* Assigned authority
-* Assigned department
-* SLA
-* Status timeline
-* Progress visibility
-
-This directly supports the RoadWatch requirement of reporting issues to responsible authorities.
+This reduces ambiguity and helps move from complaint filing to action assignment.
 
 ---
 
-## 4. Public Spending Transparency
+### 5. Repair Tracker
 
-The Public Spending module connects road quality with spending visibility.
+The repair lifecycle can be tracked through clear stages:
 
-It tracks:
+1. Reported
+2. Verified
+3. Assigned
+4. In Progress
+5. Completion Claimed
+6. Proof Submitted
+7. Verified / Rejected
+8. Closed / Escalated
 
-* Approved budget
+This makes the repair process transparent for citizens, authorities, and auditors.
+
+---
+
+### 6. Proof-of-Repair System
+
+RoadIntel promotes evidence-based closure. A complaint should not be treated as truly resolved unless repair proof is available.
+
+Supported proof structure:
+
+* Before image
+* After image
+* Contractor update
+* Authority verification
+* Status trail
+* Reopen or dispute option for weak closure claims
+
+This helps reduce paper-based closure and improves public trust.
+
+---
+
+### 7. Public Spending Accountability
+
+RoadIntel connects road condition and repair records with spending visibility.
+
+The spending module is designed to compare:
+
+* Approved spending
 * Actual spending
-* Road health after spending
-* Contractor quality
-* Repeat repair pattern
-* Budget-quality mismatch
-* Audit-risk flags
-
-The purpose is to answer a key transparency question:
-
-```txt
-If public money was spent on a road, did the road actually improve?
-```
-
-This module helps identify cases where:
-
-```txt
-High spending + poor road health + repeated repairs = audit risk
-```
-
----
-
-## 5. Contractor Accountability Dashboard
-
-RoadIntel evaluates contractors using a Road Accountability Score.
-
-The score considers:
-
-* Repair quality
-* Timeliness
-* Budget discipline
-* Repeat failure rate
-* Complaint recurrence
-
-Contractors are grouped as:
-
-```txt
-Strong
-Watchlist
-Audit Required
-```
-
-This helps citizens and authorities see whether repeated road failures are linked to poor maintenance quality or contractor performance.
-
----
-
-## 6. Quick Scan Road Classifier
-
-Quick Scan allows users to upload or select a road image sample and classify visible road damage.
-
-Supported categories include:
-
-* Pothole formation
-* Surface cracking
-* Waterlogging risk
-* Good road condition
-* Surface wear
-
-The scan result includes:
-
-* Issue type
-* Severity
-* Confidence score
-* Health score
-* Damage probability
-* Responsible authority
-* Suggested SLA
-* Detected signals
-* Recommended action
-
-The classifier is clearly labelled as a demo classifier. It does not falsely claim to be connected to official live government AI systems.
-
----
-
-## 7. Future Risk Map
-
-The Future Risk Map highlights roads likely to fail soon.
-
-Risk prediction considers:
-
 * Road health score
-* Complaint density
-* Repeat repair history
+* Repair frequency
 * Contractor quality
-* Monsoon exposure
-* Surface deterioration signals
+* Repeat defect signals
 
-The page prioritizes roads into:
-
-```txt
-Critical
-High
-Medium
-Low
-```
-
-This supports proactive road maintenance instead of waiting for severe road failure.
+This helps flag cases where high spending does not match visible road improvement.
 
 ---
 
-## 8. Sensor Intelligence Digital Twin
+### 8. Contractor Accountability Score
 
-Sensor Intel is presented as a simulated digital twin for future road monitoring.
+RoadIntel includes a Road Accountability Score model for contractor performance assessment.
 
-It demonstrates how future sensor integration could use:
+The score can consider:
 
-* Vibration score
-* Roughness index
-* Shock spikes
-* Rainfall stress
-* Traffic load
-* Damage probability
+* Timeliness
+* Work quality
+* Budget discipline
+* Repeat failure control
+* Repair proof quality
+* Complaint recurrence after repair
 
-This is shown as simulated pilot data, not as a fake live sensor feed.
+This creates a more transparent performance layer for infrastructure maintenance.
 
 ---
 
-## 9. Analytics Command Center
+### 9. Analytics Command Center
 
-The Analytics page connects the major RoadIntel layers into one evaluation-ready dashboard.
+RoadIntel includes dashboards for:
 
-It includes:
-
-* Complaint lifecycle trends
+* Complaint lifecycle analysis
+* Issue type distribution
 * Road health trends
-* Risk trends
-* Zone-wise risk load
-* Contractor accountability analytics
-* Spending vs road health
-* Issue-type distribution
-* Audit alignment checklist
+* Spending versus quality signals
+* Contractor performance
+* Repeat failure areas
+* Priority repair queues
+* Risk indicators
 
-This helps evaluators quickly understand how the platform connects safety, transparency and accountability.
-
----
-
-## 10. Floating RoadIntel Assistant
-
-RoadIntel includes a floating assistant to help users navigate and understand the platform.
-
-It supports:
-
-* Text chat
-* Voice input where browser-supported
-* Voice output
-* Website navigation commands
-* RoadIntel-specific explanations
-* Road risk, complaint, spending and contractor guidance
-
-The assistant is presented as a rule-based decision helper for the demo and avoids overclaiming as a fully autonomous AI system.
+These analytics help authorities and decision-makers move from reactive repair to data-backed maintenance planning.
 
 ---
 
-## Main User Workflows
+### 10. Sensor and Future Data Readiness
 
-### Citizen Workflow
+RoadIntel is designed for future integration with:
 
-```txt
-Open RoadIntel
-→ File complaint or scan road issue
-→ Get responsible authority
-→ Track complaint progress
-→ View road condition and public spending
-→ Understand whether repair action is happening
-```
+* Mobile accelerometer data
+* Vehicle vibration signals
+* Road roughness data
+* Rainfall and flooding data
+* Traffic intensity data
+* GPS clustering
+* Dashcam or camera-based detection
+* Municipal work-order systems
+* Public spending datasets
 
-### Civic Authority Workflow
-
-```txt
-View complaint load
-→ Identify high-risk roads
-→ Check assigned department
-→ Review road health and risk
-→ Prioritize field inspection
-→ Monitor verified resolution
-```
-
-### Audit / Transparency Workflow
-
-```txt
-Select road
-→ Check approved budget and actual spending
-→ Compare spending with road health
-→ Review contractor performance
-→ Detect repeated repair patterns
-→ Flag contractor or road for audit
-```
+The current prototype demonstrates the interface and workflow readiness for these integrations.
 
 ---
 
-## Why RoadIntel Fits RoadWatch
+### 11. Emergency Support Extension
 
-RoadIntel is designed around the exact RoadWatch transparency goals.
+RoadIntel also includes an emergency support interface as a future safety extension. This module can help connect road-risk intelligence with crisis response context, such as nearest hospital information and emergency-route awareness.
 
-It enables:
-
-* Road quality monitoring
-* Public spending visibility
-* Issue reporting
-* Authority routing
-* Repair progress tracking
-* Contractor accountability
-* Citizen-facing transparency
-* Explainable risk prioritization
-
-The strongest part of RoadIntel is that it does not treat road quality as a single complaint. It treats every road as a public asset with condition, spending, repair history and responsibility.
+This feature is informational in the prototype stage and does not replace official emergency services.
 
 ---
 
-## What Makes RoadIntel Different
+## Why RoadIntel Is Different
 
-Most road-reporting tools stop at:
+Many civic systems focus only on collecting complaints. RoadIntel focuses on accountability after the complaint.
 
-```txt
-User reports pothole
-→ Complaint is submitted
-```
-
-RoadIntel goes further:
-
-```txt
-User reports issue
-→ Issue is routed
-→ Road DNA is updated
-→ Risk score is generated
-→ Spending is checked
-→ Contractor performance is reviewed
-→ Recommended action is shown
-```
-
-This creates a complete accountability chain.
+| Existing Approach             | RoadIntel Approach                                     |
+| ----------------------------- | ------------------------------------------------------ |
+| Complaint submission only     | Full report-to-repair accountability loop              |
+| Manual issue review           | AI-assisted defect and severity classification         |
+| Unclear ownership             | Smart routing to likely responsible authority          |
+| Closure without public proof  | Before-after evidence-based closure                    |
+| Spending shown separately     | Spending connected with road health and repair quality |
+| Contractor performance hidden | Contractor accountability scoring                      |
+| Reactive road repair          | Road DNA-based preventive prioritisation               |
+| Fragmented dashboards         | Unified civic road intelligence layer                  |
 
 ---
 
-## Technical Architecture
+## System Workflow
 
-```txt
-Frontend Application
-├── React
-├── TypeScript
-├── Vite
-├── Tailwind CSS
-├── Wouter Router
-├── Recharts
-├── Lucide React Icons
-└── TanStack React Query
-
-RoadIntel Modules
-├── Landing and Login
-├── Dashboard
-├── Complaint Routing
-├── Quick Scan
-├── Road DNA Registry
-├── Road Detail Pages
-├── Future Risk Map
-├── Public Spending
-├── Sensor Intelligence
-├── Contractor Accountability
-├── Analytics
-├── Settings
-└── Emergency SOS
+```text
+Citizen Report
+      ↓
+AI-Assisted Classification
+      ↓
+Duplicate / Severity / Routing Check
+      ↓
+Authority Review
+      ↓
+Repair Assignment
+      ↓
+Contractor Progress Update
+      ↓
+Before-After Proof Upload
+      ↓
+Verification
+      ↓
+Road DNA + Spending + Contractor Score Update
+      ↓
+Public Accountability Dashboard
 ```
 
 ---
 
-## Tech Stack
+## User Roles
 
-### Frontend
+### Citizens
 
-* React
-* TypeScript
-* Vite
-* Tailwind CSS
-* Wouter Router
-* Recharts
-* Lucide React Icons
-* TanStack React Query
+* Report road defects
+* Track complaint status
+* View repair proof
+* Understand road health
+* Escalate unresolved issues
 
-### Tooling
+### Authorities
 
-* pnpm workspace
-* TypeScript build validation
-* Vercel deployment
-* Responsive web layout
-* SPA routing support
+* Review verified reports
+* Prioritise high-risk road issues
+* Assign repair work
+* Track repair timelines
+* Monitor road health and complaint patterns
+
+### Contractors
+
+* Receive assigned repair cases
+* Update repair progress
+* Submit before-after proof
+* Build performance credibility through transparent scoring
+
+### Auditors and Civic Reviewers
+
+* Compare spending with road outcomes
+* Identify repeat repair failures
+* Review proof-based closure
+* Track accountability gaps
+
+### City Leaders and Administrators
+
+* Monitor road readiness
+* Identify priority corridors
+* Improve budget allocation
+* Build public trust through transparency
 
 ---
 
-## Folder Structure
+## Technology Stack
 
-```txt
-RoadIntel/
+RoadIntel is built as a modern web application using:
+
+* **React** — frontend user interface
+* **TypeScript** — type-safe development
+* **Vite** — fast development and production build system
+* **Tailwind CSS** — responsive styling and design system
+* **Wouter** — lightweight client-side routing
+* **TanStack React Query** — async data and API-readiness layer
+* **Recharts** — dashboards and visual analytics
+* **Lucide React** — icon system
+* **Framer Motion** — interface animations
+* **Vercel** — frontend deployment
+
+---
+
+## Repository Structure
+
+```text
+RoadIntel-website/
+│
 ├── artifacts/
 │   └── roadintel/
-│       ├── public/
 │       ├── src/
 │       │   ├── components/
-│       │   │   ├── layout/
-│       │   │   ├── ui/
-│       │   │   └── FloatingRoadIntelBot.tsx
+│       │   ├── pages/
 │       │   ├── hooks/
 │       │   ├── lib/
-│       │   ├── pages/
-│       │   │   ├── analytics.tsx
-│       │   │   ├── complaints.tsx
-│       │   │   ├── contractors.tsx
-│       │   │   ├── dashboard.tsx
-│       │   │   ├── landing.tsx
-│       │   │   ├── login.tsx
-│       │   │   ├── register.tsx
-│       │   │   ├── risk-map.tsx
-│       │   │   ├── road-detail.tsx
-│       │   │   ├── roads.tsx
-│       │   │   ├── scan.tsx
-│       │   │   ├── sensors.tsx
-│       │   │   ├── settings.tsx
-│       │   │   └── sos.tsx
 │       │   ├── App.tsx
 │       │   ├── main.tsx
 │       │   └── index.css
+│       │
+│       ├── public/
 │       ├── package.json
 │       └── vite.config.ts
+│
 ├── package.json
-├── pnpm-lock.yaml
 ├── pnpm-workspace.yaml
+├── pnpm-lock.yaml
 ├── vercel.json
 └── README.md
 ```
 
 ---
 
-## Main Routes
+## Main Application Routes
 
-```txt
-/                 Landing page
-/login            Login page
-/register         Register page
-/dashboard        Main dashboard
-/complaints       Complaint routing and status tracker
-/scan             Quick road image classifier
-/roads            Road DNA registry
-/roads/:id        Road DNA detail page
-/risk-map         Future risk map
-/spending         Public spending transparency
-/sensors          Sensor intelligence digital twin
-/contractors      Contractor accountability dashboard
-/analytics        Analytics command center
-/settings         Account settings
-/sos              Emergency SOS workflow
-```
+| Route          | Purpose                                         |
+| -------------- | ----------------------------------------------- |
+| `/`            | Main entry / landing flow                       |
+| `/landing`     | Public project introduction                     |
+| `/login`       | Login interface                                 |
+| `/register`    | Registration interface                          |
+| `/dashboard`   | Main RoadIntel command center                   |
+| `/complaints`  | Citizen complaint filing and tracking           |
+| `/scan`        | Quick Scan road defect classifier               |
+| `/roads`       | Road DNA registry                               |
+| `/road-detail` | Individual road intelligence profile            |
+| `/risk-map`    | Future road risk and priority view              |
+| `/spending`    | Public spending accountability dashboard        |
+| `/contractors` | Contractor performance and accountability score |
+| `/sensors`     | Sensor intelligence and road condition signals  |
+| `/analytics`   | Road health and complaint analytics             |
+| `/sos`         | Emergency support interface                     |
+| `/settings`    | User settings and preferences                   |
 
 ---
 
-## Local Setup
+## Installation and Local Setup
 
-Install dependencies:
+### Prerequisites
+
+Install the following before running the project:
+
+* Node.js
+* pnpm
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/Prathamesh-A-Noroliya/RoadIntel-website.git
+cd RoadIntel-website
+```
+
+### Install Dependencies
 
 ```bash
 pnpm install
 ```
 
-Run the RoadIntel application locally:
+### Run Development Server
 
 ```bash
 pnpm --filter @workspace/roadintel dev
 ```
 
-Build the RoadIntel app:
+### Build for Production
 
 ```bash
 pnpm --filter @workspace/roadintel build
 ```
 
-Run full workspace build:
+### Type Check
 
 ```bash
-pnpm build
+pnpm --filter @workspace/roadintel typecheck
 ```
 
 ---
 
-## Vercel Deployment
+## Deployment
 
-Recommended Vercel settings:
+The project is deployed using Vercel.
 
-```txt
-Framework Preset: Vite
+Expected deployment settings:
+
+```text
+Framework: Vite
 Root Directory: artifacts/roadintel
-Install Command: pnpm install
-Build Command: pnpm build
-Output Directory: dist
+Build Command: pnpm install --frozen-lockfile=false && pnpm --filter @workspace/roadintel build
+Output Directory: artifacts/roadintel/dist
 ```
 
-The project includes SPA routing support through `vercel.json`, so direct refreshes on routes like `/dashboard`, `/complaints`, `/roads`, `/spending`, `/contractors`, and `/risk-map` work correctly.
+The repository includes SPA routing support through `vercel.json`, allowing direct refreshes on internal routes.
 
 ---
 
-## Submission Readiness
+## Prototype Status
 
-RoadIntel is prepared as a hackathon-ready software prototype with:
+RoadIntel is currently a functional web prototype that demonstrates the product workflow, interface design, module structure, and civic accountability model.
 
-* Working web application
-* Login flow
-* RoadWatch-specific modules
-* Responsive UI
-* Public spending transparency layer
-* Citizen complaint workflow
-* Contractor accountability
-* Demo classifier
-* Analytics dashboard
-* Vercel deployment compatibility
-* Clear assumptions and demo-data note
+Current prototype includes:
 
-Recommended submission materials:
-
-```txt
-1. Source code repository
-2. Deployed website link
-3. 7-slide presentation
-4. README.md
-5. Short assumptions / technical note
-6. Demo credentials
-```
+* Working frontend interface
+* Road intelligence dashboard
+* Complaint filing and tracking views
+* Quick Scan classifier interface
+* Road DNA module
+* Spending accountability dashboard
+* Contractor performance module
+* Analytics dashboards
+* Sensor-readiness interface
+* Emergency support interface
+* Public deployment
 
 ---
 
-## Demo Data and Assumptions
+## Responsible Claims
 
-RoadIntel currently uses realistic pilot-style demo data for Pune / PCMC road monitoring.
+RoadIntel is designed as a practical and scalable civic technology platform, but the current prototype should be understood responsibly.
 
-The project intentionally does not claim that it is already connected to:
-
-* Live government databases
-* Official municipal complaint APIs
-* Real-time official sensor networks
-* Official contractor payment systems
-* Official civic dashboards
-
-The demo data is used to show:
-
-* Product workflow
-* RoadWatch alignment
-* Complaint routing logic
-* Public spending transparency
-* Contractor accountability scoring
-* Risk prediction approach
-* Future integration potential
-
-This keeps the project honest, explainable and evaluation-safe.
-
----
-
-## Transparency and Accountability Principles
-
-RoadIntel follows these principles:
-
-### 1. Citizen Visibility
-
-Citizens should be able to see road condition, complaint progress and responsible authority.
-
-### 2. Spending Visibility
-
-Public spending should be connected to actual road quality and repair outcomes.
-
-### 3. Authority Clarity
-
-Every complaint should be routed to a clear responsible authority.
-
-### 4. Contractor Accountability
-
-Repeated failures should be linked to contractor performance and audit risk.
-
-### 5. Explainable Risk
-
-Risk scores should be understandable through complaints, repairs, spending and road condition.
-
-### 6. Honest Demo Data
-
-Simulated data should be labelled clearly and should not be presented as official live data.
-
----
-
-## Evaluation Strengths
-
-### RoadWatch Fit
-
-RoadIntel directly targets monitoring road quality, tracking spending and reporting issues to responsible authorities.
-
-### Transparency
-
-The platform exposes road condition, public money, contractor quality and complaint progress in one place.
-
-### Practicality
-
-The application is already implemented as a working web prototype using deployable technologies.
-
-### Scalability
-
-The design can later integrate municipal complaint APIs, GIS ownership data, real road images, mobile reporting and sensor feeds.
-
-### Impact
-
-RoadIntel can help reduce unsafe road conditions by making road failure visible earlier and making repair accountability clearer.
-
-### Technical Clarity
-
-The project uses TypeScript, React, Vite, Recharts and modular page-based architecture.
-
-### Presentation Readiness
-
-The UI is consistent, mobile-friendly and designed for live demonstration.
-
----
-
-## Risk and Mitigation
-
-| Risk                              | Mitigation                                                    |
-| --------------------------------- | ------------------------------------------------------------- |
-| Lack of real municipal API access | Use demo data now; design API-ready structure for integration |
-| Fake-data concern                 | Clearly label data as pilot-style demo data                   |
-| Multi-authority confusion         | Include authority-routing logic                               |
-| Complaint-only limitation         | Add Road DNA, spending, contractor and risk layers            |
-| Scalability concern               | Keep modular architecture and future API integration plan     |
-| Trust concern                     | Add transparency-first workflow and audit-safe explanations   |
+* Current data shown in the prototype may include demo, sample, or pilot-style data.
+* The AI classifier is a prototype decision-support layer and not a certified engineering inspection system.
+* Road DNA scores are explainable prioritisation indicators, not official road safety certificates.
+* Spending-quality flags indicate review priority and do not independently prove misconduct.
+* Contractor scoring in production should include transparent methodology and dispute handling.
+* Emergency support features are informational and do not replace official emergency numbers or services.
+* Road defects are preventable risk signals, but RoadIntel does not claim that all accidents are caused by road damage.
 
 ---
 
 ## Future Scope
 
-Planned improvements include:
+RoadIntel can be expanded into a larger civic infrastructure intelligence system through:
 
-* Real municipal complaint API integration
-* GIS-based road ownership mapping
-* Citizen mobile reporting application
-* Verified before/after repair photo workflow
-* Contractor payment hold recommendation after failed repair verification
-* Public open dashboard for citizens
-* AI-assisted road image classifier
-* Mobile accelerometer-based roughness detection
-* Field engineer mobile workflow
-* Admin panel for civic departments
-* Multilingual citizen interface
-* Integration with real road safety datasets
-
----
-
-## Project Status
-
-RoadIntel is currently a working demo-ready web application with pilot data, responsive design and deployable Vercel configuration.
-
-It demonstrates how road quality, citizen reporting, public spending and contractor accountability can be combined into one transparent RoadWatch platform.
+* Mobile-first complaint reporting
+* Offline complaint filing and sync
+* GPS-based duplicate detection
+* Computer-vision pothole and crack detection
+* Before-after repair verification model
+* Role-based dashboards for authorities and contractors
+* Live municipal complaint integration
+* Work-order and SLA tracking
+* Public spending dataset integration
+* Rainfall, traffic, and road-stress overlays
+* Vehicle sensor and accelerometer-based road roughness detection
+* Road readiness scoring for emergency routes
+* City-level and state-level road health dashboards
 
 ---
 
-## Project Identity
+## Suggested Pilot Model
 
-```txt
-Project: RoadIntel
-Team: HackTech Novas
-Problem Statement: RoadWatch
-Primary Goal: Road Infrastructure Transparency
-Secondary Goals: Road Safety, Civic Accountability, Predictive Maintenance
-Primary Users: Citizens, Civic Authorities, Auditors, Reviewers
-Pilot Data Region: Pune / PCMC
-Deployment Target: Vercel
-```
+A practical pilot can begin with a limited geography instead of a full-scale rollout.
+
+### Pilot Scope
+
+* 1 ward or selected road corridor
+* 20–50 road segments
+* 100+ citizen road reports
+* 2–3 authority users
+* 2–5 contractor profiles
+* 60–90 day validation period
+
+### Pilot Success Indicators
+
+* Percentage of reports mapped to likely authority
+* Percentage of high-severity cases prioritised
+* Percentage of repair closures with before-after proof
+* Number of repeat defect clusters identified
+* Average time from report to assignment
+* Road DNA score improvement after repair
+* Number of spending-quality mismatch signals reviewed
+* Citizen visibility of status and proof
 
 ---
 
-## Final Statement
+## Impact Potential
 
-RoadIntel is built around one simple principle:
+RoadIntel can create value across multiple levels.
 
-```txt
-Road infrastructure should be visible, measurable and accountable.
-```
+### Citizen Impact
 
-The platform helps answer the most important RoadWatch questions:
+* Easier road issue reporting
+* Transparent complaint status
+* Visible proof of repair
+* Higher trust in civic response
 
-```txt
-Which roads are damaged?
-Where is public money being spent?
-Who is responsible for the road?
-Has the issue been reported?
-Has the repair been verified?
-Which contractor is repeatedly failing?
-Which road needs urgent action next?
-```
+### Authority Impact
 
-By combining citizen complaints, Road DNA, public spending transparency, contractor accountability and predictive risk, RoadIntel presents a practical, scalable and transparency-first RoadWatch solution.
+* Better prioritisation of road repairs
+* Reduced duplicate complaint load
+* Clearer repair queues
+* Evidence-based decision-making
+
+### Contractor Impact
+
+* Transparent work assignment
+* Proof-based completion records
+* Performance credibility
+* Fairer quality tracking
+
+### Governance Impact
+
+* Spending linked with road outcomes
+* Repeat repair failures identified
+* Audit-ready repair history
+* Public accountability improved
+
+### Safety Impact
+
+* Preventable infrastructure risks identified earlier
+* High-risk road segments prioritised
+* Emergency route readiness can be improved
+* Preventive maintenance becomes more data-driven
+
+---
+
+## Evaluation Snapshot
+
+| Area                | RoadIntel Strength                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Originality         | Combines complaint reporting, AI classification, Road DNA, repair proof, spending accountability, and contractor scoring into one workflow |
+| Clarity             | Simple report-to-audit civic action loop                                                                                                   |
+| Feasibility         | Functional web prototype with modular architecture                                                                                         |
+| Scalability         | Can begin ward-level and expand city-by-city                                                                                               |
+| Social Impact       | Targets road safety, transparency, public spending visibility, and civic trust                                                             |
+| Technical Potential | Ready for backend, AI, GPS, sensor, and municipal data integration                                                                         |
+| Sustainability      | Can support municipal SaaS, civic pilots, smart-city programs, infrastructure audits, and public dashboards                                |
+
+---
+
+## Project Vision
+
+RoadIntel aims to become a Road Readiness Intelligence Layer for cities.
+
+The long-term vision is to help cities continuously monitor road condition, detect infrastructure risk early, verify repair action, connect spending with outcomes, and make road maintenance more transparent for every citizen.
+
+---
+
+
+**Project:** RoadIntel
+**Email:** [prathameshnoroliyaa@gmail.com](mailto:prathameshnoroliyaa@gmail.com)
+**Website:** https://roadintel.vercel.app
+**GitHub:** https://github.com/Prathamesh-A-Noroliya/RoadIntel-website
+
+---
+
+## License and Usage
+
+This project is currently shared for demonstration, evaluation, and innovation review purposes. A formal open-source license may be added later depending on future release and deployment plans.
+
+---
+
+## Final Note
+
+RoadIntel is built to make road repair accountability visible.
+
+It transforms road defects from isolated complaints into verified, prioritised, assigned, repaired, and auditable civic action.
