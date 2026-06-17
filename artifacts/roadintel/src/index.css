@@ -318,3 +318,32 @@
 .nav-item-inactive {
   border-left: 3px solid transparent;
 }
+
+/* ===== REMOVE GOOGLE TRANSLATE / CHROME TRANSLATE UI ===== */
+html.notranslate,
+body.notranslate {
+  top: 0 !important;
+}
+
+.goog-te-banner-frame,
+.goog-te-gadget,
+.goog-te-combo,
+.goog-logo-link,
+.goog-te-balloon-frame,
+.skiptranslate,
+iframe.skiptranslate,
+#google_translate_element,
+.VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-ZVi9od-aZ2wEe,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+body {
+  top: 0 !important;
+}

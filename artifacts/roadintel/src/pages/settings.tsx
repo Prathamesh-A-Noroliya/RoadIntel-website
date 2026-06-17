@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   Bell,
@@ -6,7 +6,6 @@ import {
   Database,
   Download,
   FileText,
-  Languages,
   Lock,
   Mail,
   MapPin,
@@ -31,7 +30,6 @@ type SavedUser = {
   mobile?: string;
   location?: string;
   role?: string;
-  language?: string;
 };
 
 const DEFAULT_USER = {
@@ -59,7 +57,6 @@ function forceRoadIntelDarkTheme() {
   root.style.colorScheme = "dark";
 
   localStorage.setItem("roadintel-theme", "dark");
-  localStorage.setItem("roadintel-language", "en");
 }
 
 function readSavedUser(): SavedUser {
@@ -80,7 +77,6 @@ function readSavedUser(): SavedUser {
       mobile: parsed.mobile || DEFAULT_USER.mobile,
       location: parsed.location || DEFAULT_USER.location,
       role: parsed.role || DEFAULT_USER.role,
-      language: "English",
     };
   } catch {
     return DEFAULT_USER;
@@ -114,12 +110,10 @@ function saveUserToStorage(user: SavedUser) {
     mobile: user.mobile || DEFAULT_USER.mobile,
     location: user.location || DEFAULT_USER.location,
     role: user.role || DEFAULT_USER.role,
-    language: "English",
   };
 
   localStorage.setItem("roadintel-user", JSON.stringify(cleanUser));
   sessionStorage.setItem("roadintel-user", JSON.stringify(cleanUser));
-  localStorage.setItem("roadintel-language", "en");
 }
 
 function saveNotificationsToStorage(settings: NotificationSettings) {
@@ -360,7 +354,6 @@ export default function Settings() {
       mobile: cleanMobile,
       location: cleanLocation,
       role: cleanRole || DEFAULT_USER.role,
-      language: "English",
     };
 
     saveUserToStorage(user);
@@ -381,11 +374,9 @@ export default function Settings() {
         mobile,
         location,
         role,
-        language: "English",
       },
       preferences: {
         theme: "RoadIntel fixed dark blue",
-        language: "English",
         notifications,
       },
       demoData: {
@@ -431,7 +422,6 @@ export default function Settings() {
 
     saveUserToStorage({
       ...DEFAULT_USER,
-      language: "English",
     });
 
     saveNotificationsToStorage(DEFAULT_NOTIFICATIONS);
@@ -450,7 +440,6 @@ export default function Settings() {
     localStorage.removeItem("roadintel-auth");
     localStorage.removeItem("roadintel-user");
     localStorage.removeItem("roadintel-notifications");
-    localStorage.removeItem("roadintel-language");
     localStorage.removeItem("roadintel-local-complaints-v2");
 
     sessionStorage.removeItem("roadintel-auth");
@@ -616,39 +605,6 @@ export default function Settings() {
 
         <div className="space-y-6">
           <SettingCard
-            title="Language"
-            description="RoadIntel is currently locked to English to keep the demo simple and consistent."
-            icon={Languages}
-          >
-            <div
-              className="rounded-2xl p-4"
-              style={{
-                background: "hsl(var(--background))",
-                border: "1px solid hsl(var(--border))",
-              }}
-            >
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-semibold">English</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Default and only enabled interface language.
-                  </p>
-                </div>
-
-                <span
-                  className="rounded-full px-2.5 py-1 text-xs font-bold"
-                  style={{
-                    background: "rgba(22,163,74,0.14)",
-                    color: "#16A34A",
-                  }}
-                >
-                  Active
-                </span>
-              </div>
-            </div>
-          </SettingCard>
-
-          <SettingCard
             title="Appearance"
             description="Theme controls have been removed. The app now keeps one professional dark-blue RoadIntel theme."
             icon={Shield}
@@ -730,3 +686,4 @@ export default function Settings() {
     </div>
   );
 }
+

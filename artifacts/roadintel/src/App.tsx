@@ -158,9 +158,7 @@ export default function App() {
       <ThemeProvider defaultTheme="dark" storageKey="roadintel-theme">
         <TooltipProvider>
           <OfflineSyncProvider />
-
           <Router />
-
           <FloatingRoadIntelBot />
           <Toaster />
         </TooltipProvider>

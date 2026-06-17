@@ -209,15 +209,22 @@ function getPageTitle(path: string) {
 }
 
 function getPageSubtitle(path: string) {
-  if (path === "/complaints") return "Report, route and track road issues.";
-  if (path === "/spending") return "Track public money against road quality.";
-  if (path === "/contractors") return "Review repair quality and accountability.";
-  if (path === "/risk-map") return "Prioritize future road failure zones.";
+  if (path === "/dashboard") return "RoadIntel transparency dashboard.";
+  if (path === "/complaints") return "Report, route, and track road issues.";
+  if (path === "/scan") return "Capture road defects and create evidence-backed reports.";
+  if (path === "/spending") return "Track public money against visible road quality.";
+  if (path === "/contractors") return "Review repair quality, contractor history, and accountability.";
+  if (path === "/risk-map") return "Prioritize future road failure zones before they become safety risks.";
   if (path === "/roads" || path.startsWith("/roads/")) {
-    return "Monitor road condition, repair history and risk.";
+    return "Monitor road condition, repair history, and risk signals.";
   }
-  if (path === "/analytics") return "Connect complaints, spending, road health and accountability.";
-  return "RoadWatch transparency dashboard.";
+  if (path === "/sensors") return "View demo sensor intelligence for road condition monitoring.";
+  if (path === "/analytics") {
+    return "Connect complaints, spending, road health, and accountability.";
+  }
+  if (path === "/settings") return "Manage your RoadIntel profile and account preferences.";
+  if (path === "/sos") return "Access emergency road assistance and safety actions.";
+  return "RoadIntel civic intelligence platform.";
 }
 
 function Badge({ badge }: { badge: NavBadge }) {
@@ -256,7 +263,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     return apiNotifications.length > 0 ? apiNotifications : FALLBACK_NOTIFICATIONS;
   }, [notifications]);
 
-  const unreadCount = notificationList.filter((notification) => notification.read !== true).length;
+  const unreadCount = notificationList.filter(
+    (notification) => notification.read !== true
+  ).length;
 
   function closeSidebar() {
     setSidebarOpen(false);
@@ -315,7 +324,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 RoadIntel
               </div>
               <div className="text-xs text-slate-400">
-                RoadWatch Transparency
+                Civic Road Intelligence
               </div>
             </div>
           </div>
@@ -477,7 +486,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                         </span>
                       </div>
                       <p className="mt-1 text-xs text-slate-500">
-                        RoadWatch transparency alerts
+                        RoadIntel transparency alerts
                       </p>
                     </div>
 
@@ -537,9 +546,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto">
-          {children}
-        </main>
+        <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );
