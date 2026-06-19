@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+﻿import { Link } from "wouter";
 import {
   AlertTriangle,
   ArrowRight,
@@ -44,7 +44,7 @@ type Workflow = {
 
 type Requirement = {
   title: string;
-  roadwatchNeed: string;
+  RoadIntelNeed: string;
   roadintelFeature: string;
   icon: LucideIcon;
   color: string;
@@ -66,7 +66,7 @@ const PILOT_STATS: Stat[] = [
     color: "#3B82F6",
   },
   {
-    value: "₹24.3Cr",
+    value: "â‚¹24.3Cr",
     label: "Budget Visibility",
     note: "Approved vs used comparison",
     icon: IndianRupee,
@@ -81,31 +81,31 @@ const PILOT_STATS: Stat[] = [
   },
 ];
 
-const ROADWATCH_REQUIREMENTS: Requirement[] = [
+const RoadIntel_REQUIREMENTS: Requirement[] = [
   {
     title: "Monitor Road Quality",
-    roadwatchNeed: "Citizens need a simple way to understand road condition.",
+    RoadIntelNeed: "Citizens need a simple way to understand road condition.",
     roadintelFeature: "Road DNA, health score, risk score and repair history.",
     icon: Map,
     color: "#0EA5A4",
   },
   {
     title: "Track Public Spending",
-    roadwatchNeed: "Public money spent on roads should be visible.",
+    RoadIntelNeed: "Public money spent on roads should be visible.",
     roadintelFeature: "Approved budget, actual spend and road-health comparison.",
     icon: IndianRupee,
     color: "#F59E0B",
   },
   {
     title: "Report Issues",
-    roadwatchNeed: "Citizens should be able to report potholes and unsafe roads.",
+    RoadIntelNeed: "Citizens should be able to report potholes and unsafe roads.",
     roadintelFeature: "Complaint filing, issue severity and progress timeline.",
     icon: ClipboardList,
     color: "#3B82F6",
   },
   {
     title: "Route to Authority",
-    roadwatchNeed: "Complaints must reach the responsible department.",
+    RoadIntelNeed: "Complaints must reach the responsible department.",
     roadintelFeature: "PMC / PCMC / PWD / NHAI-MSRDC routing logic.",
     icon: Landmark,
     color: "#8B5CF6",
@@ -175,7 +175,7 @@ const WORKFLOW: Workflow[] = [
 ];
 
 const AUDIT_POINTS = [
-  "Transparency-first RoadWatch workflow",
+  "Transparency-first RoadIntel workflow",
   "Civic transparency platform",
   "No fake live government-data claims",
   "Pilot data clearly focused on Pune / PCMC",
@@ -215,14 +215,14 @@ export default function Landing() {
                 RoadIntel
               </div>
               <div className="text-xs text-slate-400">
-                RoadWatch Transparency Platform
+                RoadIntel Transparency Platform
               </div>
             </div>
           </div>
 
           <div className="hidden items-center gap-7 text-sm text-slate-400 md:flex">
-            <a href="#roadwatch" className="transition hover:text-white">
-              RoadWatch Fit
+            <a href="#RoadIntel" className="transition hover:text-white">
+              RoadIntel Fit
             </a>
             <a href="#features" className="transition hover:text-white">
               Features
@@ -258,7 +258,7 @@ export default function Landing() {
               <div>
                 <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-300">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  Built for RoadWatch: quality, spending, reporting and transparency
+                  Built for RoadIntel: quality, spending, reporting and transparency
                 </div>
 
                 <h1
@@ -286,9 +286,9 @@ export default function Landing() {
                     </button>
                   </Link>
 
-                  <a href="#roadwatch">
+                  <a href="#RoadIntel">
                     <button className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/[0.08]">
-                      View RoadWatch Alignment
+                      View RoadIntel Alignment
                     </button>
                   </a>
                 </div>
@@ -387,12 +387,12 @@ Transparency-first demo
           </div>
         </section>
 
-        <section id="roadwatch" className="px-4 py-16 sm:px-6 lg:px-8">
+        <section id="RoadIntel" className="px-4 py-16 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <div className="mb-10 max-w-3xl">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-300">
                 <MapPin className="h-3.5 w-3.5" />
-                RoadWatch Requirement Mapping
+                RoadIntel Requirement Mapping
               </div>
 
               <h2
@@ -410,7 +410,7 @@ Transparency-first demo
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {ROADWATCH_REQUIREMENTS.map((item) => (
+              {RoadIntel_REQUIREMENTS.map((item) => (
                 <div
                   key={item.title}
                   className="rounded-3xl border border-white/10 bg-white/[0.04] p-5"
@@ -437,7 +437,7 @@ Transparency-first demo
                   </p>
 
                   <p className="mt-1 text-sm leading-6 text-slate-400">
-                    {item.roadwatchNeed}
+                    {item.RoadIntelNeed}
                   </p>
 
                   <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-cyan-300">
@@ -661,7 +661,7 @@ Transparency-first demo
         </div>
 
         <p className="mt-3 text-sm text-slate-500">
-          Transparency-first RoadWatch platform by HackTech Novas.
+          Transparency-first RoadIntel platform by HackTech Novas.
         </p>
 
         <p className="mt-2 text-xs text-slate-600">

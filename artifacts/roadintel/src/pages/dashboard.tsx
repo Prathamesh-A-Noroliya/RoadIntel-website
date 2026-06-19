@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   AlertTriangle,
@@ -112,7 +112,7 @@ const FALLBACK_KPI_DATA: Kpi[] = [
   },
   {
     label: "Spending Tracked",
-    value: "₹27.5Cr",
+    value: "â‚¹27.5Cr",
     note: "Approved vs actual spend",
     icon: IndianRupee,
     color: "#F59E0B",
@@ -279,8 +279,8 @@ function getSeverityFromRisk(risk: number): Severity {
 }
 
 function formatCurrencyCr(amount: number) {
-  if (!amount || amount <= 0) return "₹0Cr";
-  return `₹${amount.toFixed(amount >= 10 ? 0 : 1)}Cr`;
+  if (!amount || amount <= 0) return "â‚¹0Cr";
+  return `â‚¹${amount.toFixed(amount >= 10 ? 0 : 1)}Cr`;
 }
 
 function getSpendingStatus(
@@ -794,7 +794,7 @@ export default function Dashboard() {
 
                     <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4" />
-                      {road.zone} · {road.authority}
+                      {road.zone} Â· {road.authority}
                     </p>
 
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">
@@ -898,12 +898,12 @@ export default function Dashboard() {
                   <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
                     <div>
                       <p className="text-xs text-muted-foreground">Approved</p>
-                      <p className="font-bold">₹{item.approved.toFixed(1)}Cr</p>
+                      <p className="font-bold">â‚¹{item.approved.toFixed(1)}Cr</p>
                     </div>
 
                     <div>
                       <p className="text-xs text-muted-foreground">Spent</p>
-                      <p className="font-bold">₹{item.spent.toFixed(1)}Cr</p>
+                      <p className="font-bold">â‚¹{item.spent.toFixed(1)}Cr</p>
                     </div>
 
                     <div>

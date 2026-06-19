@@ -1,4 +1,4 @@
-import {
+﻿import {
   Activity,
   AlertTriangle,
   Award,
@@ -200,7 +200,7 @@ function getStatusMeta(status: ContractorStatus) {
 }
 
 function formatCr(value: number) {
-  return `₹${value.toFixed(1)} Cr`;
+  return `â‚¹${value.toFixed(1)} Cr`;
 }
 
 function formatPercent(value: number) {
@@ -311,7 +311,7 @@ export default function Contractors() {
             </div>
 
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              RAS™ combines quality, budget discipline, repeat-failure control
+              RASâ„¢ combines quality, budget discipline, repeat-failure control
               and timeliness.
             </p>
           </div>
@@ -393,7 +393,7 @@ export default function Contractors() {
             className="font-semibold"
             style={{ fontFamily: "Sora, sans-serif" }}
           >
-            RAS™ Scoring Model
+            RASâ„¢ Scoring Model
           </h2>
 
           <p className="mt-1 text-xs text-muted-foreground">
@@ -461,7 +461,7 @@ export default function Contractors() {
           </div>
 
           <div className="text-xs text-muted-foreground">
-            Sorted by RAS™ highest to lowest
+            Sorted by RASâ„¢ highest to lowest
           </div>
         </div>
 
@@ -498,7 +498,7 @@ export default function Contractors() {
               <tr className="text-left text-xs uppercase text-muted-foreground">
                 <th className="px-5 py-3 font-semibold">Contractor</th>
                 <th className="px-5 py-3 font-semibold">Authority</th>
-                <th className="px-5 py-3 font-semibold">RAS™</th>
+                <th className="px-5 py-3 font-semibold">RASâ„¢</th>
                 <th className="px-5 py-3 font-semibold">Budget</th>
                 <th className="px-5 py-3 font-semibold">Repeat Failures</th>
                 <th className="px-5 py-3 font-semibold">Status</th>
@@ -518,7 +518,7 @@ export default function Contractors() {
                     <td className="px-5 py-4">
                       <div className="font-semibold">{contractor.name}</div>
                       <div className="mt-1 text-xs text-muted-foreground">
-                        {contractor.id} · {contractor.zone}
+                        {contractor.id} Â· {contractor.zone}
                       </div>
                     </td>
 
@@ -593,7 +593,7 @@ function ContractorCard({ contractor }: { contractor: Contractor }) {
 
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
-            {contractor.zone} · {contractor.authority}
+            {contractor.zone} Â· {contractor.authority}
           </p>
         </div>
 
@@ -748,7 +748,7 @@ function AuditQueueItem({
           </div>
 
           <p className="mt-1 text-xs text-muted-foreground">
-            {contractor.zone} · {contractor.authority}
+            {contractor.zone} Â· {contractor.authority}
           </p>
         </div>
 
@@ -756,7 +756,7 @@ function AuditQueueItem({
       </div>
 
       <div className="mt-3">
-        <ScoreBar value={ras} label="RAS™" />
+        <ScoreBar value={ras} label="RASâ„¢" />
       </div>
 
       <p className="mt-3 text-xs leading-5 text-muted-foreground">

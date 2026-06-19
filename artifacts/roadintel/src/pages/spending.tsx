@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+﻿import { Link } from "wouter";
 import {
   AlertTriangle,
   ArrowRight,
@@ -182,7 +182,7 @@ const AUDIT_FLAGS: AuditFlag[] = [
     contractor: "UrbanBuild Pune Services",
     severity: "critical",
     evidence:
-      "₹4.8 Cr spent against ₹3.9 Cr approved, but road health remains 42/100 with 4 repeat repairs.",
+      "â‚¹4.8 Cr spent against â‚¹3.9 Cr approved, but road health remains 42/100 with 4 repeat repairs.",
     recommendedAction:
       "Escalate for field verification and freeze additional payment until repair proof is submitted.",
   },
@@ -209,7 +209,7 @@ const AUDIT_FLAGS: AuditFlag[] = [
 ];
 
 function formatCr(value: number) {
-  return `₹${value.toFixed(1)} Cr`;
+  return `â‚¹${value.toFixed(1)} Cr`;
 }
 
 function getOverrunPercent(record: RoadSpendRecord) {
@@ -407,7 +407,7 @@ function SpendingCard({ record }: { record: RoadSpendRecord }) {
 
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
-            {record.zone} · {record.authority}
+            {record.zone} Â· {record.authority}
           </p>
         </div>
 
@@ -550,7 +550,7 @@ function AuditFlagCard({ flag }: { flag: AuditFlag }) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        {flag.road} · {flag.contractor}
+        {flag.road} Â· {flag.contractor}
       </p>
 
       <p className="mt-3 text-xs leading-5 text-muted-foreground">
@@ -727,7 +727,7 @@ export default function Spending() {
                 <Area
                   type="monotone"
                   dataKey="approved"
-                  name="Approved ₹Cr"
+                  name="Approved â‚¹Cr"
                   stroke="#0EA5A4"
                   fill="rgba(14,165,164,0.14)"
                   strokeWidth={2}
@@ -735,7 +735,7 @@ export default function Spending() {
                 <Area
                   type="monotone"
                   dataKey="spent"
-                  name="Spent ₹Cr"
+                  name="Spent â‚¹Cr"
                   stroke="#F59E0B"
                   fill="rgba(245,158,11,0.14)"
                   strokeWidth={2}
@@ -743,7 +743,7 @@ export default function Spending() {
                 <Area
                   type="monotone"
                   dataKey="flagged"
-                  name="Flagged ₹Cr"
+                  name="Flagged â‚¹Cr"
                   stroke="#DC2626"
                   fill="rgba(220,38,38,0.12)"
                   strokeWidth={2}
@@ -821,7 +821,7 @@ export default function Spending() {
                 <Bar
                   yAxisId="left"
                   dataKey="spent"
-                  name="Spent ₹Cr"
+                  name="Spent â‚¹Cr"
                   radius={[6, 6, 0, 0]}
                 >
                   {chartData.map((item) => (
@@ -966,7 +966,7 @@ export default function Spending() {
 
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               This page uses realistic Pune / PCMC pilot-style demo data to show
-              the RoadWatch transparency workflow. It does not claim connection
+              the RoadIntel transparency workflow. It does not claim connection
               to official live government payment systems. The purpose is to
               demonstrate how public spending, road quality and contractor
               accountability can be connected in one explainable platform.

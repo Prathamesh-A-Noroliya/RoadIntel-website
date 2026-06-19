@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { useGetRiskMap } from "@workspace/api-client-react";
 import {
   AlertTriangle,
@@ -449,7 +449,7 @@ export default function RiskMap() {
                     </div>
 
                     <div className="mt-1 text-slate-400">
-                      {safeText(point.city)} • {level.toUpperCase()}
+                      {safeText(point.city)} â€¢ {level.toUpperCase()}
                     </div>
 
                     <div className="mt-2 text-slate-300">

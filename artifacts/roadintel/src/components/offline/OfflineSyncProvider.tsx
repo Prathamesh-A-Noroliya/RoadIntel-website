@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { syncPendingReports } from "@/lib/offlineReports";
 
 const SYNC_ENDPOINT = "";

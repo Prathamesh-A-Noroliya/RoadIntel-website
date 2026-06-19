@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { X, Send, Bot, User } from "lucide-react";
 import { useChatWithAi } from "@workspace/api-client-react";
 
@@ -100,3 +100,4 @@ export function ChatbotPanel({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+

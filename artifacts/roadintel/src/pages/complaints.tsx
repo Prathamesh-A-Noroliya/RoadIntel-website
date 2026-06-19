@@ -1,4 +1,4 @@
-import {
+﻿import {
   useEffect,
   useMemo,
   useState,
@@ -147,7 +147,7 @@ const MOCK_COMPLAINTS: Complaint[] = [
     issueType: "Pothole",
     createdAt: new Date().toISOString(),
     assignedDepartment: "PMC Roads Department",
-    assignedEngineer: "Ward Engineer — Shivajinagar",
+    assignedEngineer: "Ward Engineer â€” Shivajinagar",
     sla: "48 hours",
     authority: "PMC",
     zone: "Pune Central",
@@ -166,7 +166,7 @@ const MOCK_COMPLAINTS: Complaint[] = [
     issueType: "Waterlogging",
     createdAt: new Date().toISOString(),
     assignedDepartment: "PMC Stormwater + Roads Cell",
-    assignedEngineer: "Assistant Engineer — Baner Ward",
+    assignedEngineer: "Assistant Engineer â€” Baner Ward",
     sla: "5 days",
     authority: "PMC",
     zone: "Pune West",
@@ -185,7 +185,7 @@ const MOCK_COMPLAINTS: Complaint[] = [
     issueType: "Cracking",
     createdAt: new Date().toISOString(),
     assignedDepartment: "PCMC Roads Department",
-    assignedEngineer: "Junior Engineer — Wakad Zone",
+    assignedEngineer: "Junior Engineer â€” Wakad Zone",
     sla: "7 days",
     authority: "PCMC",
     zone: "PCMC Corridor",
@@ -284,8 +284,8 @@ function getRoutingDecision(form: ComplaintForm): RoutingDecision {
       department: "Highway Maintenance Unit",
       engineer:
         form.severity === "critical"
-          ? "Executive Engineer — Highway Safety"
-          : "Assistant Engineer — Highway Maintenance",
+          ? "Executive Engineer â€” Highway Safety"
+          : "Assistant Engineer â€” Highway Maintenance",
       sla: form.severity === "critical" ? "24-48 hours" : "5-7 days",
       zone: "Highway Corridor",
     };
@@ -304,8 +304,8 @@ function getRoutingDecision(form: ComplaintForm): RoutingDecision {
       department: "PCMC Roads Department",
       engineer:
         form.severity === "critical"
-          ? "Executive Engineer — PCMC Roads"
-          : "Ward Engineer — PCMC Zone",
+          ? "Executive Engineer â€” PCMC Roads"
+          : "Ward Engineer â€” PCMC Zone",
       sla:
         form.severity === "critical"
           ? "24 hours"
@@ -322,8 +322,8 @@ function getRoutingDecision(form: ComplaintForm): RoutingDecision {
       department: "PWD Road Maintenance Division",
       engineer:
         form.severity === "critical"
-          ? "Executive Engineer — PWD"
-          : "Assistant Engineer — PWD",
+          ? "Executive Engineer â€” PWD"
+          : "Assistant Engineer â€” PWD",
       sla: form.severity === "critical" ? "48 hours" : "7 days",
       zone: "State Road",
     };
@@ -337,8 +337,8 @@ function getRoutingDecision(form: ComplaintForm): RoutingDecision {
         : "PMC Roads Department",
     engineer:
       form.severity === "critical"
-        ? "Executive Engineer — PMC Roads"
-        : "Ward Engineer — PMC Zone",
+        ? "Executive Engineer â€” PMC Roads"
+        : "Ward Engineer â€” PMC Zone",
     sla:
       form.severity === "critical"
         ? "24 hours"
@@ -1039,8 +1039,8 @@ export default function Complaints() {
                   <WifiOff className="h-3.5 w-3.5" />
                 )}
                 {isOnline
-                  ? "ONLINE — backend save enabled"
-                  : "OFFLINE MODE — local save enabled"}
+                  ? "ONLINE â€” backend save enabled"
+                  : "OFFLINE MODE â€” local save enabled"}
               </div>
             </div>
 
@@ -1083,7 +1083,7 @@ export default function Complaints() {
             <div>
               <h3 className="font-semibold">Complaint saved successfully</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Assigned to {submitResult.authority} · {submitResult.engineer} ·
+                Assigned to {submitResult.authority} Â· {submitResult.engineer} Â·
                 SLA: {submitResult.sla}
               </p>
             </div>

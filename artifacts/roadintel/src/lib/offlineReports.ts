@@ -1,4 +1,4 @@
-export type ReportSyncStatus = "Pending Sync" | "Synced";
+﻿export type ReportSyncStatus = "Pending Sync" | "Synced";
 
 export type RoadDefectInput = {
   defectType: string;

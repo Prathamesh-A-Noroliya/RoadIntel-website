@@ -1,4 +1,4 @@
-export function normalizeArray<T>(value: unknown, fallback: T[] = []): T[] {
+﻿export function normalizeArray<T>(value: unknown, fallback: T[] = []): T[] {
   if (Array.isArray(value)) {
     return value as T[];
   }

@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from "clsx"
+﻿import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -23,12 +23,13 @@ export function getHealthColor(score: number) {
 }
 
 export function formatCurrency(value: number) {
-  if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
-  if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
-  return `₹${value.toLocaleString()}`;
+  if (value >= 10000000) return `â‚¹${(value / 10000000).toFixed(1)}Cr`;
+  if (value >= 100000) return `â‚¹${(value / 100000).toFixed(1)}L`;
+  return `â‚¹${value.toLocaleString()}`;
 }
 
 export function formatDate(date: string) {
   try { return new Date(date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }); }
   catch { return date; }
 }
+

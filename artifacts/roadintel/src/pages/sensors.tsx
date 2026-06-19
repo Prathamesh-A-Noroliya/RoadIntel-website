@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   Area,
@@ -419,7 +419,7 @@ function SensorRoadCard({ road }: { road: SensorRoad }) {
 
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
-            {road.zone} · {road.authority}
+            {road.zone} Â· {road.authority}
           </p>
         </div>
 
@@ -880,7 +880,7 @@ export default function Sensors() {
             className="font-semibold"
             style={{ fontFamily: "Sora, sans-serif" }}
           >
-            How Sensor Intel Supports RoadWatch
+            How Sensor Intel Supports RoadIntel
           </h2>
 
           <p className="mt-1 text-xs text-muted-foreground">

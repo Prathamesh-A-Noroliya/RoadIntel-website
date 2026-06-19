@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+﻿import { FormEvent, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
 
@@ -73,7 +73,7 @@ export default function Login() {
               India's Civic Road Intelligence Platform
             </div>
             <h1 className="text-5xl font-bold leading-tight" style={{ fontFamily: "Sora, sans-serif" }}>
-              Monitor roads, verify repairs, track spending — one dashboard.
+              Monitor roads, verify repairs, track spending â€” one dashboard.
             </h1>
             <p className="mt-6 text-lg leading-8 text-slate-300">
               RoadIntel helps civic teams track road conditions, predict failure zones,
@@ -94,7 +94,7 @@ export default function Login() {
               </div>
             </div>
           </div>
-          <div className="relative z-10 text-sm text-slate-500">Live Demo — June 2026</div>
+          <div className="relative z-10 text-sm text-slate-500">Live Demo â€” June 2026</div>
         </section>
 
         {/* RIGHT: LOGIN FORM */}
@@ -157,3 +157,4 @@ export default function Login() {
     </main>
   );
 }
+

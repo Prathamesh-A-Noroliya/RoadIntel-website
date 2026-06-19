@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { AlertTriangle, MapPin, Phone, Heart, Navigation, Clock, CheckCircle, Loader2, X, Siren } from "lucide-react";
 
 const HOSPITALS = [
@@ -198,7 +198,7 @@ export default function SOSPage() {
           <div className="rounded-2xl p-5 space-y-3" style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}>
             <div className="flex items-center gap-2">
               <Heart className="w-4 h-4" style={{ color: "#E53935" }} />
-              <h3 className="font-bold">Nearest Hospital — Recommended Route</h3>
+              <h3 className="font-bold">Nearest Hospital â€” Recommended Route</h3>
             </div>
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -265,3 +265,4 @@ export default function SOSPage() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Area,
   AreaChart,
   Bar,
@@ -401,7 +401,7 @@ export default function Analytics() {
             </div>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Pune / PCMC pilot · No fake live claims
+              Pune / PCMC pilot Â· No fake live claims
             </p>
           </div>
         </div>
@@ -568,7 +568,7 @@ export default function Analytics() {
                 <Tooltip />
                 <Legend />
                 <Bar dataKey="quality" name="Quality" fill="#0EA5A4" radius={[0, 6, 6, 0]} />
-                <Bar dataKey="ras" name="RAS™" fill="#3B82F6" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="ras" name="RASâ„¢" fill="#3B82F6" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -576,7 +576,7 @@ export default function Analytics() {
 
         <ChartCard
           title="Spending vs Road Health"
-          description="This exposes the key RoadWatch problem: high spending should correlate with better road health."
+          description="This exposes the key RoadIntel problem: high spending should correlate with better road health."
         >
           <div className="h-[330px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -593,7 +593,7 @@ export default function Analytics() {
                 <Bar
                   yAxisId="left"
                   dataKey="spent"
-                  name="Spent ₹Cr"
+                  name="Spent â‚¹Cr"
                   fill="#F59E0B"
                   radius={[6, 6, 0, 0]}
                 />

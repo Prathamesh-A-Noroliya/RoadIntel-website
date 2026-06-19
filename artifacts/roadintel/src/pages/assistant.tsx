@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useChatWithAi } from "@workspace/api-client-react";
 import { Bot, Mic, MicOff, Send, Globe, ChevronRight, Volume2 } from "lucide-react";
 
@@ -45,7 +45,7 @@ function getQuickLink(text: string): string | null {
 
 export default function Assistant() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", text: "Hello! I'm RoadIntel AI — your road intelligence assistant. Ask me about roads, spending, contractors, complaints, or sensor data.", time: new Date().toLocaleTimeString() },
+    { role: "assistant", text: "Hello! I'm RoadIntel AI â€” your road intelligence assistant. Ask me about roads, spending, contractors, complaints, or sensor data.", time: new Date().toLocaleTimeString() },
   ]);
   const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);
@@ -222,9 +222,10 @@ export default function Assistant() {
           </button>
         </div>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          Voice: {LANGS.find(l => l.code === lang)?.label} · Tap mic to speak
+          Voice: {LANGS.find(l => l.code === lang)?.label} Â· Tap mic to speak
         </p>
       </div>
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   Activity,
@@ -472,7 +472,7 @@ function RoadCard({ road }: { road: Road }) {
 
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4" />
-            {road.location} · {road.authority}
+            {road.location} Â· {road.authority}
           </p>
         </div>
 

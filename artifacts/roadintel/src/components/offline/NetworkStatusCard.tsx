@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Wifi, WifiOff } from "lucide-react";
 
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -80,8 +80,8 @@ export function NetworkStatusCard() {
             style={{ fontFamily: "Sora, sans-serif" }}
           >
             {isOnline
-              ? "System Online — Reports sync instantly"
-              : "Offline Mode Active — Reports saved locally"}
+              ? "System Online â€” Reports sync instantly"
+              : "Offline Mode Active â€” Reports saved locally"}
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">

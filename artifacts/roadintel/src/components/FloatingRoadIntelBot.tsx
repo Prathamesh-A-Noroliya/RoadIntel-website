@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
   Bot,
@@ -349,7 +349,7 @@ function getDecisionReply(input: string) {
     const top = [...PILOT_ROADS].sort((a, b) => b.risk - a.risk).slice(0, 3);
 
     return {
-      text: `Top predicted failure risks are: 1) ${top[0].name} — ${top[0].risk}/100, ${top[0].failureWindow}; 2) ${top[1].name} — ${top[1].risk}/100, ${top[1].failureWindow}; 3) ${top[2].name} — ${top[2].risk}/100, ${top[2].failureWindow}. The first action should be field inspection and contractor verification.`,
+      text: `Top predicted failure risks are: 1) ${top[0].name} â€” ${top[0].risk}/100, ${top[0].failureWindow}; 2) ${top[1].name} â€” ${top[1].risk}/100, ${top[1].failureWindow}; 3) ${top[2].name} â€” ${top[2].risk}/100, ${top[2].failureWindow}. The first action should be field inspection and contractor verification.`,
       intent: "risk_summary",
     };
   }
@@ -447,7 +447,7 @@ function getDecisionReply(input: string) {
 
   return {
     text:
-      "I can help with RoadIntel’s Pune / PCMC pilot: road risk, complaint routing, public spending, contractor accountability, quick scan, sensors, and analytics. Try asking: “Which road is highest risk?” or “Explain RAS.”",
+      "I can help with RoadIntelâ€™s Pune / PCMC pilot: road risk, complaint routing, public spending, contractor accountability, quick scan, sensors, and analytics. Try asking: â€œWhich road is highest risk?â€ or â€œExplain RAS.â€",
     intent: "fallback",
   };
 }
@@ -471,7 +471,7 @@ export default function FloatingRoadIntelBot() {
   const [messages, setMessages] = useState<Message[]>([
     createMessage(
       "assistant",
-      "Hi, I’m RoadIntel Assistant. I can help you navigate the website and explain risk, complaints, sensors, spending, and contractor accountability.",
+      "Hi, Iâ€™m RoadIntel Assistant. I can help you navigate the website and explain risk, complaints, sensors, spending, and contractor accountability.",
       "welcome",
     ),
   ]);
@@ -663,7 +663,7 @@ export default function FloatingRoadIntelBot() {
                 </h2>
 
                 <p className="text-xs text-slate-400">
-                  Rule-based decision helper · demo-safe
+                  Rule-based decision helper Â· demo-safe
                 </p>
               </div>
             </div>
@@ -834,7 +834,7 @@ export default function FloatingRoadIntelBot() {
               {listening && (
                 <div className="mt-2 flex items-center gap-2 text-xs text-cyan-300">
                   <Navigation className="h-3.5 w-3.5 animate-pulse" />
-                  Listening... say “open risk map” or ask a question.
+                  Listening... say â€œopen risk mapâ€ or ask a question.
                 </div>
               )}
             </div>

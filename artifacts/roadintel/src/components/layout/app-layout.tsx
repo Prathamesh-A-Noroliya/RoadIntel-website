@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+﻿import { useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity,
@@ -400,7 +400,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               Audit-safe demo
             </div>
             <p className="mt-1 text-xs leading-5 text-slate-400">
-              Pilot data · Pune / PCMC · transparency-first
+              Pilot data Â· Pune / PCMC Â· transparency-first
             </p>
           </div>
 

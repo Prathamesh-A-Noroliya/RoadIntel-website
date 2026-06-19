@@ -1,4 +1,4 @@
-import { Link, useParams } from "wouter";
+﻿import { Link, useParams } from "wouter";
 import {
   Activity,
   AlertTriangle,
@@ -845,7 +845,7 @@ function getQualityColor(quality: RepairQuality) {
 }
 
 function formatCr(value: number) {
-  return `₹${value.toFixed(1)} Cr`;
+  return `â‚¹${value.toFixed(1)} Cr`;
 }
 
 function Pill({
@@ -999,7 +999,7 @@ export default function RoadDetailPage() {
 
               <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
-                {road.location} · {road.authority} · {road.roadType}
+                {road.location} Â· {road.authority} Â· {road.roadType}
               </p>
 
               <p className="mt-4 max-w-4xl text-sm leading-6 text-muted-foreground">
@@ -1173,7 +1173,7 @@ export default function RoadDetailPage() {
           </h2>
 
           <p className="mt-1 text-xs text-muted-foreground">
-            Approved vs actual spend in ₹ crore.
+            Approved vs actual spend in â‚¹ crore.
           </p>
 
           <div className="mt-4 h-[260px]">
@@ -1310,7 +1310,7 @@ export default function RoadDetailPage() {
                       </div>
 
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {repair.date} · {repair.contractor}
+                        {repair.date} Â· {repair.contractor}
                       </p>
                     </div>
 
