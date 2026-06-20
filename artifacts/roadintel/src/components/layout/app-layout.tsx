@@ -1,4 +1,10 @@
-﻿import { useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity,
@@ -41,6 +47,98 @@ type NotificationItem = {
   read?: boolean;
   severity?: "critical" | "high" | "medium" | "low" | string;
 };
+
+const TEXT_FIXES: Array<[string, string]> = [
+  ["â‚¹", "₹"],
+  ["â€™", "'"],
+  ["â€˜", "'"],
+  ["â€œ", '"'],
+  ["â€�", '"'],
+  ["â€“", "–"],
+  ["â€”", "—"],
+  ["â€¦", "…"],
+  ["Â·", "·"],
+  ["Â", ""],
+];
+
+function fixBrokenText(value: string) {
+  let fixed = value;
+
+  for (const [wrong, correct] of TEXT_FIXES) {
+    fixed = fixed.split(wrong).join(correct);
+  }
+
+  return fixed;
+}
+
+function updateTextNode(node: Text) {
+  const currentValue = node.nodeValue ?? "";
+  const fixedValue = fixBrokenText(currentValue);
+
+  if (fixedValue !== currentValue) {
+    node.nodeValue = fixedValue;
+  }
+}
+
+function cleanBrokenEncoding(root: ParentNode) {
+  if (typeof document === "undefined") return;
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+
+      if (!parent) return NodeFilter.FILTER_REJECT;
+
+      const blockedTags = ["SCRIPT", "STYLE", "TEXTAREA", "INPUT"];
+      if (blockedTags.includes(parent.tagName)) {
+        return NodeFilter.FILTER_REJECT;
+      }
+
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+
+  let node = walker.nextNode();
+
+  while (node) {
+    updateTextNode(node as Text);
+    node = walker.nextNode();
+  }
+}
+
+function useGlobalTextEncodingFix() {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    cleanBrokenEncoding(document.body);
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === "characterData") {
+          updateTextNode(mutation.target as Text);
+        }
+
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            updateTextNode(node as Text);
+          }
+
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            cleanBrokenEncoding(node as Element);
+          }
+        });
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => observer.disconnect();
+  }, []);
+}
 
 const NAV_ITEMS: NavItem[] = [
   {
@@ -215,15 +313,16 @@ function getPageSubtitle(path: string) {
   if (path === "/spending") return "Track public money against visible road quality.";
   if (path === "/contractors") return "Review repair quality, contractor history, and accountability.";
   if (path === "/risk-map") return "Prioritize future road failure zones before they become safety risks.";
+
   if (path === "/roads" || path.startsWith("/roads/")) {
     return "Monitor road condition, repair history, and risk signals.";
   }
+
   if (path === "/sensors") return "View demo sensor intelligence for road condition monitoring.";
-  if (path === "/analytics") {
-    return "Connect complaints, spending, road health, and accountability.";
-  }
+  if (path === "/analytics") return "Connect complaints, spending, road health, and accountability.";
   if (path === "/settings") return "Manage your RoadIntel profile and account preferences.";
   if (path === "/sos") return "Access emergency road assistance and safety actions.";
+
   return "RoadIntel civic intelligence platform.";
 }
 
@@ -255,6 +354,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const [location, navigate] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationRef = useRef<HTMLDivElement | null>(null);
+
+  useGlobalTextEncodingFix();
 
   const { data: notifications } = useListNotifications();
 
@@ -266,6 +368,24 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const unreadCount = notificationList.filter(
     (notification) => notification.read !== true
   ).length;
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (!notificationsOpen) return;
+
+      const target = event.target as Node;
+
+      if (notificationRef.current && !notificationRef.current.contains(target)) {
+        setNotificationsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [notificationsOpen]);
 
   function closeSidebar() {
     setSidebarOpen(false);
@@ -400,7 +520,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               Audit-safe demo
             </div>
             <p className="mt-1 text-xs leading-5 text-slate-400">
-              Pilot data Â· Pune / PCMC Â· transparency-first
+              Pilot data · Pune / PCMC · transparency-first
             </p>
           </div>
 
@@ -454,7 +574,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </button>
               </Link>
 
-              <div className="relative">
+              <div className="relative" ref={notificationRef}>
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen((current) => !current)}
